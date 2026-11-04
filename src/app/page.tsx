@@ -33,6 +33,9 @@ export default function DashboardPage() {
   const [showMCPSettings, setShowMCPSettings] = useState(false);
   const [selectedProjectForModal, setSelectedProjectForModal] = useState<Project | null>(null);
 
+  // Resolve the persisted Supabase session first. Workspace data is loaded by
+  // the user-scoped effect below, so both refresh and an in-app login follow
+  // exactly the same loading path.
   useEffect(() => {
     let active = true;
 
@@ -42,48 +45,37 @@ export default function DashboardPage() {
         return;
       }
 
-      const { data: { user: authUser }, error } = await supabase.auth.getUser();
-      if (!active) return;
-      if (error || !authUser) {
-        setUser(null);
-        setProjects([]);
-        setBugs([]);
-        setLoading(false);
-        return;
-      }
-
       try {
-        const profile = await DataService.fetchProfile(authUser.id, authUser.email || '');
+        const { data: { user: authUser }, error } = await supabase.auth.getUser();
         if (!active) return;
-        setUser(profile);
-        try {
-          const userNotifications = await DataService.fetchNotifications(authUser.id);
-          if (active) setNotifications(userNotifications);
-        } catch (notificationError) {
-          console.error('Notification database read failed:', notificationError);
-          if (active) setDataError(notificationError instanceof Error ? notificationError.message : 'Bildirishnomalarni yuklab bo‘lmadi.');
+        if (error || !authUser) {
+          setUser(null);
+          setProjects([]);
+          setBugs([]);
+          setNotifications([]);
+          setLoading(false);
+          return;
         }
-        const projs = await DataService.fetchProjects();
-        if (!active) return;
-        setProjects(projs);
-        const bugGroups = await Promise.all(projs.map((project) => DataService.fetchBugs(project.id)));
-        if (!active) return;
-        setBugs(bugGroups.flat());
-        if (projs.length > 0) setSelectedProjectForModal(projs[0]);
+
+        const profile = await DataService.fetchProfile(authUser.id, authUser.email || '');
+        if (active) setUser(profile);
       } catch (err) {
-        console.error('Error loading dashboard data from database:', err);
-        setDataError(err instanceof Error ? err.message : 'Database ma’lumotlarini yuklab bo‘lmadi.');
-      } finally {
-        if (active) setLoading(false);
+        console.error('Error resolving authenticated user:', err);
+        if (active) {
+          setDataError(err instanceof Error ? err.message : 'Foydalanuvchi ma’lumotlarini yuklab bo‘lmadi.');
+          setLoading(false);
+        }
       }
     }
 
-    initialize();
+    void initialize();
     const { data: { subscription } } = supabase?.auth.onAuthStateChange((_event, session) => {
       if (!session?.user) {
         setUser(null);
         setProjects([]);
         setBugs([]);
+        setNotifications([]);
+        setLoading(false);
       }
     }) || { data: { subscription: null } };
 
@@ -92,6 +84,43 @@ export default function DashboardPage() {
       subscription?.unsubscribe();
     };
   }, []);
+
+  // Also runs immediately after login/signup, not only after a page refresh.
+  useEffect(() => {
+    if (!user?.id) return;
+    const userId = user.id;
+    let active = true;
+
+    async function loadWorkspace() {
+      setLoading(true);
+      setDataError('');
+      try {
+        const [userNotifications, projs] = await Promise.all([
+          DataService.fetchNotifications(userId).catch((err) => {
+            console.error('Notification database read failed:', err);
+            if (active) setDataError(err instanceof Error ? err.message : 'Bildirishnomalarni yuklab bo‘lmadi.');
+            return [] as BugNotification[];
+          }),
+          DataService.fetchProjects(),
+        ]);
+        if (!active) return;
+        setNotifications(userNotifications);
+        setProjects(projs);
+        const bugGroups = await Promise.all(projs.map((project) => DataService.fetchBugs(project.id)));
+        if (!active) return;
+        setBugs(bugGroups.flat());
+        setSelectedProjectForModal(projs[0] || null);
+      } catch (err) {
+        console.error('Error loading dashboard data from database:', err);
+        if (active) setDataError(err instanceof Error ? err.message : 'Database ma’lumotlarini yuklab bo‘lmadi.');
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    void loadWorkspace();
+    return () => { active = false; };
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user?.id) return;
