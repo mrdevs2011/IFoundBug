@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { authErrorToUzbek, normalizeUsername, usernameToAuthEmail } from '@/lib/supabase/username-auth';
 import { BugIcon } from '@/components/icons';
-import { UserProfile } from '@/types';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -71,18 +70,7 @@ export default function SignupPage() {
           setLoading(false);
           return;
         }
-        if (data?.user && data.session) {
-          if (typeof window !== 'undefined') {
-            const profile: UserProfile = {
-              id: data.user.id,
-              email: cleanUser,
-              full_name: fullName.trim() || cleanUser,
-              role: role as UserProfile['role'],
-              created_at: data.user.created_at,
-            };
-            localStorage.setItem('ifb_active_user', JSON.stringify(profile));
-          }
-        }
+
 
         router.push('/');
         return;
@@ -137,7 +125,7 @@ export default function SignupPage() {
             <input
               type="text"
               required
-              placeholder="Alisher Qodirov"
+              placeholder="Ism Familiya"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500"

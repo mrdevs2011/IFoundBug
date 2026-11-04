@@ -56,10 +56,9 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
   const [expectedBehavior, setExpectedBehavior] = useState('');
   const [devNotes, setDevNotes] = useState('');
   const [isSensitive, setIsSensitive] = useState(false);
-  const [reporterName, setReporterName] = useState('Anonymous Hunter');
 
   // Dynamic steps
-  const [steps, setSteps] = useState<string[]>(['1. Ilovani oching']);
+  const [steps, setSteps] = useState<string[]>([]);
   // Dynamic acceptance criteria
   const [criteria, setCriteria] = useState<string[]>(['Xatolik to‘liq bartaraf etildi']);
 
@@ -191,11 +190,6 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
       dev_notes: devNotes.trim(),
       evidence_urls: evidenceUrls,
       is_sensitive: isSensitive,
-      reporter_name: reporterName.trim() || 'Anonymous Hunter',
-      status: 'REPORTED',
-      upvotes_count: 1,
-      reproduced_count: 1,
-      views_count: 1,
     };
 
     try {
@@ -514,7 +508,7 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
             />
           </div>
 
-          {/* Privacy & Reporter */}
+          {/* Privacy */}
           <div className="flex items-center justify-between pt-2 border-t border-zinc-800">
             <label className="flex items-center gap-2 cursor-pointer text-xs text-zinc-300">
               <input
@@ -525,17 +519,7 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
               />
               <span>Maxfiy PII (Skrinshotda shaxsiy ma&apos;lumotlar bor bo‘lsa xiralashtirilsin)</span>
             </label>
-
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-zinc-400">Ismingiz:</span>
-              <input
-                type="text"
-                placeholder="Sarvar Tester"
-                value={reporterName}
-                onChange={(e) => setReporterName(e.target.value)}
-                className="bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1 text-xs text-white"
-              />
-            </div>
+            <span className="text-xs text-zinc-500">Muallif profilingdan olinadi</span>
           </div>
 
           {/* Submit Action */}

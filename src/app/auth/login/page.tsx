@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { authErrorToUzbek, normalizeUsername, usernameToAuthEmail } from '@/lib/supabase/username-auth';
 import { BugIcon } from '@/components/icons';
-import { UserProfile } from '@/types';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -55,17 +54,6 @@ export default function LoginPage() {
           setErrorMsg('Supabase sessiyasi olinmadi. Qayta urinib ko‘ring.');
           setLoading(false);
           return;
-        }
-
-        if (data.user && data.session && typeof window !== 'undefined') {
-          const profile: UserProfile = {
-            id: data.user.id,
-            email: cleanUser,
-            full_name: (data.user.user_metadata?.full_name as string) || cleanUser,
-            role: (data.user.user_metadata?.role as UserProfile['role']) || 'developer',
-            created_at: data.user.created_at,
-          };
-          localStorage.setItem('ifb_active_user', JSON.stringify(profile));
         }
 
         router.push('/');

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { authErrorToUzbek, normalizeUsername, usernameToAuthEmail } from '@/lib/supabase/username-auth';
 import { UserProfile } from '@/types';
+import { DataService } from '@/lib/supabase/data-service';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -87,13 +88,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           }
 
           if (data.user && data.session) {
-            userProfile = {
-              id: data.user.id,
-              email: cleanUser,
-              full_name: fullName.trim() || cleanUser,
-              role,
-              created_at: data.user.created_at || new Date().toISOString(),
-            };
+            userProfile = await DataService.fetchProfile(data.user.id, data.user.email || cleanUser);
           }
         }
 
@@ -131,13 +126,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           }
 
           if (data.user && data.session) {
-            userProfile = {
-              id: data.user.id,
-              email: cleanUser,
-              full_name: data.user.user_metadata?.full_name || cleanUser,
-              role: data.user.user_metadata?.role || 'developer',
-              created_at: data.user.created_at || new Date().toISOString(),
-            };
+            userProfile = await DataService.fetchProfile(data.user.id, data.user.email || cleanUser);
           }
         }
 

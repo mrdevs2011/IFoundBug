@@ -1,51 +1,38 @@
 import { createAuthenticatedServerClient } from '@/lib/supabase/server-auth';
 import { NextResponse } from 'next/server';
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf', 'text/plain']);
+
 export async function POST(req: Request) {
   const auth = await createAuthenticatedServerClient();
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const { client: supabase } = auth;
+
   try {
     const formData = await req.formData();
-    const file = formData.get('file') as File;
+    const file = formData.get('file');
+    if (!(file instanceof File)) return NextResponse.json({ error: 'Fayl topilmadi' }, { status: 400 });
+    if (!ALLOWED_TYPES.has(file.type)) return NextResponse.json({ error: 'Fayl turi qo‘llab-quvvatlanmaydi.' }, { status: 415 });
+    if (file.size <= 0 || file.size > MAX_FILE_SIZE) return NextResponse.json({ error: 'Fayl hajmi 10 MB dan oshmasligi kerak.' }, { status: 413 });
 
-    if (!file) {
-      return NextResponse.json({ error: 'Fayl topilmadi' }, { status: 400 });
-    }
-
-    const fileExt = file.name.split('.').pop() || 'png';
-    const fileName = `evidence-${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-    const filePath = `bugs/${fileName}`;
-
-    if (supabase) {
-      try {
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const { error: uploadError } = await supabase.storage
-          .from('bug-attachments')
-          .upload(filePath, buffer, {
-            contentType: file.type || 'image/png',
-            upsert: true,
-          });
-
-        if (!uploadError) {
-          const { data: publicUrlData } = supabase.storage
-            .from('bug-attachments')
-            .getPublicUrl(filePath);
-
-          return NextResponse.json({ url: publicUrlData.publicUrl });
-        }
-      } catch (err) {
-        console.warn('Supabase storage upload error:', err);
-      }
-    }
-
-    // Fallback: Convert to Base64 data URL
+    const fileExt = file.name.split('.').pop()?.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10) || 'bin';
+    const filePath = `bugs/${crypto.randomUUID()}.${fileExt}`;
     const buffer = Buffer.from(await file.arrayBuffer());
-    const base64 = `data:${file.type || 'image/png'};base64,${buffer.toString('base64')}`;
-    return NextResponse.json({ url: base64 });
+    const { error: uploadError } = await auth.client.storage
+      .from('bug-attachments')
+      .upload(filePath, buffer, { contentType: file.type, upsert: false });
+
+    if (uploadError) {
+      console.error('Supabase storage upload failed:', uploadError);
+      return NextResponse.json({ error: uploadError.message }, { status: 502 });
+    }
+
+    const { data } = auth.client.storage.from('bug-attachments').getPublicUrl(filePath);
+    if (!data.publicUrl) return NextResponse.json({ error: 'Storage public URL qaytarmadi.' }, { status: 502 });
+    return NextResponse.json({ url: data.publicUrl }, { status: 201 });
   } catch (error: unknown) {
-    const err = error as Error;
-    console.error('Upload handler error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Unknown server error';
+    console.error('Upload handler error:', message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

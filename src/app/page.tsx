@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Project, Bug, UserProfile, BugNotification } from '@/types';
 import { DataService } from '@/lib/supabase/data-service';
 import { AppNavbar } from '@/components/AppNavbar';
@@ -15,11 +16,13 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [bugs, setBugs] = useState<Bug[]>([]);
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [notifications] = useState<BugNotification[]>([]);
+  const [notifications, setNotifications] = useState<BugNotification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dataError, setDataError] = useState('');
 
   // Modals
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
@@ -40,7 +43,6 @@ export default function DashboardPage() {
       const { data: { user: authUser }, error } = await supabase.auth.getUser();
       if (!active) return;
       if (error || !authUser) {
-        localStorage.removeItem('ifb_active_user');
         setUser(null);
         setProjects([]);
         setBugs([]);
@@ -48,30 +50,27 @@ export default function DashboardPage() {
         return;
       }
 
-      const profile: UserProfile = {
-        id: authUser.id,
-        email: authUser.email || '',
-        full_name: (authUser.user_metadata?.full_name as string) || authUser.email?.split('@')[0] || 'Dasturchi',
-        role: (authUser.user_metadata?.role as UserProfile['role']) || 'developer',
-        created_at: authUser.created_at,
-      };
-      setUser(profile);
-      localStorage.setItem('ifb_active_user', JSON.stringify(profile));
-
       try {
+        const profile = await DataService.fetchProfile(authUser.id, authUser.email || '');
+        if (!active) return;
+        setUser(profile);
+        try {
+          const userNotifications = await DataService.fetchNotifications(authUser.id);
+          if (active) setNotifications(userNotifications);
+        } catch (notificationError) {
+          console.error('Notification database read failed:', notificationError);
+          if (active) setDataError(notificationError instanceof Error ? notificationError.message : 'Bildirishnomalarni yuklab bo‘lmadi.');
+        }
         const projs = await DataService.fetchProjects();
         if (!active) return;
         setProjects(projs);
-        const bugsList: Bug[] = [];
-        for (const project of projs) {
-          const projectBugs = await DataService.fetchBugs(project.id);
-          bugsList.push(...projectBugs);
-        }
+        const bugGroups = await Promise.all(projs.map((project) => DataService.fetchBugs(project.id)));
         if (!active) return;
-        setBugs(bugsList);
+        setBugs(bugGroups.flat());
         if (projs.length > 0) setSelectedProjectForModal(projs[0]);
       } catch (err) {
-        console.error('Error loading dashboard data:', err);
+        console.error('Error loading dashboard data from database:', err);
+        setDataError(err instanceof Error ? err.message : 'Database ma’lumotlarini yuklab bo‘lmadi.');
       } finally {
         if (active) setLoading(false);
       }
@@ -80,7 +79,6 @@ export default function DashboardPage() {
     initialize();
     const { data: { subscription } } = supabase?.auth.onAuthStateChange((_event, session) => {
       if (!session?.user) {
-        localStorage.removeItem('ifb_active_user');
         setUser(null);
         setProjects([]);
         setBugs([]);
@@ -93,6 +91,27 @@ export default function DashboardPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = DataService.subscribeToNotifications(user.id, (item, eventType) => {
+      setNotifications((prev) => eventType === 'DELETE'
+        ? prev.filter((n) => n.id !== item.id)
+        : [item, ...prev.filter((n) => n.id !== item.id)]);
+    });
+    return () => { channel?.unsubscribe(); };
+  }, [user?.id]);
+
+  const handleMarkNotificationRead = async (id: string) => {
+    await DataService.markNotificationRead(id);
+    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
+  };
+
+  const handleClearNotifications = async () => {
+    if (!user) return;
+    await DataService.clearNotifications(user.id);
+    setNotifications([]);
+  };
+
   const handleCreateProject = async (projData: Partial<Project>) => {
     const created = await DataService.createProject(projData);
     setProjects((prev) => [created, ...prev]);
@@ -101,33 +120,23 @@ export default function DashboardPage() {
 
   const handleCreateBug = async (bugData: Partial<Bug>) => {
     if (!selectedProjectForModal) return;
-    const newBug: Bug = {
-      id: crypto.randomUUID(),
-      // Time-based code avoids collisions when several users report bugs at once.
-      code: `B${Date.now().toString(36).toUpperCase()}`,
+    const newBug: Partial<Bug> = {
       project_id: selectedProjectForModal.id,
-      title: bugData.title || 'Nomsiz bug',
-      summary: bugData.actual_behavior || '',
-      section: bugData.section || 'UI',
-      screen: bugData.screen || 'Main',
-      severity: bugData.severity || 'MEDIUM',
-      priority: bugData.priority || 'P2',
-      status: 'REPORTED',
-      environment: bugData.environment || 'PRODUCTION',
-      actual_behavior: bugData.actual_behavior || '',
-      expected_behavior: bugData.expected_behavior || '',
-      steps_to_reproduce: bugData.steps_to_reproduce || [],
-      acceptance_criteria: bugData.acceptance_criteria || [],
-      device_telemetry: bugData.device_telemetry,
-      dev_notes: bugData.dev_notes || '',
-      evidence_urls: bugData.evidence_urls || [],
-      is_sensitive: bugData.is_sensitive || false,
-      upvotes_count: 1,
-      reproduced_count: 1,
-      views_count: 1,
-      reporter_name: bugData.reporter_name || user?.full_name || 'Dasturchi',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      title: bugData.title?.trim() || '',
+      ...(bugData.summary !== undefined && { summary: bugData.summary }),
+      ...(bugData.section !== undefined && { section: bugData.section }),
+      ...(bugData.screen !== undefined && { screen: bugData.screen }),
+      ...(bugData.severity !== undefined && { severity: bugData.severity }),
+      ...(bugData.priority !== undefined && { priority: bugData.priority }),
+      ...(bugData.environment !== undefined && { environment: bugData.environment }),
+      ...(bugData.actual_behavior !== undefined && { actual_behavior: bugData.actual_behavior }),
+      ...(bugData.expected_behavior !== undefined && { expected_behavior: bugData.expected_behavior }),
+      ...(bugData.steps_to_reproduce !== undefined && { steps_to_reproduce: bugData.steps_to_reproduce }),
+      ...(bugData.acceptance_criteria !== undefined && { acceptance_criteria: bugData.acceptance_criteria }),
+      ...(bugData.device_telemetry !== undefined && { device_telemetry: bugData.device_telemetry }),
+      ...(bugData.dev_notes !== undefined && { dev_notes: bugData.dev_notes }),
+      ...(bugData.evidence_urls !== undefined && { evidence_urls: bugData.evidence_urls }),
+      ...(bugData.is_sensitive !== undefined && { is_sensitive: bugData.is_sensitive }),
     };
 
     const saved = await DataService.createBug(newBug, selectedProjectForModal);
@@ -143,7 +152,6 @@ export default function DashboardPage() {
 
   const handleLogout = async () => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('ifb_active_user');
     }
     if (isSupabaseConfigured && supabase) {
       await supabase.auth.signOut();
@@ -161,6 +169,9 @@ export default function DashboardPage() {
         projects={projects}
         user={user}
         notifications={notifications}
+        onMarkNotificationRead={handleMarkNotificationRead}
+        onClearNotifications={handleClearNotifications}
+        onSelectBug={(bugId) => { const n = notifications.find((item) => item.bug_id === bugId); const p = projects.find((item) => item.id === n?.project_id); if (p && n?.bug_code) router.push(`/p/${p.slug}/bugs/${n.bug_code}`); }}
         onOpenReportModal={() => {
           if (projects.length > 0) {
             setSelectedProjectForModal(projects[0]);
@@ -173,6 +184,7 @@ export default function DashboardPage() {
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {dataError && <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs text-red-300">Database bilan bog‘lanishda xato: {dataError}</div>}
         {/* Hero Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-white/[0.06]">
           <div>

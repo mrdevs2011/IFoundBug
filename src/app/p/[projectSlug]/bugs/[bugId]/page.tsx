@@ -34,6 +34,7 @@ export default function BugDetailPage() {
   const [bug, setBug] = useState<Bug | null>(null);
   const [comments, setComments] = useState<BugComment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   // States
   const [activeTab, setActiveTab] = useState<'details' | 'discussion'>('details');
@@ -50,19 +51,10 @@ export default function BugDetailPage() {
   // 1. Load Bug & Project & Session
   useEffect(() => {
     if (isSupabaseConfigured && supabase) {
-      supabase.auth.getUser().then(({ data: { user: authUser, }, error }) => {
+      supabase.auth.getUser().then(async ({ data: { user: authUser, }, error }) => {
         if (!error && authUser) {
-          const profile: UserProfile = {
-            id: authUser.id,
-            email: authUser.email || '',
-            full_name: (authUser.user_metadata?.full_name as string) || authUser.email?.split('@')[0] || 'Dasturchi',
-            role: (authUser.user_metadata?.role as UserProfile['role']) || 'developer',
-            created_at: authUser.created_at,
-          };
+          const profile = await DataService.fetchProfile(authUser.id, authUser.email || '');
           setUser(profile);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('ifb_active_user', JSON.stringify(profile));
-          }
         }
       });
     }
@@ -81,7 +73,8 @@ export default function BugDetailPage() {
           setComments(comms);
         }
       } catch (err) {
-        console.error('Error loading bug detail:', err);
+        console.error('Error loading bug detail from database:', err);
+        setLoadError(err instanceof Error ? err.message : 'Database ma’lumotlarini yuklab bo‘lmadi.');
       } finally {
         setLoading(false);
       }
@@ -159,8 +152,8 @@ export default function BugDetailPage() {
   // Handlers
   const handleStatusChange = async (newStatus: BugStatus) => {
     if (!bug) return;
-    setBug((prev) => (prev ? { ...prev, status: newStatus } : null));
-    await DataService.updateBugStatus(bug.id, newStatus);
+    const savedBug = await DataService.updateBugStatus(bug.id, newStatus);
+    setBug(savedBug);
   };
 
   const handleToggleAcceptance = async (criterionId: string) => {
@@ -168,42 +161,29 @@ export default function BugDetailPage() {
     const updated = bug.acceptance_criteria.map((c) =>
       c.id === criterionId ? { ...c, checked: !c.checked } : c
     );
-    setBug((prev) => (prev ? { ...prev, acceptance_criteria: updated } : null));
-    await DataService.updateBugCriteria(bug.id, updated);
+    const savedBug = await DataService.updateBugCriteria(bug.id, updated);
+    setBug(savedBug);
   };
 
   const handleUpvote = async () => {
-    if (!bug) return;
-    setBug((prev) =>
-      prev
-        ? {
-            ...prev,
-            upvotes_count: prev.upvotes_count + 1,
-            reproduced_count: prev.reproduced_count + 1,
-          }
-        : null
-    );
-    await DataService.toggleUpvote(bug.id, 'dev-user');
+    if (!bug || !user) return;
+    const result = await DataService.toggleUpvote(bug.id);
+    setBug((prev) => prev ? { ...prev, upvotes_count: result.count, reproduced_count: result.reproducedCount } : null);
   };
 
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim() || !bug) return;
 
-    const newComment: BugComment = {
-      id: `comm-${Date.now()}`,
+    const newComment: Partial<BugComment> = {
       bug_id: bug.id,
-      author_name: 'Dasturchi',
-      author_avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
       content: commentText.trim(),
       is_internal: isInternalComment,
-      reactions: {},
-      created_at: new Date().toISOString(),
     };
 
-    setComments((prev) => [newComment, ...prev]);
+    const savedComment = await DataService.createComment(newComment);
+    setComments((prev) => [savedComment, ...prev]);
     setCommentText('');
-    await DataService.createComment(newComment);
   };
 
   const handleShareTelegram = () => {
@@ -237,6 +217,10 @@ export default function BugDetailPage() {
     );
   }
 
+  if (loadError) {
+    return <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center p-6"><div role="alert" className="max-w-lg rounded-xl border border-red-500/30 bg-red-500/10 p-5 text-sm text-red-300">Database bilan bog‘lanishda xato: {loadError}</div></div>;
+  }
+
   if (!bug || !project) {
     return (
       <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
@@ -259,7 +243,6 @@ export default function BugDetailPage() {
 
   const handleLogout = async () => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('ifb_active_user');
     }
     if (isSupabaseConfigured && supabase) {
       try {
@@ -386,7 +369,7 @@ export default function BugDetailPage() {
 
           <div className="flex items-center gap-3 text-xs text-zinc-500 pt-1 border-t border-zinc-800/60">
             <span>
-              Muallif: <strong className="text-zinc-300">{bug.reporter_name || 'Dasturchi'}</strong>
+              Muallif: <strong className="text-zinc-300">{bug.reporter_name || '—'}</strong>
             </span>
             <span>•</span>
             <span>{new Date(bug.created_at).toLocaleString()}</span>

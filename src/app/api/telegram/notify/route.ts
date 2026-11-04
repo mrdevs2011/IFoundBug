@@ -28,7 +28,7 @@ ${severityTag} *${bug.title}*
 *Loyiha:* *${project_name}*
 *Bo'lim:* ${bug.section} • ${bug.screen || 'Asosiy'}
 *Holat:* ${bug.status} | *Muhit:* ${bug.environment}
-*Report:* ${bug.reporter_name || 'Dasturchi'}
+*Report:* ${bug.reporter_name || '—'}
 
 *Haqiqiy holat:*
 ${bug.actual_behavior}

@@ -64,12 +64,8 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 NEXT_PUBLIC_APP_URL=http://localhost:3333
 ```
 
-### 3. Supabase Migratsiyalari:
-Supabase boshqaruv panelidagi **SQL Editor** ga kiring va `sql/` papkasidagi skriptlarni ketma-ket ishga tushiring:
-1. `sql/001_initial_schema.sql` — Barcha jadvallar
-2. `sql/002_row_level_security.sql` — RLS xavfsizlik siyosatlari
-3. `sql/003_realtime_and_triggers.sql` — Realtime va triggerlar
-4. `sql/004_seed_data.sql` — 22 ta haqiqiy Barbershop ilovasi buglari va demo loyihalar
+### 3. Supabase Database
+Supabase Dashboard → SQL Editor ichida faqat `sql/IFOUNDBUG_UNIVERSAL.sql` faylini to‘liq ishga tushiring. U barcha jadvallar, RLS, triggerlar, RPC, Storage va Realtime sozlamalarini yaratadi. Demo/seed qatorlari yo‘q.
 
 ### 4. Dasturni ishga tushirish:
 ```bash
@@ -85,15 +81,11 @@ Brauzerda oching: `http://localhost:3333`
 ```text
 ifoundbug/
 ├── public/
-│   ├── evidence/          # Haqiqiy bug skrinshotlari (B01-01.jpg, ...)
 │   ├── manifest.json      # PWA manifest
 │   ├── sw.js              # Service Worker offline kesh
 │   └── widget.js          # Tashqi saytlar uchun suzuvchi Report Bug vidjeti
 ├── sql/
-│   ├── 001_initial_schema.sql
-│   ├── 002_row_level_security.sql
-│   ├── 003_realtime_and_triggers.sql
-│   ├── 004_seed_data.sql
+│   ├── IFOUNDBUG_UNIVERSAL.sql
 │   └── README.md
 ├── src/
 │   ├── app/
@@ -110,7 +102,6 @@ ifoundbug/
 │   │   ├── ShareInviteModal.tsx# Invite linklar va Telegram sozlamalari
 │   │   └── icons.tsx           # Yengil SVG ikonalar to'plami
 │   ├── lib/
-│   │   ├── mock-data.ts        # 22 ta haqiqiy bug va demo loyihalar
 │   │   └── supabase/client.ts  # Supabase klienti
 │   └── types/
 │       └── index.ts            # TypeScript interfeyslari
@@ -119,3 +110,8 @@ ifoundbug/
 ├── package.json
 └── tsconfig.json
 ```
+
+
+## Data architecture
+
+All application records (profiles, projects, bugs, comments, votes, audit events, invites and notifications) are read from and written to Supabase PostgreSQL. The browser does not cache or seed business records in localStorage, and there is no mock/demo dataset. PostgreSQL owns generated IDs, project slugs, bug codes, timestamps, reporter/comment authorship, status audit records and notifications. If the database is unavailable, the UI reports the database error instead of substituting local data. UI copy, visual styles and enum definitions remain application code; they are presentation/schema definitions, not user records.

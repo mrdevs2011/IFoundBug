@@ -7,8 +7,8 @@ import { BugIcon } from '@/components/icons';
 interface NewProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateProject?: (project: Project) => void | Promise<void>;
-  onCreate?: (project: Project) => void | Promise<void>;
+  onCreateProject?: (project: Partial<Project>) => void | Promise<void>;
+  onCreate?: (project: Partial<Project>) => void | Promise<void>;
 }
 
 export default function NewProjectModal({
@@ -38,19 +38,12 @@ export default function NewProjectModal({
       .map((s) => s.trim())
       .filter(Boolean);
 
-    const project: Project = {
-      // Supabase ifb_projects.id is UUID; never send a prefixed timestamp.
-      id: crypto.randomUUID(),
+    const project: Partial<Project> = {
       name: name.trim(),
-      slug: name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       description: description.trim() || undefined,
       github_repo_url: githubUrl.trim() || undefined,
-      tech_stack: techStack.length > 0 ? techStack : ['Next.js', 'React'],
+      tech_stack: techStack,
       is_public: isPublic,
-      allow_guest_reports: true,
-      color: '#10b981',
-      icon: 'bug',
-      created_at: new Date().toISOString(),
     };
 
     try {

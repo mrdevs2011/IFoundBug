@@ -34,6 +34,7 @@ export default function ProjectWorkspacePage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [notifications, setNotifications] = useState<BugNotification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   // Filters & Views
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
@@ -54,19 +55,10 @@ export default function ProjectWorkspacePage() {
   // Load project & bugs & session
   useEffect(() => {
     if (isSupabaseConfigured && supabase) {
-      supabase.auth.getUser().then(({ data: { user: authUser, }, error }) => {
+      supabase.auth.getUser().then(async ({ data: { user: authUser, }, error }) => {
         if (!error && authUser) {
-          const profile: UserProfile = {
-            id: authUser.id,
-            email: authUser.email || '',
-            full_name: (authUser.user_metadata?.full_name as string) || authUser.email?.split('@')[0] || 'Dasturchi',
-            role: (authUser.user_metadata?.role as UserProfile['role']) || 'developer',
-            created_at: authUser.created_at,
-          };
+          const profile = await DataService.fetchProfile(authUser.id, authUser.email || '');
           setUser(profile);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('ifb_active_user', JSON.stringify(profile));
-          }
         }
       });
     }
@@ -84,13 +76,39 @@ export default function ProjectWorkspacePage() {
           setBugs(projectBugs);
         }
       } catch (err) {
-        console.error('Error loading workspace:', err);
+        console.error('Error loading workspace from database:', err);
+        setLoadError(err instanceof Error ? err.message : 'Database ma’lumotlarini yuklab bo‘lmadi.');
       } finally {
         setLoading(false);
       }
     }
     loadWorkspace();
   }, [projectSlug]);
+
+  // Notifications are persisted in Supabase and streamed from the same table.
+  useEffect(() => {
+    if (!user?.id) return;
+    let active = true;
+    DataService.fetchNotifications(user.id).then((items) => { if (active) setNotifications(items); })
+      .catch((error) => console.error('Failed to load notifications from database:', error));
+    const channel = DataService.subscribeToNotifications(user.id, (item, eventType) => {
+      setNotifications((prev) => eventType === 'DELETE'
+        ? prev.filter((n) => n.id !== item.id)
+        : [item, ...prev.filter((n) => n.id !== item.id)]);
+    });
+    return () => { active = false; channel?.unsubscribe(); };
+  }, [user?.id]);
+
+  const handleMarkNotificationRead = async (id: string) => {
+    await DataService.markNotificationRead(id);
+    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
+  };
+
+  const handleClearNotifications = async () => {
+    if (!user) return;
+    await DataService.clearNotifications(user.id);
+    setNotifications([]);
+  };
 
   // Realtime subscription on project bugs
   useEffect(() => {
@@ -110,23 +128,7 @@ export default function ProjectWorkspacePage() {
         return prev;
       });
 
-      // Add Notification
-      setNotifications((prev) => [
-        {
-          id: `notif-${Date.now()}`,
-          bug_id: updatedBug.id,
-          bug_code: updatedBug.code,
-          title: updatedBug.title,
-          message:
-            eventType === 'INSERT'
-              ? 'Yangi bug qo‘shildi'
-              : `Status: ${updatedBug.status}`,
-          type: eventType === 'INSERT' ? 'new_bug' : 'status_change',
-          read: false,
-          created_at: new Date().toISOString(),
-        },
-        ...prev,
-      ]);
+
     });
 
     return () => {
@@ -192,41 +194,29 @@ export default function ProjectWorkspacePage() {
 
   // Handlers
   const handleStatusChange = async (bugId: string, newStatus: BugStatus) => {
-    setBugs((prev) =>
-      prev.map((b) => (b.id === bugId ? { ...b, status: newStatus } : b))
-    );
-    await DataService.updateBugStatus(bugId, newStatus, user?.full_name || 'Dasturchi');
+    const savedBug = await DataService.updateBugStatus(bugId, newStatus);
+    setBugs((prev) => prev.map((bug) => bug.id === bugId ? savedBug : bug));
   };
 
   const handleCreateBug = async (bugData: Partial<Bug>) => {
     if (!project) return;
-    const nextCodeNumber = bugs.length + 1;
-    const newBug: Bug = {
-      id: crypto.randomUUID(),
-      code: `B${nextCodeNumber < 10 ? '0' + nextCodeNumber : nextCodeNumber}`,
+    const newBug: Partial<Bug> = {
       project_id: project.id,
-      title: bugData.title || 'Nomsiz bug',
-      summary: bugData.actual_behavior || '',
-      section: bugData.section || 'UI',
-      screen: bugData.screen || 'Main',
-      severity: bugData.severity || 'MEDIUM',
-      priority: bugData.priority || 'P2',
-      status: 'REPORTED',
-      environment: bugData.environment || 'PRODUCTION',
-      actual_behavior: bugData.actual_behavior || '',
-      expected_behavior: bugData.expected_behavior || '',
-      steps_to_reproduce: bugData.steps_to_reproduce || [],
-      acceptance_criteria: bugData.acceptance_criteria || [],
-      device_telemetry: bugData.device_telemetry,
-      dev_notes: bugData.dev_notes || '',
-      evidence_urls: bugData.evidence_urls || [],
-      is_sensitive: bugData.is_sensitive || false,
-      upvotes_count: 1,
-      reproduced_count: 1,
-      views_count: 1,
-      reporter_name: bugData.reporter_name || user?.full_name || 'Dasturchi',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      title: bugData.title?.trim() || '',
+      ...(bugData.summary !== undefined && { summary: bugData.summary }),
+      ...(bugData.section !== undefined && { section: bugData.section }),
+      ...(bugData.screen !== undefined && { screen: bugData.screen }),
+      ...(bugData.severity !== undefined && { severity: bugData.severity }),
+      ...(bugData.priority !== undefined && { priority: bugData.priority }),
+      ...(bugData.environment !== undefined && { environment: bugData.environment }),
+      ...(bugData.actual_behavior !== undefined && { actual_behavior: bugData.actual_behavior }),
+      ...(bugData.expected_behavior !== undefined && { expected_behavior: bugData.expected_behavior }),
+      ...(bugData.steps_to_reproduce !== undefined && { steps_to_reproduce: bugData.steps_to_reproduce }),
+      ...(bugData.acceptance_criteria !== undefined && { acceptance_criteria: bugData.acceptance_criteria }),
+      ...(bugData.device_telemetry !== undefined && { device_telemetry: bugData.device_telemetry }),
+      ...(bugData.dev_notes !== undefined && { dev_notes: bugData.dev_notes }),
+      ...(bugData.evidence_urls !== undefined && { evidence_urls: bugData.evidence_urls }),
+      ...(bugData.is_sensitive !== undefined && { is_sensitive: bugData.is_sensitive }),
     };
 
     const saved = await DataService.createBug(newBug, project);
@@ -243,6 +233,10 @@ export default function ProjectWorkspacePage() {
         </div>
       </div>
     );
+  }
+
+  if (loadError) {
+    return <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center p-6"><div role="alert" className="max-w-lg rounded-xl border border-red-500/30 bg-red-500/10 p-5 text-sm text-red-300">Database bilan bog‘lanishda xato: {loadError}</div></div>;
   }
 
   if (!project) {
@@ -267,7 +261,6 @@ export default function ProjectWorkspacePage() {
 
   const handleLogout = async () => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('ifb_active_user');
     }
     if (isSupabaseConfigured && supabase) {
       try {
@@ -288,11 +281,13 @@ export default function ProjectWorkspacePage() {
         projects={allProjects}
         user={user}
         notifications={notifications}
+        onMarkNotificationRead={handleMarkNotificationRead}
+        onClearNotifications={handleClearNotifications}
+        onSelectBug={(bugId) => { const n = notifications.find((item) => item.bug_id === bugId); if (n?.bug_code) router.push(`/p/${project?.slug || projectSlug}/bugs/${n.bug_code}`); }}
         onOpenReportModal={() => setShowReportModal(true)}
         onOpenShareModal={() => setShowShareModal(true)}
         onOpenAuthModal={() => setShowAuthModal(true)}
         onLogout={handleLogout}
-        onSelectBug={(bId) => router.push(`/p/${project.slug}/bugs/${bId}`)}
       />
 
       {/* Workspace Subheader & Toolbar */}

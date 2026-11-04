@@ -133,6 +133,20 @@ create table if not exists public.ifb_bug_upvotes (
   unique(bug_id, user_identifier)
 );
 
+-- Persistent, per-user notifications. No browser/localStorage notification data.
+create table if not exists public.ifb_notifications (
+  id uuid primary key default gen_random_uuid(),
+  recipient_id uuid not null references public.ifb_profiles(id) on delete cascade,
+  project_id uuid not null references public.ifb_projects(id) on delete cascade,
+  bug_id uuid references public.ifb_bugs(id) on delete cascade,
+  bug_code text,
+  title text not null,
+  message text not null,
+  type text not null check (type in ('status_change','new_comment','new_bug','mention')),
+  read_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
 -- Add columns that may be missing on installations created by older revisions.
 alter table public.ifb_profiles add column if not exists auth_user_id uuid references auth.users(id) on delete cascade;
 alter table public.ifb_profiles add column if not exists avatar_url text;
@@ -193,6 +207,7 @@ create index if not exists ifb_bugs_status_idx on public.ifb_bugs(status);
 create index if not exists ifb_bugs_severity_idx on public.ifb_bugs(severity);
 create index if not exists ifb_comments_bug_created_idx on public.ifb_bug_comments(bug_id, created_at);
 create index if not exists ifb_audit_bug_created_idx on public.ifb_bug_audit_logs(bug_id, created_at desc);
+create index if not exists ifb_notifications_recipient_created_idx on public.ifb_notifications(recipient_id, created_at desc);
 
 -- 3. AUTH PROFILE AUTOMATION ---------------------------------------------------
 create or replace function public.ifb_handle_updated_at()
@@ -301,6 +316,162 @@ begin
 end;
 $$;
 
+-- Project slug is generated server-side from the name and a collision-resistant suffix.
+create or replace function public.ifb_prepare_project_insert()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.slug is null or btrim(new.slug) = '' then
+    new.slug := coalesce(nullif(trim(both '-' from lower(regexp_replace(coalesce(new.name, 'project'), '[^a-zA-Z0-9]+', '-', 'g'))), ''), 'project')
+      || '-' || lower(substr(replace(gen_random_uuid()::text, '-', ''), 1, 12));
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists ifb_projects_prepare_insert on public.ifb_projects;
+create trigger ifb_projects_prepare_insert before insert on public.ifb_projects
+for each row execute function public.ifb_prepare_project_insert();
+
+-- Generate bug code and author identity in PostgreSQL, never in browser code.
+create or replace function public.ifb_prepare_bug_insert()
+returns trigger language plpgsql security definer set search_path = public, auth as $$
+declare v_profile public.ifb_profiles%rowtype;
+begin
+  select * into v_profile from public.ifb_profiles where auth_user_id = auth.uid();
+  if auth.uid() is not null and v_profile.id is null then raise exception 'Authenticated profile not found'; end if;
+  if new.code is null or btrim(new.code) = '' then
+    new.code := 'B' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 12));
+  end if;
+  if v_profile.id is not null then
+    new.reported_by := v_profile.id;
+    new.reporter_name := v_profile.full_name;
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists ifb_bugs_prepare_insert on public.ifb_bugs;
+create trigger ifb_bugs_prepare_insert before insert on public.ifb_bugs
+for each row execute function public.ifb_prepare_bug_insert();
+
+create or replace function public.ifb_prepare_comment_insert()
+returns trigger language plpgsql security definer set search_path = public, auth as $$
+declare v_profile public.ifb_profiles%rowtype;
+begin
+  select * into v_profile from public.ifb_profiles where auth_user_id = auth.uid();
+  if auth.uid() is not null and v_profile.id is null then raise exception 'Authenticated profile not found'; end if;
+  if v_profile.id is not null then
+    new.author_id := v_profile.id;
+    new.author_name := v_profile.full_name;
+    new.author_avatar := v_profile.avatar_url;
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists ifb_comments_prepare_insert on public.ifb_bug_comments;
+create trigger ifb_comments_prepare_insert before insert on public.ifb_bug_comments
+for each row execute function public.ifb_prepare_comment_insert();
+
+create or replace function public.ifb_notify_bug_event()
+returns trigger language plpgsql security definer set search_path = public, auth as $$
+declare v_actor uuid; v_type text; v_message text;
+begin
+  select id into v_actor from public.ifb_profiles where auth_user_id = auth.uid();
+  if tg_op = 'INSERT' then
+    v_type := 'new_bug'; v_message := 'Yangi bug qo‘shildi';
+  elsif new.status is distinct from old.status then
+    v_type := 'status_change'; v_message := 'Bug holati: ' || new.status;
+  else
+    return new;
+  end if;
+  insert into public.ifb_notifications(recipient_id, project_id, bug_id, bug_code, title, message, type)
+  select pm.user_id, new.project_id, new.id, new.code, new.title, v_message, v_type
+  from public.ifb_project_members pm
+  where pm.project_id = new.project_id and (v_actor is null or pm.user_id <> v_actor);
+  return new;
+end;
+$$;
+drop trigger if exists ifb_bugs_notify_after_change on public.ifb_bugs;
+drop trigger if exists ifb_bugs_notify_after_insert on public.ifb_bugs;
+create trigger ifb_bugs_notify_after_insert after insert on public.ifb_bugs
+for each row execute function public.ifb_notify_bug_event();
+drop trigger if exists ifb_bugs_notify_after_status_update on public.ifb_bugs;
+create trigger ifb_bugs_notify_after_status_update after update of status on public.ifb_bugs
+for each row execute function public.ifb_notify_bug_event();
+
+create or replace function public.ifb_notify_comment()
+returns trigger language plpgsql security definer set search_path = public, auth as $$
+declare v_project_id uuid; v_code text; v_title text;
+begin
+  select project_id, code, title into v_project_id, v_code, v_title from public.ifb_bugs where id = new.bug_id;
+  insert into public.ifb_notifications(recipient_id, project_id, bug_id, bug_code, title, message, type)
+  select pm.user_id, v_project_id, new.bug_id, v_code, v_title, 'Yangi izoh qo‘shildi', 'new_comment'
+  from public.ifb_project_members pm
+  where pm.project_id = v_project_id and pm.user_id is distinct from new.author_id;
+  return new;
+end;
+$$;
+drop trigger if exists ifb_comments_notify_after_insert on public.ifb_bug_comments;
+create trigger ifb_comments_notify_after_insert after insert on public.ifb_bug_comments
+for each row execute function public.ifb_notify_comment();
+
+-- Atomic status update + audit trail; actor and timestamps are database-owned.
+create or replace function public.ifb_update_bug_status(target_bug_id uuid, new_status text)
+returns public.ifb_bugs language plpgsql security definer set search_path = public, auth as $$
+declare v_profile public.ifb_profiles%rowtype; v_bug public.ifb_bugs%rowtype;
+begin
+  if auth.uid() is null then raise exception 'Authentication required'; end if;
+  select * into v_profile from public.ifb_profiles where auth_user_id = auth.uid();
+  if v_profile.id is null then raise exception 'Authenticated profile not found'; end if;
+  select * into v_bug from public.ifb_bugs where id = target_bug_id for update;
+  if not found then raise exception 'Bug not found'; end if;
+  if v_bug.status = new_status then return v_bug; end if;
+  update public.ifb_bugs
+    set status = new_status,
+        resolved_at = case when new_status = 'FIXED' then now() else null end
+    where id = target_bug_id
+    returning * into v_bug;
+  insert into public.ifb_bug_audit_logs(bug_id, actor_name, action, details)
+    values (target_bug_id, v_profile.full_name, 'STATUS_CHANGED', jsonb_build_object('new_status', new_status));
+  return v_bug;
+end;
+$$;
+
+create or replace function public.ifb_update_bug_criteria(target_bug_id uuid, new_criteria jsonb)
+returns public.ifb_bugs language plpgsql security definer set search_path = public, auth as $$
+declare v_profile public.ifb_profiles%rowtype; v_bug public.ifb_bugs%rowtype; v_old_status text; v_all_checked boolean;
+begin
+  if auth.uid() is null then raise exception 'Authentication required'; end if;
+  select * into v_profile from public.ifb_profiles where auth_user_id = auth.uid();
+  if v_profile.id is null then raise exception 'Authenticated profile not found'; end if;
+  select * into v_bug from public.ifb_bugs where id = target_bug_id for update;
+  if not found then raise exception 'Bug not found'; end if;
+  v_old_status := v_bug.status;
+  if jsonb_typeof(new_criteria) <> 'array' then raise exception 'Acceptance criteria must be a JSON array'; end if;
+  v_all_checked := jsonb_array_length(new_criteria) > 0
+    and not exists (select 1 from jsonb_array_elements(new_criteria) as criteria_item(item) where coalesce(criteria_item.item->>'checked', 'false') <> 'true');
+  update public.ifb_bugs
+    set acceptance_criteria = new_criteria,
+        status = case when v_all_checked and status <> 'FIXED' then 'READY_FOR_QA' else status end
+    where id = target_bug_id returning * into v_bug;
+  if v_bug.status is distinct from v_old_status then
+    insert into public.ifb_bug_audit_logs(bug_id, actor_name, action, details)
+      values (target_bug_id, v_profile.full_name, 'STATUS_CHANGED', jsonb_build_object('new_status', v_bug.status, 'source', 'acceptance_criteria'));
+  end if;
+  return v_bug;
+end;
+$$;
+
+create or replace function public.ifb_mark_notification_read(target_notification_id uuid)
+returns void language plpgsql security definer set search_path = public, auth as $$
+declare v_profile_id uuid;
+begin
+  if auth.uid() is null then raise exception 'Authentication required'; end if;
+  select id into v_profile_id from public.ifb_profiles where auth_user_id = auth.uid();
+  update public.ifb_notifications set read_at = now()
+    where id = target_notification_id and recipient_id = v_profile_id;
+  if not found then raise exception 'Notification not found or access denied'; end if;
+end;
+$$;
+
 -- 6. UPDATED_AT TRIGGERS -------------------------------------------------------
 drop trigger if exists ifb_profiles_updated_at on public.ifb_profiles;
 create trigger ifb_profiles_updated_at before update on public.ifb_profiles for each row execute function public.ifb_handle_updated_at();
@@ -320,6 +491,8 @@ alter table public.ifb_bugs enable row level security;
 alter table public.ifb_bug_comments enable row level security;
 alter table public.ifb_bug_audit_logs enable row level security;
 alter table public.ifb_bug_upvotes enable row level security;
+alter table public.ifb_notifications enable row level security;
+alter table public.ifb_notifications replica identity full;
 
 do $$
 declare p record;
@@ -327,7 +500,7 @@ begin
   for p in select schemaname, tablename, policyname from pg_policies
     where schemaname = 'public' and tablename in (
       'ifb_profiles','ifb_projects','ifb_project_members','ifb_project_invites',
-      'ifb_bugs','ifb_bug_comments','ifb_bug_audit_logs','ifb_bug_upvotes'
+      'ifb_bugs','ifb_bug_comments','ifb_bug_audit_logs','ifb_bug_upvotes','ifb_notifications'
     )
   loop execute format('drop policy if exists %I on %I.%I', p.policyname, p.schemaname, p.tablename); end loop;
 end $$;
@@ -350,6 +523,10 @@ create policy ifb_bug_audit_logs_authenticated_all on public.ifb_bug_audit_logs 
   using (auth.uid() is not null) with check (auth.uid() is not null);
 create policy ifb_bug_upvotes_authenticated_all on public.ifb_bug_upvotes for all to authenticated
   using (auth.uid() is not null) with check (auth.uid() is not null);
+create policy ifb_notifications_read_own on public.ifb_notifications for select to authenticated
+  using (recipient_id = (select id from public.ifb_profiles where auth_user_id = auth.uid()));
+create policy ifb_notifications_delete_own on public.ifb_notifications for delete to authenticated
+  using (recipient_id = (select id from public.ifb_profiles where auth_user_id = auth.uid()));
 
 -- 8. STORAGE ------------------------------------------------------------------
 insert into storage.buckets(id, name, public, file_size_limit, allowed_mime_types)
@@ -385,6 +562,9 @@ begin
   if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='ifb_bug_audit_logs') then
     alter publication supabase_realtime add table public.ifb_bug_audit_logs;
   end if;
+  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='ifb_notifications') then
+    alter publication supabase_realtime add table public.ifb_notifications;
+  end if;
 end $$;
 
 -- 10. API PERMISSIONS + SCHEMA CACHE ------------------------------------------
@@ -392,18 +572,30 @@ grant usage on schema public to authenticated, service_role;
 grant select, insert, update, delete on public.ifb_profiles, public.ifb_projects,
   public.ifb_project_members, public.ifb_project_invites, public.ifb_bugs,
   public.ifb_bug_comments, public.ifb_bug_audit_logs, public.ifb_bug_upvotes to authenticated;
+grant select, delete on public.ifb_notifications to authenticated;
 grant usage, select on all sequences in schema public to authenticated;
 grant execute on function public.ifb_increment_bug_views(uuid) to authenticated;
 grant execute on function public.ifb_toggle_bug_upvote(uuid, text, boolean) to authenticated;
+grant execute on function public.ifb_update_bug_status(uuid, text) to authenticated;
+grant execute on function public.ifb_update_bug_criteria(uuid, jsonb) to authenticated;
+grant execute on function public.ifb_mark_notification_read(uuid) to authenticated;
 revoke all on public.ifb_profiles, public.ifb_projects, public.ifb_project_members,
   public.ifb_project_invites, public.ifb_bugs, public.ifb_bug_comments,
-  public.ifb_bug_audit_logs, public.ifb_bug_upvotes from anon;
+  public.ifb_bug_audit_logs, public.ifb_bug_upvotes, public.ifb_notifications from anon;
 revoke execute on function public.ifb_increment_bug_views(uuid) from public, anon;
 revoke execute on function public.ifb_toggle_bug_upvote(uuid, text, boolean) from public, anon;
+revoke execute on function public.ifb_update_bug_status(uuid, text) from public, anon;
+revoke execute on function public.ifb_update_bug_criteria(uuid, jsonb) from public, anon;
+revoke execute on function public.ifb_mark_notification_read(uuid) from public, anon;
 revoke all on function public.ifb_handle_new_auth_user() from public, anon, authenticated;
 revoke all on function public.ifb_handle_updated_at() from public, anon, authenticated;
 revoke all on function public.ifb_set_project_owner() from public, anon, authenticated;
 revoke all on function public.ifb_add_project_owner_member() from public, anon, authenticated;
+revoke all on function public.ifb_prepare_project_insert() from public, anon, authenticated;
+revoke all on function public.ifb_prepare_bug_insert() from public, anon, authenticated;
+revoke all on function public.ifb_prepare_comment_insert() from public, anon, authenticated;
+revoke all on function public.ifb_notify_bug_event() from public, anon, authenticated;
+revoke all on function public.ifb_notify_comment() from public, anon, authenticated;
 
 notify pgrst, 'reload schema';
 notify pgrst, 'reload config';

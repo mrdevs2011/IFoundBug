@@ -122,6 +122,9 @@ export interface UserProfile {
 
 export interface BugNotification {
   id: string;
+  recipient_id?: string;
+  project_id?: string;
+  read_at?: string | null;
   bug_id: string;
   bug_code: string;
   title: string;
