@@ -117,20 +117,24 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
           {/* User Profile */}
           {user ? (
             <div className="flex items-center gap-2 pl-2 border-l border-zinc-800">
-              <div
-                className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/40 text-emerald-300 font-bold flex items-center justify-center text-xs shadow-inner cursor-default"
-                title={`${user.full_name} (${user.email})`}
+              <Link
+                href="/profile"
+                aria-label="Profilimni ochish"
+                title={`${user.full_name} — Profilim`}
+                className="group flex items-center gap-2 rounded-xl -mr-1 p-1 pr-2 transition hover:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70"
               >
-                {user.full_name ? user.full_name.slice(0, 2).toUpperCase() : 'U'}
-              </div>
-              <div className="hidden md:flex flex-col text-left">
-                <span className="text-xs font-semibold text-zinc-200 leading-tight truncate max-w-[100px]">
-                  {user.full_name?.split(' ')[0]}
+                <span className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/40 text-emerald-300 font-bold flex items-center justify-center text-xs shadow-inner group-hover:border-emerald-400/70 transition">
+                  {user.full_name ? user.full_name.slice(0, 2).toUpperCase() : 'U'}
                 </span>
-                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider">
-                  {user.role}
+                <span className="hidden md:flex flex-col text-left">
+                  <span className="text-xs font-semibold text-zinc-200 leading-tight truncate max-w-[100px] group-hover:text-emerald-300 transition">
+                    {user.full_name?.split(' ')[0]}
+                  </span>
+                  <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider">
+                    {user.role}
+                  </span>
                 </span>
-              </div>
+              </Link>
               {onLogout && (
                 <button
                   onClick={onLogout}
