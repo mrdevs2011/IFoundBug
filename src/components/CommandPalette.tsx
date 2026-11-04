@@ -247,7 +247,7 @@ export default function CommandPalette({
             <span>↑↓ Harakatlanish</span>
             <span>↵ Tanlash</span>
           </div>
-          <span>IFound_a_Bugs Spotlight</span>
+          <span>IFound_a_Bug Spotlight</span>
         </div>
       </div>
     </div>

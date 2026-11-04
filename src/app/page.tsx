@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Bug, Project, BugComment, BugStatus, Severity } from '@/types';
+import { Bug, Project, BugComment, BugStatus, Severity, UserProfile } from '@/types';
 import { INITIAL_PROJECTS, INITIAL_BUGS, INITIAL_COMMENTS } from '@/lib/mock-data';
 import {
   BugIcon,
@@ -26,14 +26,35 @@ import CyberBackground from '@/components/CyberBackground';
 import CyberHUD from '@/components/CyberHUD';
 import VirtualDeviceRadar from '@/components/VirtualDeviceRadar';
 import CommandPalette from '@/components/CommandPalette';
+import AuthModal from '@/components/AuthModal';
+import OnboardingModal from '@/components/OnboardingModal';
+import NewProjectModal from '@/components/NewProjectModal';
 import { cyberSound } from '@/lib/cyber-sound';
 
 export default function IFoundBugApp() {
   // State
-  const [projects] = useState<Project[]>(INITIAL_PROJECTS);
+  const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
   const [currentProject, setCurrentProject] = useState<Project>(INITIAL_PROJECTS[0]);
   const [bugs, setBugs] = useState<Bug[]>(INITIAL_BUGS);
   const [comments, setComments] = useState<BugComment[]>(INITIAL_COMMENTS);
+
+  // User & Auth State
+  const [user, setUser] = useState<UserProfile | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('ifb_user');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {
+          // ignore
+        }
+      }
+    }
+    return null;
+  });
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  const [showNewProjectModal, setShowNewProjectModal] = useState(false);
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,6 +75,42 @@ export default function IFoundBugApp() {
   const [selectedBugIdsForSprint, setSelectedBugIdsForSprint] = useState<string[]>([]);
 
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleAuthSuccess = (u: UserProfile, isNewUser?: boolean) => {
+    setUser(u);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ifb_user', JSON.stringify(u));
+    }
+    if (isNewUser) {
+      setShowOnboardingModal(true);
+    }
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('ifb_user');
+    }
+    cyberSound.playClick();
+  };
+
+  const handleCreateProject = (newProj: Project) => {
+    setProjects((prev) => [newProj, ...prev]);
+    setCurrentProject(newProj);
+    cyberSound.playSuccess();
+  };
+
+  const handleLoadSampleBugs = () => {
+    const sampleBugs = INITIAL_BUGS.map((b) => ({
+      ...b,
+      project_id: currentProject.id,
+    }));
+    setBugs((prev) => [
+      ...prev.filter((b) => b.project_id !== currentProject.id),
+      ...sampleBugs,
+    ]);
+    cyberSound.playSuccess();
+  };
 
   // Audio chimes (synthesized via Web Audio API)
   const playChime = (type: 'resolve' | 'vote') => {
@@ -349,10 +406,7 @@ export default function IFoundBugApp() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-zinc-200 to-emerald-400 bg-clip-text text-transparent inline-flex items-baseline">
-                  IFound<sub className="text-emerald-400 text-xs font-mono font-bold px-0.5 relative -bottom-0.5 not-italic select-none">a</sub>Bugs
-                </span>
-                <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  IFB v2.0
+                  IFound<sub className="text-emerald-400 text-xs font-mono font-bold px-0.5 relative -bottom-0.5 not-italic select-none">a</sub>Bug
                 </span>
               </div>
               <p className="text-[10px] text-zinc-400 hidden sm:block">
@@ -361,23 +415,37 @@ export default function IFoundBugApp() {
             </div>
           </div>
 
-          {/* Project Selector Dropdown */}
-          <div className="flex items-center space-x-2 bg-zinc-950/80 border border-zinc-800 rounded-xl px-3 py-1.5 shadow-inner">
-            <span className="text-zinc-500 text-xs hidden md:inline">Loyiha:</span>
-            <select
-              value={currentProject.id}
-              onChange={(e) => {
-                const found = projects.find((p) => p.id === e.target.value);
-                if (found) setCurrentProject(found);
+          {/* Project Selector & New Project Button */}
+          <div className="flex items-center space-x-1.5">
+            <div className="flex items-center space-x-2 bg-zinc-950/80 border border-zinc-800 rounded-xl px-3 py-1.5 shadow-inner">
+              <span className="text-zinc-500 text-xs hidden md:inline">Loyiha:</span>
+              <select
+                value={currentProject.id}
+                onChange={(e) => {
+                  const found = projects.find((p) => p.id === e.target.value);
+                  if (found) setCurrentProject(found);
+                }}
+                className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer max-w-[140px] truncate"
+              >
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id} className="bg-zinc-900 text-white">
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              onClick={() => {
+                cyberSound.playClick();
+                setShowNewProjectModal(true);
               }}
-              className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer"
+              className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-emerald-500/50 text-zinc-400 hover:text-emerald-300 transition text-xs flex items-center gap-1"
+              title="Yangi Loyiha Yaratish"
             >
-              {projects.map((p) => (
-                <option key={p.id} value={p.id} className="bg-zinc-900 text-white">
-                  {p.name}
-                </option>
-              ))}
-            </select>
+              <span>+</span>
+              <span className="hidden xl:inline font-semibold">Loyiha</span>
+            </button>
           </div>
 
           {/* Header Actions */}
@@ -418,6 +486,55 @@ export default function IFoundBugApp() {
               <ShareIcon className="w-3.5 h-3.5" />
               <span className="hidden md:inline">Ulashish</span>
             </button>
+
+            {/* User Auth Profile / Login Button */}
+            {user ? (
+              <div className="flex items-center gap-2 pl-2 border-l border-zinc-800">
+                <div
+                  onClick={() => setShowOnboardingModal(true)}
+                  className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold flex items-center justify-center text-xs cursor-pointer hover:border-emerald-400 transition"
+                  title="Profil sozlamalari & Onboarding"
+                >
+                  {user.full_name ? user.full_name.slice(0, 2).toUpperCase() : 'U'}
+                </div>
+                <div className="hidden xl:flex flex-col text-left">
+                  <span className="text-xs font-bold text-white leading-none truncate max-w-[100px]">
+                    {user.full_name}
+                  </span>
+                  <span className="text-[10px] text-zinc-500 font-mono capitalize">
+                    {user.role.replace('_', ' ')}
+                  </span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="text-zinc-500 hover:text-red-400 text-xs p-1 transition"
+                  title="Hisobdan chiqish (Logout)"
+                >
+                  🚪
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 pl-2 border-l border-zinc-800">
+                <button
+                  onClick={() => {
+                    cyberSound.playClick();
+                    setShowAuthModal(true);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition"
+                >
+                  Kirish
+                </button>
+                <button
+                  onClick={() => {
+                    cyberSound.playClick();
+                    setShowAuthModal(true);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition hidden sm:inline"
+                >
+                  Ro‘yxatdan o‘tish
+                </button>
+              </div>
+            )}
 
             {/* + Report Bug Button */}
             <button
@@ -650,18 +767,36 @@ export default function IFoundBugApp() {
         ) : (
           <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl">
             {filteredBugs.length === 0 ? (
-              <div className="py-16 text-center space-y-3">
-                <BugIcon className="w-10 h-10 text-zinc-600 mx-auto" />
-                <h4 className="text-sm font-bold text-zinc-300">Hech qanday bug topilmadi</h4>
-                <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-                  Qidiruv so‘rovingizni o‘zgartiring yoki yangi xatolik qo‘shing.
-                </p>
-                <button
-                  onClick={() => setShowReportModal(true)}
-                  className="bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs px-4 py-2 rounded-xl transition inline-flex items-center gap-1.5 shadow"
-                >
-                  <PlusIcon className="w-4 h-4" /> Yangi Bug Qo‘shish
-                </button>
+              <div className="py-16 text-center space-y-4 px-4">
+                <BugIcon className="w-12 h-12 text-zinc-600 mx-auto" />
+                <div>
+                  <h4 className="text-base font-bold text-zinc-200">
+                    {stats.total === 0
+                      ? `"${currentProject.name}" loyihasida hali xatoliklar yo‘q!`
+                      : 'Qidiruv bo‘yicha hech qanday bug topilmadi'}
+                  </h4>
+                  <p className="text-xs text-zinc-400 max-w-md mx-auto mt-1">
+                    {stats.total === 0
+                      ? 'Bu toza real loyiha. Birinchi haqiqiy xatolikni qo‘shing yoki tekshirib ko‘rish uchun namunaviy ma’lumotlarni yuklang.'
+                      : 'Filtrlarni tozalang yoki yangi xatolik qo‘shing.'}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                  <button
+                    onClick={() => setShowReportModal(true)}
+                    className="bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs px-4 py-2.5 rounded-xl transition inline-flex items-center gap-1.5 shadow-lg shadow-emerald-500/20"
+                  >
+                    <PlusIcon className="w-4 h-4" /> + Birinchi Bugni Qo‘shish
+                  </button>
+                  {stats.total === 0 && (
+                    <button
+                      onClick={handleLoadSampleBugs}
+                      className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold text-xs px-4 py-2.5 rounded-xl border border-zinc-700 transition inline-flex items-center gap-1.5"
+                    >
+                      📦 Namunaviy Buglarni Yuklash (Demo)
+                    </button>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="divide-y divide-zinc-800/80">
@@ -777,7 +912,7 @@ export default function IFoundBugApp() {
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center space-x-2">
             <span className="font-bold text-zinc-300 inline-flex items-baseline">
-              IFound<sub className="text-emerald-400 text-[10px] font-mono font-bold px-0.5 relative -bottom-0.5 not-italic select-none">a</sub>Bugs (IFB)
+              IFound<sub className="text-emerald-400 text-[10px] font-mono font-bold px-0.5 relative -bottom-0.5 not-italic select-none">a</sub>Bug (IFB)
             </span>
             <span>—</span>
             <span>Dasturchilar va Bug Hunterlar uchun mukammal hamkorlik platformasi.</span>
@@ -905,6 +1040,36 @@ export default function IFoundBugApp() {
         onOpenAIPromptModal={() => setShowAIPromptModal(true)}
         onOpenShareModal={() => setShowShareModal(true)}
         onSetViewMode={(mode) => setViewMode(mode)}
+      />
+
+      {/* Auth Modal (Login & Signup) */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+      />
+
+      {/* Onboarding Wizard (Profile & First Real Project) */}
+      <OnboardingModal
+        isOpen={showOnboardingModal}
+        user={user}
+        onClose={() => setShowOnboardingModal(false)}
+        onComplete={(newProj, profileUpdates) => {
+          handleCreateProject(newProj);
+          if (user && profileUpdates) {
+            setUser({
+              ...user,
+              ...profileUpdates,
+            });
+          }
+        }}
+      />
+
+      {/* New Project Creator Modal */}
+      <NewProjectModal
+        isOpen={showNewProjectModal}
+        onClose={() => setShowNewProjectModal(false)}
+        onCreateProject={handleCreateProject}
       />
     </div>
   );

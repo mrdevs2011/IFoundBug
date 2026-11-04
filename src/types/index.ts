@@ -109,3 +109,13 @@ export interface ProjectInvite {
   expires_at?: string;
   created_at: string;
 }
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string;
+  avatar_url?: string;
+  role: 'developer' | 'qa_tester' | 'team_lead' | 'product_manager';
+  organization?: string;
+  created_at: string;
+}

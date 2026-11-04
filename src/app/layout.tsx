@@ -2,13 +2,13 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "IFound_a_Bugs (IFB) — Apex Collaborative Bug Tracking Platform",
+  title: "IFound_a_Bug (IFB) — Apex Collaborative Bug Tracking Platform",
   description: "Stop debugging in Telegram. Ship flawless software with AI-assisted bug tracking, telemetry capture, and realtime collaboration.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "IFound_a_Bugs",
+    title: "IFound_a_Bug",
   },
 };
 
