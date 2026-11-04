@@ -158,9 +158,10 @@ export default function NewProjectModal({
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 text-xs font-bold text-zinc-950 bg-emerald-400 hover:bg-emerald-300 rounded-xl transition shadow-md shadow-emerald-500/10 cursor-pointer"
+                disabled={isSubmitting}
+                className="px-4 py-2 text-xs font-bold text-zinc-950 bg-emerald-400 hover:bg-emerald-300 disabled:opacity-60 disabled:cursor-not-allowed rounded-xl transition shadow-md shadow-emerald-500/10 cursor-pointer"
               >
-                Yaratish
+                {isSubmitting ? 'Yaratilmoqda...' : 'Yaratish'}
               </button>
             </div>
           </div>
