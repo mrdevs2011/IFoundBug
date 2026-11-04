@@ -1,16 +1,15 @@
 # 🐛 IFoundBug (IFB) — Apex Collaborative Bug Tracking Platform
 
-> **"Stop Debugging in Telegram. Ship Flawless Software."**
+> **"Find Bugs. Fix Faster. Ship Better Software."**
 
 IFoundBug — dasturchilar, QA testerlar va loyiha yetakchilari uchun maxsus yaratilgan, ko'p loyihali, real vaqtda ishlaydigan va AI (Claude Code, Cursor, Codex) bilan to'liq integratsiya qilingan eng zamonaviy bug tracking platformasi.
 
 ---
 
-## 🌟 Asosiy Afzalliklari (Nima uchun Telegram va oddiy saytlardan 1,000,000 marta ustun?)
+## 🌟 Asosiy imkoniyatlar
 
-1. **Telegram Tartibsizligiga Chek Qo'yadi**:
-   - Skrinshotlar va audiolarni guruhga pala-partish tashlash o'rniga: har bir bug o'zining noyob kodi (`B01`, `IFB-101`), jiddiylik darajasi (`CRITICAL (P0)`, `HIGH (P1)`), telemetriyasi va interaktiv qabul mezonlari bilan tizimlashtiriladi.
-   - **Telegram Webhook Bot**: Yangi bug kiritilganda yoki holat o'zgarganda guruhga avtomatik tarzda chiroyli va qulay formatdagi kartochka yuboradi.
+1. **Tartibli bug tracking**:
+   - Har bir bug noyob kod, jiddiylik darajasi, telemetriya va interaktiv qabul mezonlari bilan boshqariladi.
 
 2. **Avtomatlashgan Qurilma & Telemetriya Tahlili**:
    - Bug yozilayotgan paytda foydalanuvchining **Operatsion tizimi (OS)**, **Brauzeri**, **Ekran o'lchami**, **Viewport kengligi** va tili avtomatik aniqlanadi va bug kartasiga biriktiriladi.
@@ -89,7 +88,7 @@ ifoundbug/
 │   └── README.md
 ├── src/
 │   ├── app/
-│   │   ├── api/bugs/route.ts   # Bug qabul qilish va Telegram webhook API
+│   │   ├── api/bugs/route.ts   # Bug qabul qilish API
 │   │   ├── globals.css         # Tailwind v4 dizayn qoidalari
 │   │   ├── layout.tsx          # PWA & meta sozlamalari
 │   │   └── page.tsx            # Boshqaruv paneli, ro'yxat, statistika
@@ -99,7 +98,7 @@ ifoundbug/
 │   │   ├── ImageAnnotator.tsx  # Brauzerda skrinshotga chizish & PII blur
 │   │   ├── KanbanBoard.tsx     # Kanban ustunlari
 │   │   ├── ReportBugModal.tsx  # Yangi bug kiritish & avto-telemetriya
-│   │   ├── ShareInviteModal.tsx# Invite linklar va Telegram sozlamalari
+│   │   ├── ShareInviteModal.tsx# Invite linklar va widget sozlamalari
 │   │   └── icons.tsx           # Yengil SVG ikonalar to'plami
 │   ├── lib/
 │   │   └── supabase/client.ts  # Supabase klienti

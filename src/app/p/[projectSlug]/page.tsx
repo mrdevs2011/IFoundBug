@@ -227,7 +227,7 @@ export default function ProjectWorkspacePage() {
       ...(bugData.is_sensitive !== undefined && { is_sensitive: bugData.is_sensitive }),
     };
 
-    const saved = await DataService.createBug(newBug, project);
+    const saved = await DataService.createBug(newBug);
     setBugs((prev) => [saved, ...prev]);
     setShowReportModal(false);
   };

@@ -45,21 +45,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: error.message, code: error.code }, { status: 400 });
     }
 
-    const tgToken = process.env.TELEGRAM_BOT_TOKEN;
-    const tgChat = process.env.TELEGRAM_CHAT_ID;
-    if (tgToken && tgChat) {
-      const text = `*[Yangi Bug Qayd Etildi]* [${bug.code}]\n\n*Sarlavha:* ${bug.title}\n*Bo‘lim:* ${bug.section}\n*Jiddiylik:* ${bug.severity} (${bug.priority})\n*Xabar beruvchi:* ${bug.reporter_name}`;
-      try {
-        await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: tgChat, text, parse_mode: 'Markdown' }),
-        });
-      } catch (telegramError) {
-        console.warn('Telegram notification failed:', telegramError);
-      }
-    }
-
     return NextResponse.json({ success: true, bug }, { status: 201 });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown server error';

@@ -15,7 +15,6 @@ import {
   MessageSquareIcon,
   SendIcon,
   CopyIcon,
-  TelegramIcon,
 } from './icons';
 import { AIPromptModal } from './AIPromptModal';
 import { ImageAnnotator } from './ImageAnnotator';
@@ -52,11 +51,6 @@ export const BugDetailModal: React.FC<BugDetailModalProps> = ({
   const [localPrivacy, setLocalPrivacy] = useState(privacyMode || Boolean(bug.is_sensitive));
   const [copiedLink, setCopiedLink] = useState(false);
 
-  const handleShareTelegram = () => {
-    const url = `${typeof window !== 'undefined' ? window.location.origin : ''}?bug=${bug.code}`;
-    const text = `[${bug.code}] ${bug.title}\nDaraja: ${bug.severity} | Holat: ${bug.status}\nBo'lim: ${bug.section} (${bug.screen || 'Umumiy'})\nKo'rish:`;
-    window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
-  };
 
   const handleCopyLink = async () => {
     const url = `${typeof window !== 'undefined' ? window.location.origin : ''}?bug=${bug.code}`;
@@ -146,15 +140,6 @@ export const BugDetailModal: React.FC<BugDetailModalProps> = ({
 
           {/* Action buttons */}
           <div className="flex items-center space-x-1.5 shrink-0">
-            {/* Share to Telegram */}
-            <button
-              onClick={handleShareTelegram}
-              className="bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 text-xs font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition"
-              title="Telegram guruhga ulashish"
-            >
-              <TelegramIcon className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Telegram</span>
-            </button>
 
             {/* Copy Link */}
             <button

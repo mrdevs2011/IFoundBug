@@ -188,7 +188,7 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
 
           <div className="flex items-center gap-3">
             <span className="text-xs text-zinc-400 font-medium hidden md:inline">
-              Stop Telegram Bug Chaos
+              Find and fix bugs faster
             </span>
             <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/80 border border-zinc-800 text-xs text-zinc-300">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -208,7 +208,7 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
           </div>
 
           <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-[1.15]">
-            Telegram guruhlardagi tartibsizlikka{' '}
+            Buglarni tartibli boshqarib,{' '}
             <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
               chek qo‘ying.
             </span>
@@ -216,7 +216,7 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
 
           <p className="text-sm sm:text-base text-zinc-400 leading-relaxed font-normal">
             Ilovalaringizdagi xatolarni audio yoki chalkash skrinshotlar orqali emas, balki
-            aniq qadamlar, telemetriya, bir bosishda Telegram kartalari va Claude/Cursor AI promptlari bilan boshqaring.
+            aniq qadamlar, telemetriya va Claude/Cursor AI promptlari bilan boshqaring.
           </p>
 
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 space-y-2">

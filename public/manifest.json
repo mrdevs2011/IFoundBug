@@ -1,7 +1,7 @@
 {
   "name": "IFoundBug (IFB) — Developer Bug Tracking Platform",
   "short_name": "IFoundBug",
-  "description": "Telegram guruhlardagi tartibsizlikka chek qo‘ying. Dasturchilar va jamoalar uchun tezkor, realtime bug tracking tizimi.",
+  "description": "Dasturchilar va jamoalar uchun tezkor, real-time bug tracking tizimi.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

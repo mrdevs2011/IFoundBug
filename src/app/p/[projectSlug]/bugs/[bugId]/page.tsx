@@ -21,7 +21,6 @@ import {
   MessageSquareIcon,
   SendIcon,
   CopyIcon,
-  TelegramIcon,
 } from '@/components/icons';
 
 
@@ -218,15 +217,6 @@ export default function BugDetailPage() {
     setCommentText('');
   };
 
-  const handleShareTelegram = () => {
-    if (!bug || !project) return;
-    const url = typeof window !== 'undefined' ? window.location.href : '';
-    const text = `*[${bug.code}] ${bug.title}*\n*Loyiha:* ${project.name}\n*Daraja:* ${bug.severity} | *Holat:* ${bug.status}\n*Bo'lim:* ${bug.section} (${bug.screen || 'Asosiy'})\n*Ko'rish:*`;
-    window.open(
-      `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
-      '_blank'
-    );
-  };
 
   const handleCopyLink = async () => {
     if (typeof window !== 'undefined') {
@@ -310,15 +300,6 @@ export default function BugDetailPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Telegram Share */}
-            <button
-              onClick={handleShareTelegram}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 text-xs font-semibold transition cursor-pointer"
-              title="Telegram guruhga yuborish"
-            >
-              <TelegramIcon className="w-3.5 h-3.5" />
-              <span>Telegram</span>
-            </button>
 
             {/* Copy Link */}
             <button

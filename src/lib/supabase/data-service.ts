@@ -103,9 +103,6 @@ export const DataService = {
       ...(project.allow_guest_reports !== undefined && { allow_guest_reports: project.allow_guest_reports }),
       ...(project.tech_stack !== undefined && { tech_stack: project.tech_stack }),
       ...(project.github_repo_url !== undefined && { github_repo_url: project.github_repo_url }),
-      ...(project.telegram_bot_token !== undefined && { telegram_bot_token: project.telegram_bot_token }),
-      ...(project.telegram_chat_id !== undefined && { telegram_chat_id: project.telegram_chat_id }),
-      ...(project.telegram_webhook_enabled !== undefined && { telegram_webhook_enabled: project.telegram_webhook_enabled }),
     };
 
     if (isSupabaseConfigured && supabase) {
@@ -163,7 +160,7 @@ export const DataService = {
     return data ? { bug: data as Bug, project } : null;
   },
 
-  async createBug(newBug: Partial<Bug>, project?: Project): Promise<Bug> {
+  async createBug(newBug: Partial<Bug>): Promise<Bug> {
     if (isSupabaseConfigured && supabase) {
       try {
         const payload = Object.fromEntries(Object.entries(newBug).filter(([key]) => !['id', 'code', 'created_at', 'updated_at', 'reporter_name', 'reported_by', 'upvotes_count', 'reproduced_count', 'views_count', 'status'].includes(key)));
@@ -174,10 +171,6 @@ export const DataService = {
           .single();
         if (error) throw error;
         if (data) {
-          // Send Telegram notification if enabled
-          if (project?.telegram_bot_token && project?.telegram_chat_id) {
-            this.notifyTelegram(project, data as Bug);
-          }
           return data as Bug;
         }
       } catch (err) {
@@ -340,24 +333,4 @@ export const DataService = {
     return { project: data.project as Project, role: data.role };
   },
 
-  // 6. Telegram webhook sender
-  async notifyTelegram(project: Project, bug: Bug) {
-    if (!project.telegram_bot_token || !project.telegram_chat_id) return;
-    try {
-      await fetch('/api/telegram/notify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bot_token: project.telegram_bot_token,
-          chat_id: project.telegram_chat_id,
-          project_name: project.name,
-          project_slug: project.slug,
-          bug,
-          origin: typeof window !== 'undefined' ? window.location.origin : '',
-        }),
-      });
-    } catch (err) {
-      console.warn('Failed to send telegram notification:', err);
-    }
-  },
 };

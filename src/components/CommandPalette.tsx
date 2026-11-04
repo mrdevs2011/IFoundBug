@@ -89,7 +89,7 @@ export default function CommandPalette({
       },
       {
         id: 'action-share',
-        title: 'Loyiha Taklif Havolasi & Telegram Bot',
+        title: 'Loyiha taklif havolasi',
         iconNode: <ShareIcon className="w-4 h-4 text-cyan-400" />,
         category: 'Harakatlar',
         action: () => {

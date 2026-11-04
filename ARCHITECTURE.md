@@ -1,7 +1,7 @@
 # ARCHITECTURE.md — IFoundBug (IFB) Enterprise Specification
 
 ## 1. Executive Topology & Architecture
-IFoundBug is engineered as a zero-latency, high-concurrency collaborative bug tracking and developer triage platform. It replaces informal, unstructured communication channels (such as chaotic Telegram groups) with deterministic, telemetry-backed bug lifecycles.
+IFoundBug is engineered as a zero-latency, high-concurrency collaborative bug tracking and developer triage platform. It provides deterministic, telemetry-backed bug lifecycles in a focused workspace.
 
 ```mermaid
 graph TD
@@ -9,7 +9,6 @@ graph TD
     ExternalApp[Client Apps & Websites] -->|Embed Script / widget.js| APIBug[Next.js API: /api/bugs]
     NextEdge --> SupaDB[(Supabase PostgreSQL + RLS)]
     APIBug --> SupaDB
-    APIBug -->|Async Webhook| TG[Telegram Bot Channel/Group]
     SupaDB -->|Realtime Pub/Sub| RealtimeEngine[Supabase Realtime WebSocket]
     RealtimeEngine -->|Live Comments & Status Events| Client
 ```

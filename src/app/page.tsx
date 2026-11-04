@@ -215,7 +215,7 @@ export default function DashboardPage() {
       ...(bugData.is_sensitive !== undefined && { is_sensitive: bugData.is_sensitive }),
     };
 
-    const saved = await DataService.createBug(newBug, selectedProjectForModal);
+    const saved = await DataService.createBug(newBug);
     setBugs((prev) => [saved, ...prev]);
     setShowReportModal(false);
   };
@@ -275,8 +275,8 @@ export default function DashboardPage() {
               Boshqaruv Paneli & Faol Loyihalar
             </h1>
             <p className="text-xs sm:text-sm text-zinc-400 mt-1 max-w-2xl leading-relaxed">
-              Barcha ilovalaringiz xatoliklarini bitta markaziy platformada real-time kuzating,
-              Telegram guruhlar bilan sinxronlashtiring va jamoaviy yechim toping.
+              Barcha ilovalaringiz xatoliklarini bitta markaziy platformada real-time kuzating
+              va jamoa bilan samarali hal qiling.
             </p>
           </div>
 
@@ -458,7 +458,7 @@ export default function DashboardPage() {
                             setShowShareModal(true);
                           }}
                           className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/80 transition"
-                          title="Taklif havolasi & Telegram"
+                          title="Taklif havolasi"
                         >
                           <ShareIcon className="w-4 h-4" />
                         </button>
@@ -489,7 +489,7 @@ export default function DashboardPage() {
                     Yangi Loyiha Ochish
                   </h4>
                   <p className="text-[11px] text-zinc-500 max-w-[200px] mt-0.5">
-                    Yangi ilovangiz uchun workspace va Telegram integratsiyasini boshlang
+                    Yangi ilovangiz uchun workspace yarating
                   </p>
                 </div>
               </button>

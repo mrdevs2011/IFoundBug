@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "IFoundBug (IFB) — Developer Bug Tracking & Rapid Triage Platform",
-  description: "Telegram guruhlardagi tartibsizlikka chek qo‘ying. Dasturchilar va jamoalar uchun tezkor, realtime bug tracking tizimi.",
+  description: "Dasturchilar va jamoalar uchun tezkor, real-time bug tracking tizimi.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

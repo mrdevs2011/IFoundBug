@@ -38,9 +38,6 @@ create table if not exists public.ifb_projects (
   is_public boolean not null default true,
   allow_guest_reports boolean not null default false,
   tech_stack text[] not null default array['Next.js','TypeScript','Supabase'],
-  telegram_webhook_enabled boolean not null default false,
-  telegram_bot_token text,
-  telegram_chat_id text,
   github_repo_url text,
   created_by uuid references public.ifb_profiles(id) on delete set null,
   created_at timestamptz not null default now(),
@@ -152,9 +149,6 @@ alter table public.ifb_profiles add column if not exists auth_user_id uuid refer
 alter table public.ifb_profiles add column if not exists avatar_url text;
 alter table public.ifb_profiles add column if not exists reputation_score integer not null default 0;
 alter table public.ifb_profiles add column if not exists updated_at timestamptz not null default now();
-alter table public.ifb_projects add column if not exists telegram_webhook_enabled boolean not null default false;
-alter table public.ifb_projects add column if not exists telegram_bot_token text;
-alter table public.ifb_projects add column if not exists telegram_chat_id text;
 alter table public.ifb_projects add column if not exists github_repo_url text;
 alter table public.ifb_projects add column if not exists created_by uuid references public.ifb_profiles(id) on delete set null;
 alter table public.ifb_bugs add column if not exists screen text;

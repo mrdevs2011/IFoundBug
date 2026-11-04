@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react';
 import { Project } from '@/types';
-import { ShareIcon, CopyIcon, CheckIcon, XIcon, TelegramIcon } from './icons';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { ShareIcon, CopyIcon, CheckIcon, XIcon } from './icons';
 import { copyToClipboard } from '@/lib/clipboard';
 
 interface ShareInviteModalProps {
@@ -12,16 +11,11 @@ interface ShareInviteModalProps {
 }
 
 export const ShareInviteModal: React.FC<ShareInviteModalProps> = ({ project, onClose }) => {
-  const [activeTab, setActiveTab] = useState<'invite' | 'telegram' | 'widget'>('invite');
+  const [activeTab, setActiveTab] = useState<'invite' | 'widget'>('invite');
   const [role, setRole] = useState<'developer' | 'qa_tester' | 'viewer'>('developer');
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedWidget, setCopiedWidget] = useState(false);
   
-  // Telegram settings state
-  const [botToken, setBotToken] = useState(project.telegram_bot_token || '');
-  const [chatId, setChatId] = useState(project.telegram_chat_id || '');
-  const [tgSaved, setTgSaved] = useState(false);
-
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ifoundbug.app';
   const inviteLink = `${baseUrl}/invite/${project.slug}-${role}-invite`;
   const publicShareLink = `${baseUrl}/p/${project.slug}`;
@@ -48,26 +42,6 @@ export const ShareInviteModal: React.FC<ShareInviteModalProps> = ({ project, onC
       setCopiedWidget(true);
       setTimeout(() => setCopiedWidget(false), 2000);
     }
-  };
-
-  const handleSaveTelegram = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isSupabaseConfigured && supabase) {
-      try {
-        await supabase
-          .from('ifb_projects')
-          .update({
-            telegram_bot_token: botToken,
-            telegram_chat_id: chatId,
-            telegram_webhook_enabled: Boolean(botToken && chatId),
-          })
-          .eq('id', project.id);
-      } catch (err) {
-        console.warn('Failed to update telegram webhook settings:', err);
-      }
-    }
-    setTgSaved(true);
-    setTimeout(() => setTgSaved(false), 3000);
   };
 
   return (
@@ -100,16 +74,6 @@ export const ShareInviteModal: React.FC<ShareInviteModalProps> = ({ project, onC
             }`}
           >
             Invite Havolasi
-          </button>
-          <button
-            onClick={() => setActiveTab('telegram')}
-            className={`pb-2.5 px-3 text-xs font-semibold border-b-2 transition flex items-center gap-1.5 ${
-              activeTab === 'telegram'
-                ? 'border-emerald-500 text-emerald-400'
-                : 'border-transparent text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <TelegramIcon className="w-3.5 h-3.5" /> Telegram Bot Alert
           </button>
           <button
             onClick={() => setActiveTab('widget')}
@@ -203,55 +167,6 @@ export const ShareInviteModal: React.FC<ShareInviteModalProps> = ({ project, onC
             </div>
           )}
 
-          {activeTab === 'telegram' && (
-            <form onSubmit={handleSaveTelegram} className="space-y-4">
-              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 flex items-start gap-2.5">
-                <TelegramIcon className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                <div className="text-xs text-zinc-300">
-                  <strong className="text-emerald-400 block font-semibold mb-0.5">Telegram Tartibsizligiga Chek Qo‘ying!</strong>
-                  Har gal yangi bug topilganda yoki holati o‘zgarganda, tizim avtomatik tarzda Telegram guruhga chiroyli va qulay formatdagi kartochka yuboradi.
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1">
-                  Telegram Bot Token (BotFather dan olingan):
-                </label>
-                <input
-                  type="text"
-                  placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
-                  value={botToken}
-                  onChange={(e) => setBotToken(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white placeholder-zinc-600 focus:border-emerald-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1">
-                  Telegram Guruh Chat ID:
-                </label>
-                <input
-                  type="text"
-                  placeholder="-1001234567890"
-                  value={chatId}
-                  onChange={(e) => setChatId(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white placeholder-zinc-600 focus:border-emerald-500 focus:outline-none"
-                />
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-[11px] text-zinc-500">
-                  Bot guruhga administrator qilib qo‘shilishi shart.
-                </span>
-                <button
-                  type="submit"
-                  className="bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs px-4 py-2 rounded-lg transition"
-                >
-                  {tgSaved ? 'Saqlandi!' : 'Webhookni Saqlash'}
-                </button>
-              </div>
-            </form>
-          )}
 
           {activeTab === 'widget' && (
             <div className="space-y-3">

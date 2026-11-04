@@ -92,9 +92,6 @@ export interface Project {
   is_public: boolean;
   allow_guest_reports: boolean;
   tech_stack: string[];
-  telegram_webhook_enabled?: boolean;
-  telegram_bot_token?: string;
-  telegram_chat_id?: string;
   github_repo_url?: string;
   created_at: string;
 }
