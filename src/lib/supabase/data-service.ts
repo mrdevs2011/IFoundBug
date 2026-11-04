@@ -173,8 +173,9 @@ export const DataService = {
           return data as Bug;
         }
       } catch (err) {
-        console.error('Supabase createBug failed:', err);
-        throw err;
+        const detail = err && typeof err === 'object' ? err as { message?: string; code?: string; details?: string; hint?: string } : null;
+        console.error('Supabase createBug failed:', { message: detail?.message || String(err), code: detail?.code, details: detail?.details, hint: detail?.hint });
+        throw new Error(detail?.message || 'Supabase bug yozuvini saqlashni rad etdi. Database schema va permissions ni tekshir.');
       }
     }
     throw new Error('Supabase is not configured; bug creation is disabled.');

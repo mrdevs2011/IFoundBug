@@ -101,10 +101,10 @@ export default function DashboardPage() {
 
   const handleCreateBug = async (bugData: Partial<Bug>) => {
     if (!selectedProjectForModal) return;
-    const nextCodeNumber = bugs.length + 1;
     const newBug: Bug = {
       id: crypto.randomUUID(),
-      code: `B${nextCodeNumber < 10 ? '0' + nextCodeNumber : nextCodeNumber}`,
+      // Time-based code avoids collisions when several users report bugs at once.
+      code: `B${Date.now().toString(36).toUpperCase()}`,
       project_id: selectedProjectForModal.id,
       title: bugData.title || 'Nomsiz bug',
       summary: bugData.actual_behavior || '',

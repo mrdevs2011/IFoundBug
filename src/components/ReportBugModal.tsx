@@ -8,7 +8,7 @@ import { ImageAnnotator } from './ImageAnnotator';
 interface ReportBugModalProps {
   project: Project;
   onClose: () => void;
-  onSubmit: (bug: Partial<Bug>) => void;
+  onSubmit: (bug: Partial<Bug>) => void | Promise<void>;
 }
 
 const getInitialTelemetry = (): DeviceTelemetry => {
@@ -68,6 +68,8 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
   const [evidenceInput, setEvidenceInput] = useState('');
   const [annotatingImageUrl, setAnnotatingImageUrl] = useState<string | null>(null);
   const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   // Clipboard Paste (Ctrl+V) listener
   React.useEffect(() => {
@@ -161,13 +163,16 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!title.trim() || !actualBehavior.trim() || !expectedBehavior.trim()) {
       alert('Iltimos, sarlavha, hozirgi xato va kutilgan natijani to‘ldiring!');
       return;
     }
 
+    setIsSubmitting(true);
+    setSubmitError('');
     const bugData: Partial<Bug> = {
       project_id: project.id,
       title: title.trim(),
@@ -193,8 +198,16 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
       views_count: 1,
     };
 
-    onSubmit(bugData);
-    onClose();
+    try {
+      await onSubmit(bugData);
+      onClose();
+    } catch (error) {
+      console.error('Bug submission failed:', error);
+      const detail = error && typeof error === 'object' ? error as { message?: string } : null;
+      setSubmitError(detail?.message || 'Bug saqlanmadi. Qayta urinib ko‘r.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -216,6 +229,7 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
+          {submitError && <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-xs text-red-300">{submitError}</div>}
           {/* Telemetry Detection Banner */}
           <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 flex items-center justify-between text-xs">
             <div className="flex items-center gap-2 text-zinc-300">
