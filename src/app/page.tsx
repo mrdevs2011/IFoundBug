@@ -22,6 +22,11 @@ import { ReportBugModal } from '@/components/ReportBugModal';
 import { AIPromptModal } from '@/components/AIPromptModal';
 import { ShareInviteModal } from '@/components/ShareInviteModal';
 import { KanbanBoard } from '@/components/KanbanBoard';
+import CyberBackground from '@/components/CyberBackground';
+import CyberHUD from '@/components/CyberHUD';
+import VirtualDeviceRadar from '@/components/VirtualDeviceRadar';
+import CommandPalette from '@/components/CommandPalette';
+import { cyberSound } from '@/lib/cyber-sound';
 
 export default function IFoundBugApp() {
   // State
@@ -35,7 +40,7 @@ export default function IFoundBugApp() {
   const [selectedSeverity, setSelectedSeverity] = useState<string>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [selectedSection, setSelectedSection] = useState<string>('ALL');
-  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'virtual-radar'>('virtual-radar');
   const [privacyMode, setPrivacyMode] = useState(true);
 
   // Selection & Active Modal State
@@ -45,39 +50,17 @@ export default function IFoundBugApp() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showAIPromptModal, setShowAIPromptModal] = useState(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [selectedBugIdsForSprint, setSelectedBugIdsForSprint] = useState<string[]>([]);
 
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   // Audio chimes (synthesized via Web Audio API)
   const playChime = (type: 'resolve' | 'vote') => {
-    if (typeof window === 'undefined') return;
-    try {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      if (type === 'resolve') {
-        osc.frequency.setValueAtTime(523.25, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.15);
-        gain.gain.setValueAtTime(0.12, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.35);
-      } else if (type === 'vote') {
-        osc.frequency.setValueAtTime(440, ctx.currentTime);
-        osc.frequency.setValueAtTime(660, ctx.currentTime + 0.06);
-        gain.gain.setValueAtTime(0.08, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.15);
-      }
-    } catch {
-      // AudioContext policy
+    if (type === 'resolve') {
+      cyberSound.playSuccess();
+    } else {
+      cyberSound.playBlip(750);
     }
   };
 
@@ -144,9 +127,19 @@ export default function IFoundBugApp() {
 
       const list = filteredBugsRef.current;
 
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setShowCommandPalette((prev) => !prev);
+        return;
+      }
+
       if (e.key === '/') {
         e.preventDefault();
         searchInputRef.current?.focus();
+      } else if (e.key.toLowerCase() === 'v') {
+        e.preventDefault();
+        cyberSound.playRadarPing();
+        setViewMode((prev) => (prev === 'virtual-radar' ? 'list' : 'virtual-radar'));
       } else if (e.key.toLowerCase() === 'p') {
         e.preventDefault();
         setPrivacyMode((prev) => !prev);
@@ -162,6 +155,7 @@ export default function IFoundBugApp() {
         setShowShareModal(false);
         setShowAIPromptModal(false);
         setShowShortcutsModal(false);
+        setShowCommandPalette(false);
       } else if (e.key === 'j') {
         setSelectedIndex((prev) => Math.min(list.length - 1, prev + 1));
       } else if (e.key === 'k') {
@@ -437,6 +431,18 @@ export default function IFoundBugApp() {
         </div>
       </header>
 
+      {/* Ambient Neural Cyber Particle Mesh */}
+      <CyberBackground />
+
+      {/* Realtime Cyber Telemetry & Mode Controller */}
+      <CyberHUD
+        bugs={bugs}
+        viewMode={viewMode}
+        onChangeViewMode={(mode) => setViewMode(mode)}
+        onOpenCommandPalette={() => setShowCommandPalette(true)}
+        onOpenReportModal={() => setShowReportModal(true)}
+      />
+
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* KPI Statistics & Health Banner */}
@@ -521,24 +527,43 @@ export default function IFoundBugApp() {
             {/* View Mode Toggle */}
             <div className="flex items-center space-x-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800 shrink-0">
               <button
-                onClick={() => setViewMode('list')}
+                onClick={() => {
+                  cyberSound.playClick();
+                  setViewMode('list');
+                }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
                   viewMode === 'list'
                     ? 'bg-zinc-800 text-white shadow'
                     : 'text-zinc-400 hover:text-zinc-200'
                 }`}
               >
-                <ListIcon className="w-3.5 h-3.5" /> Jadval Ko‘rinishi
+                <ListIcon className="w-3.5 h-3.5" /> Jadval
               </button>
               <button
-                onClick={() => setViewMode('kanban')}
+                onClick={() => {
+                  cyberSound.playClick();
+                  setViewMode('kanban');
+                }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
                   viewMode === 'kanban'
                     ? 'bg-zinc-800 text-white shadow'
                     : 'text-zinc-400 hover:text-zinc-200'
                 }`}
               >
-                <KanbanIcon className="w-3.5 h-3.5" /> Kanban Board
+                <KanbanIcon className="w-3.5 h-3.5" /> Kanban
+              </button>
+              <button
+                onClick={() => {
+                  cyberSound.playRadarPing();
+                  setViewMode('virtual-radar');
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  viewMode === 'virtual-radar'
+                    ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+                    : 'text-zinc-400 hover:text-emerald-300'
+                }`}
+              >
+                <span>📡</span> Virtual Radar
               </button>
             </div>
           </div>
@@ -609,8 +634,13 @@ export default function IFoundBugApp() {
           </div>
         </div>
 
-        {/* Content View: List or Kanban */}
-        {viewMode === 'kanban' ? (
+        {/* Content View: Virtual Radar, Kanban, or List */}
+        {viewMode === 'virtual-radar' ? (
+          <VirtualDeviceRadar
+            bugs={filteredBugs}
+            onSelectBug={(bug) => setSelectedBug(bug)}
+          />
+        ) : viewMode === 'kanban' ? (
           <KanbanBoard
             bugs={filteredBugs}
             privacyMode={privacyMode}
@@ -644,13 +674,17 @@ export default function IFoundBugApp() {
                     <div
                       key={bug.id}
                       onClick={() => {
+                        cyberSound.playClick();
                         setSelectedIndex(index);
                         setSelectedBug(bug);
                       }}
+                      onMouseEnter={() => {
+                        cyberSound.playBlip(700 + (index % 6) * 60);
+                      }}
                       className={`p-4 transition cursor-pointer flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group ${
                         isSelected
-                          ? 'bg-zinc-800/50 border-l-4 border-l-emerald-500'
-                          : 'hover:bg-zinc-800/30'
+                          ? 'bg-zinc-800/60 border-l-4 border-l-emerald-500 shadow-[inset_0_0_20px_rgba(16,185,129,0.06)]'
+                          : 'hover:bg-zinc-800/40 hover:border-l-2 hover:border-l-emerald-500/50'
                       }`}
                     >
                       {/* Left: Code, Status, Title, Telemetry */}
@@ -816,6 +850,14 @@ export default function IFoundBugApp() {
             </h3>
             <div className="space-y-2.5 text-xs text-zinc-300">
               <div className="flex justify-between py-1 border-b border-zinc-800">
+                <span>Spotlight Command Palette</span>
+                <kbd className="bg-zinc-800 px-2 py-0.5 rounded text-white font-mono">⌘K / Ctrl+K</kbd>
+              </div>
+              <div className="flex justify-between py-1 border-b border-zinc-800">
+                <span>Virtual 3D Radar Studio</span>
+                <kbd className="bg-zinc-800 px-2 py-0.5 rounded text-white font-mono">V</kbd>
+              </div>
+              <div className="flex justify-between py-1 border-b border-zinc-800">
                 <span>Qidiruvga o‘tish</span>
                 <kbd className="bg-zinc-800 px-2 py-0.5 rounded text-white font-mono">/</kbd>
               </div>
@@ -853,6 +895,17 @@ export default function IFoundBugApp() {
           </div>
         </div>
       )}
+      {/* Global Command Palette (⌘K) */}
+      <CommandPalette
+        isOpen={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+        bugs={bugs}
+        onSelectBug={(bug) => setSelectedBug(bug)}
+        onOpenReportModal={() => setShowReportModal(true)}
+        onOpenAIPromptModal={() => setShowAIPromptModal(true)}
+        onOpenShareModal={() => setShowShareModal(true)}
+        onSetViewMode={(mode) => setViewMode(mode)}
+      />
     </div>
   );
 }
