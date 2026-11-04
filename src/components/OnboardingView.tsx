@@ -13,9 +13,9 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
   const [tab, setTab] = useState<'login' | 'signup'>('login');
   const [showSplash, setShowSplash] = useState(true);
 
-  // Form states
+  // Pure username authentication states
+  const [username, setUsername] = useState('');
   const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'developer' | 'qa_tester' | 'team_lead' | 'product_manager'>('developer');
   const [loading, setLoading] = useState(false);
@@ -29,15 +29,40 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
     return () => clearTimeout(timer);
   }, []);
 
+  const cleanUsernameStr = (val: string) => {
+    return val.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg('');
 
+    const cleanUser = cleanUsernameStr(username);
+    if (!cleanUser) {
+      setErrorMsg('Foydalanuvchi nomini kiriting.');
+      setLoading(false);
+      return;
+    }
+
     if (isSupabaseConfigured && supabase) {
       try {
+        let authEmail = cleanUser.includes('@') ? cleanUser : `${cleanUser}@ifoundbug.dev`;
+
+        // Check if there is a custom email linked to this username in public.ifb_profiles
+        try {
+          const { data: rpcEmail } = await supabase.rpc('ifb_get_email_by_username', {
+            p_username: cleanUser,
+          });
+          if (rpcEmail) {
+            authEmail = rpcEmail;
+          }
+        } catch {
+          // RPC may not exist yet, fallback to default synthetic email
+        }
+
         const { data, error } = await supabase.auth.signInWithPassword({
-          email,
+          email: authEmail,
           password,
         });
 
@@ -45,8 +70,8 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
 
         const profile: UserProfile = {
           id: data.user.id,
-          email: data.user.email || email,
-          full_name: (data.user.user_metadata?.full_name as string) || email.split('@')[0],
+          email: cleanUser,
+          full_name: (data.user.user_metadata?.full_name as string) || cleanUser,
           role: (data.user.user_metadata?.role as UserProfile['role']) || 'developer',
           created_at: new Date().toISOString(),
         };
@@ -59,7 +84,7 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
         return;
       } catch (err: unknown) {
         const error = err as Error;
-        setErrorMsg(error.message || 'Kirishda xatolik yuz berdi. Email yoki parolni tekshiring.');
+        setErrorMsg(error.message || 'Kirishda xatolik yuz berdi. Foydalanuvchi nomi yoki parolni tekshiring.');
         setLoading(false);
         return;
       }
@@ -68,8 +93,8 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
     // Local authentication fallback
     const localUser: UserProfile = {
       id: `usr-${Date.now()}`,
-      email,
-      full_name: email.split('@')[0],
+      email: cleanUser,
+      full_name: cleanUser,
       role: 'developer',
       created_at: new Date().toISOString(),
     };
@@ -84,14 +109,30 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
     setLoading(true);
     setErrorMsg('');
 
+    const cleanUser = cleanUsernameStr(username);
+    if (!cleanUser) {
+      setErrorMsg('Foydalanuvchi nomini kiriting (faqat lotin harflari va raqamlar).');
+      setLoading(false);
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMsg('Parol kamida 6 ta belgidan iborat bo‘lishi kerak.');
+      setLoading(false);
+      return;
+    }
+
     if (isSupabaseConfigured && supabase) {
       try {
+        const authEmail = `${cleanUser}@ifoundbug.dev`;
+
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: authEmail,
           password,
           options: {
             data: {
-              full_name: fullName.trim() || email.split('@')[0],
+              username: cleanUser,
+              full_name: fullName.trim() || cleanUser,
               role,
             },
           },
@@ -101,8 +142,8 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
 
         const profile: UserProfile = {
           id: data.user?.id || `usr-${Date.now()}`,
-          email,
-          full_name: fullName.trim() || email.split('@')[0],
+          email: cleanUser,
+          full_name: fullName.trim() || cleanUser,
           role,
           created_at: new Date().toISOString(),
         };
@@ -115,7 +156,7 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
         return;
       } catch (err: unknown) {
         const error = err as Error;
-        setErrorMsg(error.message || 'Ro‘yxatdan o‘tishda xatolik yuz berdi.');
+        setErrorMsg(error.message || 'Ro‘yxatdan o‘tishda xatolik yuz berdi. Bu foydalanuvchi nomi band bo‘lishi mumkin.');
         setLoading(false);
         return;
       }
@@ -124,8 +165,8 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
     // Local fallback
     const localUser: UserProfile = {
       id: `usr-${Date.now()}`,
-      email,
-      full_name: fullName.trim() || email.split('@')[0],
+      email: cleanUser,
+      full_name: fullName.trim() || cleanUser,
       role,
       created_at: new Date().toISOString(),
     };
@@ -281,7 +322,7 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
 
         {/* Right Side: Authentication Box */}
         <div className="w-full max-w-md linear-card rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 relative border border-white/[0.08]">
-          {/* Segmented Control Switcher: Only Login and Signup */}
+          {/* Segmented Control Switcher */}
           <div className="p-1 rounded-2xl bg-zinc-950/80 border border-zinc-800/80 grid grid-cols-2 gap-1">
             <button
               type="button"
@@ -320,18 +361,22 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
           )}
 
           {tab === 'login' ? (
-            /* Login Form */
+            /* Login Form: Pure Username + Password */
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-300">Email manzilingiz</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="developer@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition"
-                />
+                <label className="text-xs font-semibold text-zinc-300">Foydalanuvchi nomi (Username)</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    placeholder="masalan: muhamad"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition font-mono"
+                  />
+                </div>
               </div>
 
               <div className="space-y-1.5">
@@ -355,28 +400,30 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
               </button>
             </form>
           ) : (
-            /* Signup Form */
+            /* Signup Form: Username + Full Name + Password + Role */
             <form onSubmit={handleSignup} className="space-y-3.5">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-zinc-300">Ism va familiya</label>
+                <label className="text-xs font-semibold text-zinc-300">Foydalanuvchi nomi (Username)</label>
                 <input
                   type="text"
                   required
-                  placeholder="Ali Valiyev"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  placeholder="masalan: muhamad_dev"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500 font-mono"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-zinc-300">Email</label>
+                <label className="text-xs font-semibold text-zinc-300">Ism va familiyangiz</label>
                 <input
-                  type="email"
+                  type="text"
                   required
-                  placeholder="ali@company.uz"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Muhamad R."
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
                   className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500"
                 />
               </div>
@@ -418,7 +465,7 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
           )}
 
           <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
-            <span>Xavfsiz Shifrlash</span>
+            <span>Faqat Username orqali</span>
             <span>Next.js 15 & Supabase</span>
           </div>
         </div>

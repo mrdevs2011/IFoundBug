@@ -9,6 +9,7 @@ Bu papkadagi SQL fayllar **IFoundBug** platformasining butun ma'lumotlar bazasi,
 4. `004_seed_data.sql` — Dastlabki haqiqiy loyihalar va **bor1BUGS** dagi haqiqiy ilova buglari, ularning skrinshotlari, AI promptlari va qabul mezonlari.
 5. `005_permissions_and_grants.sql` — PostgREST API uchun schema huquqlari va schema cache yangilash (`NOTIFY pgrst, 'reload schema'`).
 6. `006_storage_buckets.sql` — `bug-attachments` storage bucket va skrinshotlar uchun public yuklash/o'qish RLS siyosati.
+7. `007_username_auth.sql` — Faqat username orqali tizimga kirish va profilni avtomatik sinxronlashtirish.
 
 ## Qanday ishga tushirish:
 Supabase Dashboard -> **SQL Editor** bo'limiga kiring va fayllarni ketma-ketlikda yurgizing.
