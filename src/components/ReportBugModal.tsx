@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Bug, Project, DeviceTelemetry, Severity, Priority, Environment } from '@/types';
-import { PlusIcon, XIcon, PenToolIcon, ImageIcon, CheckIcon, SmartphoneIcon } from './icons';
+import { PlusIcon, XIcon, PenToolIcon, CheckIcon, SmartphoneIcon } from './icons';
 import { ImageAnnotator } from './ImageAnnotator';
 
 interface ReportBugModalProps {
@@ -10,6 +10,40 @@ interface ReportBugModalProps {
   onClose: () => void;
   onSubmit: (bug: Partial<Bug>) => void;
 }
+
+const getInitialTelemetry = (): DeviceTelemetry => {
+  if (typeof window === 'undefined') {
+    return {
+      browser: 'Browser',
+      os: 'OS',
+      resolution: '1920x1080',
+      viewport: '1280x720',
+    };
+  }
+
+  const ua = navigator.userAgent;
+  let browser = 'Browser';
+  if (ua.includes('Firefox')) browser = 'Firefox';
+  else if (ua.includes('Chrome')) browser = 'Chrome';
+  else if (ua.includes('Safari')) browser = 'Safari';
+  else if (ua.includes('Edge')) browser = 'Edge';
+
+  let os = 'OS';
+  if (ua.includes('Android')) os = 'Android';
+  else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+  else if (ua.includes('Windows')) os = 'Windows';
+  else if (ua.includes('Mac')) os = 'macOS';
+  else if (ua.includes('Linux')) os = 'Linux';
+
+  return {
+    browser,
+    os,
+    resolution: `${window.screen.width}x${window.screen.height}`,
+    viewport: `${window.innerWidth}x${window.innerHeight}`,
+    userAgent: ua,
+    language: navigator.language,
+  };
+};
 
 export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose, onSubmit }) => {
   const [title, setTitle] = useState('');
@@ -34,40 +68,8 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
   const [evidenceInput, setEvidenceInput] = useState('');
   const [annotatingImageUrl, setAnnotatingImageUrl] = useState<string | null>(null);
 
-  // Auto-captured telemetry
-  const [telemetry, setTelemetry] = useState<DeviceTelemetry>({
-    browser: 'Aniqlanmoqda...',
-    os: 'Aniqlanmoqda...',
-    resolution: 'Aniqlanmoqda...',
-    viewport: 'Aniqlanmoqda...',
-  });
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const ua = navigator.userAgent;
-      let browser = 'Browser';
-      if (ua.includes('Firefox')) browser = 'Firefox';
-      else if (ua.includes('Chrome')) browser = 'Chrome';
-      else if (ua.includes('Safari')) browser = 'Safari';
-      else if (ua.includes('Edge')) browser = 'Edge';
-
-      let os = 'OS';
-      if (ua.includes('Android')) os = 'Android';
-      else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
-      else if (ua.includes('Windows')) os = 'Windows';
-      else if (ua.includes('Mac')) os = 'macOS';
-      else if (ua.includes('Linux')) os = 'Linux';
-
-      setTelemetry({
-        browser,
-        os,
-        resolution: `${window.screen.width}x${window.screen.height}`,
-        viewport: `${window.innerWidth}x${window.innerHeight}`,
-        userAgent: ua,
-        language: navigator.language,
-      });
-    }
-  }, []);
+  // Lazy-initialized telemetry without effect cascade
+  const [telemetry] = useState<DeviceTelemetry>(getInitialTelemetry);
 
   const handleAddStep = () => {
     setSteps([...steps, `${steps.length + 1}. `]);
@@ -222,6 +224,20 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
             </div>
           </div>
 
+          {/* Screen / Specific Page */}
+          <div>
+            <label className="block text-xs font-semibold text-zinc-300 mb-1">
+              Aniq Ekran / Sahifa (Screen / Page)
+            </label>
+            <input
+              type="text"
+              placeholder="Masalan: Profil sozlamalari, Bosh sahifa, To‘lov modali..."
+              value={screen}
+              onChange={(e) => setScreen(e.target.value)}
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white placeholder-zinc-600 focus:border-emerald-500 focus:outline-none"
+            />
+          </div>
+
           {/* Severity, Priority, Environment */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
@@ -267,7 +283,7 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
             </div>
           </div>
 
-          {/* Actual vs Expected Behavior */}
+          {/* Actual vs Expected Behavior Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-red-400 mb-1">
@@ -428,6 +444,20 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
             )}
           </div>
 
+          {/* Dev Notes */}
+          <div>
+            <label className="block text-xs font-semibold text-zinc-300 mb-1">
+              Texnik Tahlil & Fayl Ko‘rsatkichlari (Dev Notes) — ixtiyoriy
+            </label>
+            <textarea
+              rows={2}
+              placeholder="Masalan: navigation.json faylida kalitlar yetishmayapti, regex tekshiruvi kerak..."
+              value={devNotes}
+              onChange={(e) => setDevNotes(e.target.value)}
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white placeholder-zinc-600 focus:border-emerald-500 focus:outline-none font-mono"
+            />
+          </div>
+
           {/* Privacy & Reporter */}
           <div className="flex items-center justify-between pt-2 border-t border-zinc-800">
             <label className="flex items-center gap-2 cursor-pointer text-xs text-zinc-300">
@@ -437,7 +467,7 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
                 onChange={(e) => setIsSensitive(e.target.checked)}
                 className="rounded border-zinc-700 bg-zinc-950 text-emerald-500 focus:ring-emerald-500"
               />
-              <span>Maxfiy PII (Skrinshotda shaxsiy ma'lumotlar bor bo‘lsa xiralashtirilsin)</span>
+              <span>Maxfiy PII (Skrinshotda shaxsiy ma&apos;lumotlar bor bo‘lsa xiralashtirilsin)</span>
             </label>
 
             <div className="flex items-center gap-2">

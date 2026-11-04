@@ -5,24 +5,17 @@ import { Bug, Project, BugComment, BugStatus, Severity } from '@/types';
 import { INITIAL_PROJECTS, INITIAL_BUGS, INITIAL_COMMENTS } from '@/lib/mock-data';
 import {
   BugIcon,
-  ShieldAlertIcon,
   SparklesIcon,
   SearchIcon,
   FilterIcon,
   PlusIcon,
   ShareIcon,
-  CheckIcon,
   ThumbsUpIcon,
   EyeIcon,
   EyeOffIcon,
   KanbanIcon,
   ListIcon,
-  SmartphoneIcon,
-  ImageIcon,
-  ChevronDownIcon,
   ExternalLinkIcon,
-  CopyIcon,
-  TelegramIcon,
 } from '@/components/icons';
 import { BugDetailModal } from '@/components/BugDetailModal';
 import { ReportBugModal } from '@/components/ReportBugModal';
@@ -32,7 +25,7 @@ import { KanbanBoard } from '@/components/KanbanBoard';
 
 export default function IFoundBugApp() {
   // State
-  const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
+  const [projects] = useState<Project[]>(INITIAL_PROJECTS);
   const [currentProject, setCurrentProject] = useState<Project>(INITIAL_PROJECTS[0]);
   const [bugs, setBugs] = useState<Bug[]>(INITIAL_BUGS);
   const [comments, setComments] = useState<BugComment[]>(INITIAL_COMMENTS);
@@ -43,7 +36,7 @@ export default function IFoundBugApp() {
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [selectedSection, setSelectedSection] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
-  const [privacyMode, setPrivacyMode] = useState(true); // default true for PII protection
+  const [privacyMode, setPrivacyMode] = useState(true);
 
   // Selection & Active Modal State
   const [selectedBug, setSelectedBug] = useState<Bug | null>(null);
@@ -53,15 +46,14 @@ export default function IFoundBugApp() {
   const [showAIPromptModal, setShowAIPromptModal] = useState(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [selectedBugIdsForSprint, setSelectedBugIdsForSprint] = useState<string[]>([]);
-  const [soundEnabled, setSoundEnabled] = useState(true);
 
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Audio chimes (synthesized via Web Audio API - no external assets needed!)
-  const playChime = (type: 'resolve' | 'click' | 'vote') => {
-    if (!soundEnabled || typeof window === 'undefined') return;
+  // Audio chimes (synthesized via Web Audio API)
+  const playChime = (type: 'resolve' | 'vote') => {
+    if (typeof window === 'undefined') return;
     try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
       const osc = ctx.createOscillator();
@@ -70,8 +62,8 @@ export default function IFoundBugApp() {
       gain.connect(ctx.destination);
 
       if (type === 'resolve') {
-        osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
-        osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.15); // G5
+        osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.15);
         gain.gain.setValueAtTime(0.12, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
         osc.start();
@@ -84,54 +76,10 @@ export default function IFoundBugApp() {
         osc.start();
         osc.stop(ctx.currentTime + 0.15);
       }
-    } catch (e) {
+    } catch {
       // AudioContext policy
     }
   };
-
-  // Keyboard Shortcuts (Linear / Vim style)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept if user is typing in input or textarea
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) {
-        if (e.key === 'Escape') {
-          (e.target as HTMLElement).blur();
-        }
-        return;
-      }
-
-      if (e.key === '/') {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      } else if (e.key.toLowerCase() === 'p') {
-        e.preventDefault();
-        setPrivacyMode((prev) => !prev);
-      } else if (e.key.toLowerCase() === 'c') {
-        e.preventDefault();
-        setShowReportModal(true);
-      } else if (e.key === '?') {
-        e.preventDefault();
-        setShowShortcutsModal((prev) => !prev);
-      } else if (e.key === 'Escape') {
-        setSelectedBug(null);
-        setShowReportModal(false);
-        setShowShareModal(false);
-        setShowAIPromptModal(false);
-        setShowShortcutsModal(false);
-      } else if (e.key === 'j') {
-        setSelectedIndex((prev) => Math.min(filteredBugs.length - 1, prev + 1));
-      } else if (e.key === 'k') {
-        setSelectedIndex((prev) => Math.max(0, prev - 1));
-      } else if (e.key === 'Enter') {
-        if (filteredBugs[selectedIndex]) {
-          setSelectedBug(filteredBugs[selectedIndex]);
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedIndex]);
 
   // Filtered bugs
   const filteredBugs = useMemo(() => {
@@ -178,6 +126,56 @@ export default function IFoundBugApp() {
       return true;
     });
   }, [bugs, currentProject.id, searchQuery, selectedSeverity, selectedStatus, selectedSection]);
+
+  const filteredBugsRef = useRef(filteredBugs);
+  useEffect(() => {
+    filteredBugsRef.current = filteredBugs;
+  }, [filteredBugs]);
+
+  // Keyboard Shortcuts (Linear / Vim style)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) {
+        if (e.key === 'Escape') {
+          (e.target as HTMLElement).blur();
+        }
+        return;
+      }
+
+      const list = filteredBugsRef.current;
+
+      if (e.key === '/') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      } else if (e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        setPrivacyMode((prev) => !prev);
+      } else if (e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        setShowReportModal(true);
+      } else if (e.key === '?') {
+        e.preventDefault();
+        setShowShortcutsModal((prev) => !prev);
+      } else if (e.key === 'Escape') {
+        setSelectedBug(null);
+        setShowReportModal(false);
+        setShowShareModal(false);
+        setShowAIPromptModal(false);
+        setShowShortcutsModal(false);
+      } else if (e.key === 'j') {
+        setSelectedIndex((prev) => Math.min(list.length - 1, prev + 1));
+      } else if (e.key === 'k') {
+        setSelectedIndex((prev) => Math.max(0, prev - 1));
+      } else if (e.key === 'Enter') {
+        if (list[selectedIndex]) {
+          setSelectedBug(list[selectedIndex]);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedIndex]);
 
   // Statistics
   const stats = useMemo(() => {

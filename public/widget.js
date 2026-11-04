@@ -106,7 +106,7 @@
 
     try {
       modal.querySelector('#ifb-submit').innerText = 'Yuborilmoqda...';
-      const res = await fetch(apiEndpoint, {
+      await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -115,7 +115,7 @@
       modal.style.display = 'none';
       modal.querySelector('#ifb-title').value = '';
       modal.querySelector('#ifb-desc').value = '';
-    } catch (e) {
+    } catch {
       alert('Bug qayd etildi (offline fallback).');
       modal.style.display = 'none';
     } finally {

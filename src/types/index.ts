@@ -69,7 +69,7 @@ export interface BugComment {
   author_avatar?: string;
   content: string;
   is_internal?: boolean;
-  reactions?: Record<string, string[]>; // e.g. { "👍": ["Ali"], "🔥": ["Vali"] }
+  reactions?: Record<string, string[]>;
   created_at: string;
 }
 
@@ -78,7 +78,7 @@ export interface BugAuditLog {
   bug_id: string;
   actor_name: string;
   action: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   created_at: string;
 }
 

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useRef, useState, useEffect } from 'react';
-import { PenToolIcon, CheckIcon, XIcon, DownloadIcon } from './icons';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { PenToolIcon, CheckIcon, XIcon } from './icons';
 
 interface ImageAnnotatorProps {
   imageUrl: string;
@@ -15,11 +15,19 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({ imageUrl, onSave
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [selectedTool, setSelectedTool] = useState<Tool>('box');
   const [color, setColor] = useState<string>('#ef4444');
-  const [lineWidth, setLineWidth] = useState<number>(3);
+  const [lineWidth] = useState<number>(3);
   const [isDrawing, setIsDrawing] = useState(false);
   const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(null);
   const [history, setHistory] = useState<ImageData[]>([]);
   const imageObjRef = useRef<HTMLImageElement | null>(null);
+
+  const saveState = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    setHistory((prev) => [...prev.slice(-10), ctx.getImageData(0, 0, canvas.width, canvas.height)]);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -37,15 +45,7 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({ imageUrl, onSave
       ctx.drawImage(img, 0, 0);
       saveState();
     };
-  }, [imageUrl]);
-
-  const saveState = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    setHistory((prev) => [...prev.slice(-10), ctx.getImageData(0, 0, canvas.width, canvas.height)]);
-  };
+  }, [imageUrl, saveState]);
 
   const undo = () => {
     if (history.length <= 1) return;
@@ -55,7 +55,7 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({ imageUrl, onSave
     if (!ctx) return;
 
     const nextHistory = [...history];
-    nextHistory.pop(); // remove current
+    nextHistory.pop();
     const previousState = nextHistory[nextHistory.length - 1];
     ctx.putImageData(previousState, 0, 0);
     setHistory(nextHistory);
@@ -92,6 +92,20 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({ imageUrl, onSave
     }
   };
 
+  const drawArrow = (ctx: CanvasRenderingContext2D, fromx: number, fromy: number, tox: number, toy: number) => {
+    const headlen = 15;
+    const dx = tox - fromx;
+    const dy = toy - fromy;
+    const angle = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+  };
+
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawing || !startPos) return;
     const canvas = canvasRef.current;
@@ -105,7 +119,6 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({ imageUrl, onSave
       ctx.lineTo(currentCoords.x, currentCoords.y);
       ctx.stroke();
     } else {
-      // Restore latest saved state before drawing preview
       if (history.length > 0) {
         ctx.putImageData(history[history.length - 1], 0, 0);
       }
@@ -145,20 +158,6 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({ imageUrl, onSave
 
     saveState();
     setStartPos(null);
-  };
-
-  const drawArrow = (ctx: CanvasRenderingContext2D, fromx: number, fromy: number, tox: number, toy: number) => {
-    const headlen = 15;
-    const dx = tox - fromx;
-    const dy = toy - fromy;
-    const angle = Math.atan2(dy, dx);
-    ctx.beginPath();
-    ctx.moveTo(fromx, fromy);
-    ctx.lineTo(tox, toy);
-    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
-    ctx.moveTo(tox, toy);
-    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
-    ctx.stroke();
   };
 
   const handleExport = () => {

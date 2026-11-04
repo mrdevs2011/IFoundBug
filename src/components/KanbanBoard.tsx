@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Bug, BugStatus } from '@/types';
-import { ThumbsUpIcon, CheckIcon, ImageIcon, SmartphoneIcon } from './icons';
+import { ThumbsUpIcon, ImageIcon } from './icons';
 
 interface KanbanBoardProps {
   bugs: Bug[];
@@ -21,9 +21,7 @@ const COLUMNS: { status: BugStatus; label: string; color: string }[] = [
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   bugs,
-  privacyMode,
   onSelectBug,
-  onStatusChange,
 }) => {
   const severityColors = {
     CRITICAL: 'text-red-400 bg-red-500/10 border-red-500/20',

@@ -6,7 +6,6 @@ export async function POST(req: Request) {
     const body = await req.json();
     const {
       project_id,
-      project_slug,
       title,
       summary,
       section = 'UI',
@@ -52,7 +51,7 @@ export async function POST(req: Request) {
 
     // If Supabase is connected, save into ifb_bugs
     if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase.from('ifb_bugs').insert([newBug]).select().single();
+      const { error } = await supabase.from('ifb_bugs').insert([newBug]);
       if (error) {
         console.error('Supabase insert bug error:', error);
       }
@@ -79,8 +78,9 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: true, bug: newBug });
-  } catch (error: any) {
-    console.error('Error reporting bug:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown server error';
+    console.error('Error reporting bug:', message);
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

@@ -7,7 +7,6 @@ import {
   SparklesIcon,
   ThumbsUpIcon,
   CheckIcon,
-  CopyIcon,
   SmartphoneIcon,
   PenToolIcon,
   EyeIcon,

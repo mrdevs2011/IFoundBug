@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Project } from '@/types';
-import { ShareIcon, CopyIcon, CheckIcon, XIcon, TelegramIcon, TerminalIcon, ShieldAlertIcon } from './icons';
+import { ShareIcon, CopyIcon, CheckIcon, XIcon, TelegramIcon } from './icons';
 
 interface ShareInviteModalProps {
   project: Project;
@@ -109,18 +109,18 @@ export const ShareInviteModal: React.FC<ShareInviteModalProps> = ({ project, onC
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-                  Taklif qilinayotgan a'zoning roli:
+                  Taklif qilinayotgan a&apos;zoning roli:
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { id: 'developer', label: 'Developer', desc: 'Buglarni ko‘rish va tuzatish' },
-                    { id: 'qa_tester', label: 'QA Tester', desc: 'Yangi bug qo‘shish & test' },
-                    { id: 'viewer', label: 'Viewer', desc: 'Faqat kuzatish' },
+                    { id: 'developer' as const, label: 'Developer', desc: 'Buglarni ko‘rish va tuzatish' },
+                    { id: 'qa_tester' as const, label: 'QA Tester', desc: 'Yangi bug qo‘shish & test' },
+                    { id: 'viewer' as const, label: 'Viewer', desc: 'Faqat kuzatish' },
                   ].map((r) => (
                     <button
                       key={r.id}
                       type="button"
-                      onClick={() => setRole(r.id as any)}
+                      onClick={() => setRole(r.id)}
                       className={`p-2.5 rounded-xl border text-left transition ${
                         role === r.id
                           ? 'border-emerald-500/80 bg-emerald-500/10 text-white'
@@ -154,7 +154,7 @@ export const ShareInviteModal: React.FC<ShareInviteModalProps> = ({ project, onC
                   </button>
                 </div>
                 <p className="text-[11px] text-zinc-500 mt-1.5">
-                  Ushbu havola orqali kirgan a'zolar avtomatik ravishda <strong className="text-zinc-400">{role}</strong> huquqi bilan loyihaga qo‘shiladi.
+                  Ushbu havola orqali kirgan a&apos;zolar avtomatik ravishda <strong className="text-zinc-400">{role}</strong> huquqi bilan loyihaga qo‘shiladi.
                 </p>
               </div>
 
