@@ -305,27 +305,31 @@ export default function ProjectWorkspacePage() {
       />
 
       {/* Workspace Subheader & Toolbar */}
-      <div className="border-b border-zinc-800/80 bg-zinc-950/60 sticky top-15 z-30 backdrop-blur-sm">
+      <div className="border-b border-white/[0.06] bg-zinc-950/70 sticky top-16 z-30 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
           {/* Search Input */}
-          <div className="relative flex-1 min-w-[200px] max-w-md">
+          <div className="relative flex-1 min-w-[220px] max-w-md">
             <SearchIcon className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Qidirish (kod, nom, bo'lim)... (bosing /)"
+              placeholder="Qidirish (kod, nom, bo'lim)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-9 pr-8 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-700"
+              className="w-full bg-zinc-900/80 border border-zinc-800 rounded-xl pl-9 pr-14 py-2 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 transition"
             />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 text-xs"
-              >
-                ✕
-              </button>
-            )}
+            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              {searchQuery ? (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="text-zinc-500 hover:text-zinc-300 text-xs p-1"
+                >
+                  ✕
+                </button>
+              ) : (
+                <kbd>/</kbd>
+              )}
+            </div>
           </div>
 
           {/* Filters & View Switches */}
@@ -334,7 +338,7 @@ export default function ProjectWorkspacePage() {
             <select
               value={selectedSeverity}
               onChange={(e) => setSelectedSeverity(e.target.value)}
-              className="bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300 rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer"
+              className="bg-zinc-900/80 border border-zinc-800 text-xs font-semibold text-zinc-300 rounded-xl px-3 py-2 focus:outline-none focus:border-zinc-700 cursor-pointer"
             >
               <option value="ALL">Barcha darajalar</option>
               <option value="CRITICAL">🔥 CRITICAL</option>
@@ -347,7 +351,7 @@ export default function ProjectWorkspacePage() {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300 rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer"
+              className="bg-zinc-900/80 border border-zinc-800 text-xs font-semibold text-zinc-300 rounded-xl px-3 py-2 focus:outline-none focus:border-zinc-700 cursor-pointer"
             >
               <option value="ALL">Barcha holatlar</option>
               <option value="OPEN">Faqat Ochiq</option>
@@ -360,7 +364,7 @@ export default function ProjectWorkspacePage() {
               <select
                 value={selectedSection}
                 onChange={(e) => setSelectedSection(e.target.value)}
-                className="bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300 rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer hidden md:block"
+                className="bg-zinc-900/80 border border-zinc-800 text-xs font-semibold text-zinc-300 rounded-xl px-3 py-2 focus:outline-none focus:border-zinc-700 cursor-pointer hidden md:block"
               >
                 <option value="ALL">Barcha bo‘limlar</option>
                 {sections.map((s) => (
@@ -374,7 +378,7 @@ export default function ProjectWorkspacePage() {
             {/* AI Sprint Prompt */}
             <button
               onClick={() => setShowAIPromptModal(true)}
-              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-xl transition"
+              className="hidden lg:flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-zinc-300 hover:text-white bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 rounded-xl transition cursor-pointer"
               title="Claude Code / Cursor uchun Sprint Prompt"
             >
               <SparklesIcon className="w-3.5 h-3.5 text-emerald-400" />
@@ -382,12 +386,12 @@ export default function ProjectWorkspacePage() {
             </button>
 
             {/* View Mode Toggle: Kanban vs List */}
-            <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-xl p-0.5">
+            <div className="flex items-center bg-zinc-900/90 border border-zinc-800 rounded-xl p-0.5">
               <button
                 onClick={() => setViewMode('kanban')}
-                className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition ${
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
                   viewMode === 'kanban'
-                    ? 'bg-zinc-800 text-white shadow'
+                    ? 'bg-zinc-800 text-white shadow-sm'
                     : 'text-zinc-500 hover:text-zinc-300'
                 }`}
                 title="Kanban Taxtasi"
@@ -398,9 +402,9 @@ export default function ProjectWorkspacePage() {
 
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition ${
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
                   viewMode === 'list'
-                    ? 'bg-zinc-800 text-white shadow'
+                    ? 'bg-zinc-800 text-white shadow-sm'
                     : 'text-zinc-500 hover:text-zinc-300'
                 }`}
                 title="Ro'yxat (List)"

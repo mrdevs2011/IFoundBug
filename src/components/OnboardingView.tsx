@@ -10,7 +10,7 @@ interface OnboardingViewProps {
 }
 
 export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
-  const [tab, setTab] = useState<'login' | 'signup' | 'demo'>('login');
+  const [tab, setTab] = useState<'demo' | 'login' | 'signup'>('demo');
   const [showSplash, setShowSplash] = useState(true);
 
   // Form states
@@ -21,11 +21,11 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // 1. Silky 1.5-second splash screen like TekinMail & MYplan
+  // 1. Silky 1.2-second splash screen like TekinMail & MYplan
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
-    }, 1500);
+    }, 1200);
     return () => clearTimeout(timer);
   }, []);
 
@@ -59,7 +59,7 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
         return;
       } catch (err: unknown) {
         const error = err as Error;
-        setErrorMsg(error.message || 'Kirishda xatolik yuz berdi. Ma\'lumotlarni tekshiring.');
+        setErrorMsg(error.message || 'Kirishda xatolik yuz berdi. Email yoki parolni tekshiring.');
         setLoading(false);
         return;
       }
@@ -151,210 +151,275 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col justify-between selection:bg-emerald-500 selection:text-black relative overflow-hidden font-sans">
-      {/* 0. SILKY INTRO SPLASH SCREEN (Just like TekinMail & MYplan) */}
+      {/* 0. SILKY INTRO SPLASH SCREEN */}
       {showSplash && (
-        <div className="fixed inset-0 z-50 bg-zinc-950 flex flex-col items-center justify-center transition-opacity duration-700">
-          <div className="flex flex-col items-center space-y-4 animate-fade-in">
-            <div className="relative flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 p-0.5 shadow-2xl shadow-emerald-500/30">
-              <div className="w-full h-full bg-zinc-950 rounded-[14px] flex items-center justify-center">
-                <BugIcon className="w-8 h-8 text-emerald-400 animate-pulse" />
+        <div className="fixed inset-0 z-50 bg-zinc-950 flex flex-col items-center justify-center transition-all duration-700 ease-out">
+          <div className="flex flex-col items-center space-y-5 animate-fade-in">
+            <div className="relative flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-600 p-0.5 shadow-[0_0_50px_-10px_rgba(16,185,129,0.5)]">
+              <div className="w-full h-full bg-zinc-950 rounded-[22px] flex items-center justify-center">
+                <BugIcon className="w-10 h-10 text-emerald-400 animate-pulse" />
               </div>
             </div>
-            <div className="text-center space-y-1">
-              <div className="flex items-baseline justify-center gap-1">
+            <div className="text-center space-y-1.5">
+              <div className="flex items-baseline justify-center gap-2">
                 <span className="font-mono font-black text-2xl tracking-widest text-emerald-400">IFB</span>
-                <span className="font-extrabold text-xl tracking-tight text-white">IFoundBug</span>
+                <span className="font-extrabold text-2xl tracking-tight text-white">IFoundBug</span>
               </div>
-              <p className="text-[11px] font-mono text-zinc-500 tracking-wider">APEX BUG TRACKING PLATFORM</p>
+              <p className="text-[11px] font-mono text-zinc-500 tracking-widest uppercase">
+                Apex Collaborative Bug Tracker
+              </p>
             </div>
-            <div className="w-36 h-1 bg-zinc-900 rounded-full overflow-hidden mt-2">
-              <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full animate-progress-indeterminate" />
+            <div className="w-40 h-1 bg-zinc-900 rounded-full overflow-hidden mt-3">
+              <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full w-2/3 animate-pulse" />
             </div>
           </div>
         </div>
       )}
 
+      {/* Radiant Background Aura */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-gradient-to-b from-emerald-500/15 via-teal-500/5 to-transparent blur-3xl pointer-events-none -z-10" />
+
       {/* Top Navbar */}
-      <header className="border-b border-zinc-900 bg-zinc-950/70 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-15 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
-              <BugIcon className="w-4 h-4" />
+      <header className="border-b border-white/[0.06] bg-zinc-950/70 backdrop-blur-xl sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 text-emerald-400 shadow-sm">
+              <BugIcon className="w-5 h-5" />
             </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="font-mono font-black text-sm tracking-widest text-emerald-400">IFB</span>
+            <div className="flex items-baseline gap-2">
+              <span className="font-mono font-black text-base tracking-widest text-emerald-400">IFB</span>
               <span className="font-bold text-sm tracking-tight text-white hidden sm:inline">IFoundBug</span>
+              <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-zinc-800/80 text-zinc-400 border border-zinc-700/50">
+                v2.0
+              </span>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="text-xs text-zinc-500 hidden sm:inline">Stop Debugging in Telegram</span>
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] text-zinc-400">
+            <span className="text-xs text-zinc-400 font-medium hidden md:inline">
+              Stop Telegram Bug Chaos
+            </span>
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/80 border border-zinc-800 text-xs text-zinc-300">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Xavfsiz Tizim</span>
+              <span className="font-mono text-[11px]">Linear + Supabase Realtime</span>
             </div>
           </div>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-16">
-        {/* Left Side: Product Showcase & Pain-Point Solution */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16 flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-16">
+        {/* Left Side: Product Value & Interactive Bug Preview */}
         <div className="flex-1 max-w-xl space-y-6 text-center lg:text-left">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-semibold">
-            <span>🛡️ Dasturchilar Uchun Yangi Standart</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-medium shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Developer-First Bug Tracking</span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
+          <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-[1.15]">
             Telegram guruhlardagi tartibsizlikka{' '}
-            <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-indigo-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
               chek qo‘ying.
             </span>
           </h1>
 
-          <p className="text-sm sm:text-base text-zinc-400 leading-relaxed">
-            Ilovalaringiz xatolarini audio yoki betartib skrinshotlar orqali emas, balki bir joyda
-            aniq qadamlar, telemetriya, real-time suhbat va qabul mezonlari bilan boshqaring.
+          <p className="text-sm sm:text-base text-zinc-400 leading-relaxed font-normal">
+            Ilovalaringizdagi xatolarni audio yoki betartib skrinshotlar orqali emas, balki
+            aniq qadamlar, telemetriya, bir bosishda Telegram kartalari va Claude/Cursor AI promptlari bilan boshqaring.
           </p>
 
-          {/* Feature List */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-left">
-            <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80 space-y-1">
-              <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold">
-                <CheckIcon className="w-4 h-4 stroke-[2.5]" />
-                <span>Multi-Project Workspace</span>
+          {/* Interactive Live Mock Bug Card (Visual Proof) */}
+          <div className="linear-card rounded-2xl p-4 sm:p-5 text-left space-y-3.5 relative overflow-hidden border border-zinc-800/90 shadow-2xl">
+            <div className="flex items-center justify-between gap-2 border-b border-zinc-800/80 pb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-zinc-800 text-zinc-200 border border-zinc-700">
+                  B04
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/15 border border-red-500/30 text-red-400 text-[11px] font-mono font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                  CRITICAL • P0
+                </span>
+                <span className="text-[11px] font-mono text-zinc-500 hidden sm:inline">To‘lov / Checkout</span>
               </div>
-              <p className="text-[11px] text-zinc-400 leading-relaxed">
-                Faqat bitta ilovaga bog‘lanib qolmasdan, istalgancha yangi loyihalar ochish.
+              <span className="text-[10px] font-mono text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">
+                iPhone 15 Pro • iOS 17.4
+              </span>
+            </div>
+
+            <div>
+              <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">
+                O‘zbekcha tilda savatchadan to‘lovga o‘tishda ilova to‘xtab qolyapti
+              </h3>
+              <p className="text-xs text-zinc-400 mt-1 line-clamp-2">
+                Til o‘zbekchaga almashtirilganda to‘lov API javobidagi null qiymat sababli ilova crash bo‘lmoqda.
               </p>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80 space-y-1">
-              <div className="flex items-center gap-2 text-sky-400 text-xs font-bold">
-                <ShareIcon className="w-4 h-4 stroke-[2.5]" />
-                <span>1-Bosishda Telegramga</span>
+            {/* Checklist simulation */}
+            <div className="space-y-1.5 pt-1 text-xs text-zinc-300">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center">
+                  <CheckIcon className="w-3 h-3 stroke-[2.5]" />
+                </div>
+                <span>Savatchaga mahsulot qo‘shish va o‘zbek tilini tanlash</span>
               </div>
-              <p className="text-[11px] text-zinc-400 leading-relaxed">
-                Har bir bug uchun guruhga chiroyli va to‘liq ma&apos;lumotli karta ulashish.
-              </p>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-red-500/20 text-red-400 border border-red-500/40 flex items-center justify-center text-[10px] font-mono font-black">
+                  ✕
+                </div>
+                <span className="text-zinc-400">To‘lov tugmasi bosilganda xatolik berishi</span>
+              </div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80 space-y-1">
-              <div className="flex items-center gap-2 text-purple-400 text-xs font-bold">
-                <SparklesIcon className="w-4 h-4 stroke-[2.5]" />
-                <span>AI Prompt (Cursor/Claude)</span>
+            {/* Actions Bar inside Preview */}
+            <div className="flex items-center justify-between pt-2 border-t border-zinc-800/80">
+              <div className="flex items-center gap-2 text-[11px] text-zinc-400">
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-mono font-semibold">
+                  👍 6 ta dasturchi tasdiqladi
+                </span>
               </div>
-              <p className="text-[11px] text-zinc-400 leading-relaxed">
-                Xatoni tuzatish uchun AI ga tayyor, professional tuzatish promptini beradi.
-              </p>
-            </div>
 
-            <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80 space-y-1">
-              <div className="flex items-center gap-2 text-amber-400 text-xs font-bold">
-                <CheckIcon className="w-4 h-4 stroke-[2.5]" />
-                <span>Clipboarddan Skrinshot</span>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20 text-[11px] font-medium">
+                  <ShareIcon className="w-3 h-3" />
+                  <span>Telegram</span>
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[11px] font-medium">
+                  <SparklesIcon className="w-3 h-3" />
+                  <span>AI Prompt</span>
+                </span>
               </div>
-              <p className="text-[11px] text-zinc-400 leading-relaxed">
-                Ctrl+V bilan to‘g‘ridan-to‘g‘ri skrinshot tashlash va ustiga chizish.
-              </p>
             </div>
           </div>
         </div>
 
-        {/* Right Side: Authentication Box */}
-        <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
-          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  setTab('login');
-                  setErrorMsg('');
-                }}
-                className={`text-xs font-bold px-3 py-1.5 rounded-xl transition ${
-                  tab === 'login' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'
-                }`}
-              >
-                Kirish (Login)
-              </button>
-              <button
-                onClick={() => {
-                  setTab('signup');
-                  setErrorMsg('');
-                }}
-                className={`text-xs font-bold px-3 py-1.5 rounded-xl transition ${
-                  tab === 'signup' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'
-                }`}
-              >
-                Ro‘yxatdan o‘tish
-              </button>
-            </div>
-
+        {/* Right Side: Elite Segmented Authentication Box */}
+        <div className="w-full max-w-md linear-card rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 relative border border-white/[0.08]">
+          {/* Segmented Control Switcher */}
+          <div className="p-1 rounded-2xl bg-zinc-950/80 border border-zinc-800/80 grid grid-cols-3 gap-1">
             <button
-              onClick={() => setTab('demo')}
-              className={`text-[11px] font-semibold font-mono px-2 py-1 rounded-lg border transition ${
+              type="button"
+              onClick={() => {
+                setTab('demo');
+                setErrorMsg('');
+              }}
+              className={`py-2 text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-1 ${
                 tab === 'demo'
-                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                  : 'bg-zinc-950 text-zinc-500 border-zinc-800 hover:text-zinc-300'
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm'
+                  : 'text-zinc-400 hover:text-white'
               }`}
             >
-              ⚡ Tezkor Demo
+              <span>⚡ Demo</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setTab('login');
+                setErrorMsg('');
+              }}
+              className={`py-2 text-xs font-bold rounded-xl transition cursor-pointer ${
+                tab === 'login'
+                  ? 'bg-zinc-800 text-white shadow-sm'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              Kirish
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setTab('signup');
+                setErrorMsg('');
+              }}
+              className={`py-2 text-xs font-bold rounded-xl transition cursor-pointer ${
+                tab === 'signup'
+                  ? 'bg-zinc-800 text-white shadow-sm'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              Ro‘yxatdan
             </button>
           </div>
 
           {errorMsg && (
-            <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-xl leading-relaxed">
-              {errorMsg}
+            <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-xl leading-relaxed flex items-center gap-2">
+              <span className="text-sm">⚠️</span>
+              <span>{errorMsg}</span>
             </div>
           )}
 
           {tab === 'demo' ? (
-            /* Quick Demo Onboarding Mode */
+            /* 1-Click Demo Profiles */
             <div className="space-y-4">
               <div className="text-center space-y-1">
-                <h3 className="text-sm font-bold text-white">Tezkor Demo Profil Tanlang</h3>
+                <h3 className="text-sm font-bold text-white">1-Bosishda Kirish (Tezkor Demo)</h3>
                 <p className="text-xs text-zinc-400">
-                  Parolsiz, darhol platforma imkoniyatlarini sinab ko‘rish uchun
+                  Parol kiritmasdan, to‘g‘ridan-to‘g‘ri dasturchi yoki lead sifatida sinab ko‘ring:
                 </p>
               </div>
 
               <div className="space-y-2.5">
                 <button
+                  type="button"
                   onClick={() => handleDemoLogin('team_lead', 'Muhamad R. (Lead)')}
-                  className="w-full p-3 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-emerald-500/50 flex items-center justify-between text-left transition group cursor-pointer"
+                  className="w-full p-3.5 rounded-2xl bg-zinc-950/70 border border-zinc-800/80 hover:border-emerald-500/60 hover:bg-zinc-900/80 flex items-center justify-between text-left transition group cursor-pointer"
                 >
-                  <div>
-                    <h4 className="text-xs font-bold text-white group-hover:text-emerald-400 transition">
-                      Muhamad R.
-                    </h4>
-                    <span className="text-[10px] text-zinc-500 font-mono">Team Lead / Platform Egasi</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center font-bold text-emerald-400 text-sm group-hover:scale-105 transition">
+                      MR
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-white group-hover:text-emerald-400 transition">
+                        Muhamad R.
+                      </h4>
+                      <span className="text-[10px] text-zinc-400 font-mono">Team Lead / Creator</span>
+                    </div>
                   </div>
-                  <span className="text-xs text-emerald-400 font-bold">Kirish →</span>
+                  <span className="text-xs text-emerald-400 font-bold group-hover:translate-x-1 transition flex items-center gap-1">
+                    Kirish →
+                  </span>
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => handleDemoLogin('developer', 'Alisher Qodirov')}
-                  className="w-full p-3 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-emerald-500/50 flex items-center justify-between text-left transition group cursor-pointer"
+                  className="w-full p-3.5 rounded-2xl bg-zinc-950/70 border border-zinc-800/80 hover:border-emerald-500/60 hover:bg-zinc-900/80 flex items-center justify-between text-left transition group cursor-pointer"
                 >
-                  <div>
-                    <h4 className="text-xs font-bold text-white group-hover:text-emerald-400 transition">
-                      Alisher Qodirov
-                    </h4>
-                    <span className="text-[10px] text-zinc-500 font-mono">Frontend / Mobile Dasturchi</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center font-bold text-cyan-400 text-sm group-hover:scale-105 transition">
+                      AQ
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-white group-hover:text-emerald-400 transition">
+                        Alisher Qodirov
+                      </h4>
+                      <span className="text-[10px] text-zinc-400 font-mono">Mobile & Frontend Dev</span>
+                    </div>
                   </div>
-                  <span className="text-xs text-emerald-400 font-bold">Kirish →</span>
+                  <span className="text-xs text-emerald-400 font-bold group-hover:translate-x-1 transition flex items-center gap-1">
+                    Kirish →
+                  </span>
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => handleDemoLogin('qa_tester', 'Sarvar Tester')}
-                  className="w-full p-3 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-emerald-500/50 flex items-center justify-between text-left transition group cursor-pointer"
+                  className="w-full p-3.5 rounded-2xl bg-zinc-950/70 border border-zinc-800/80 hover:border-emerald-500/60 hover:bg-zinc-900/80 flex items-center justify-between text-left transition group cursor-pointer"
                 >
-                  <div>
-                    <h4 className="text-xs font-bold text-white group-hover:text-emerald-400 transition">
-                      Sarvar Tester
-                    </h4>
-                    <span className="text-[10px] text-zinc-500 font-mono">QA Engineer / Bug Hunter</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center font-bold text-amber-400 text-sm group-hover:scale-105 transition">
+                      ST
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-white group-hover:text-emerald-400 transition">
+                        Sarvar Tester
+                      </h4>
+                      <span className="text-[10px] text-zinc-400 font-mono">QA Engineer / Hunter</span>
+                    </div>
                   </div>
-                  <span className="text-xs text-emerald-400 font-bold">Kirish →</span>
+                  <span className="text-xs text-emerald-400 font-bold group-hover:translate-x-1 transition flex items-center gap-1">
+                    Kirish →
+                  </span>
                 </button>
               </div>
             </div>
@@ -362,14 +427,14 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
             /* Login Form */
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-300">Email yoki Dasturchi login</label>
+                <label className="text-xs font-semibold text-zinc-300">Email manzilingiz</label>
                 <input
                   type="email"
                   required
                   placeholder="developer@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition"
                 />
               </div>
 
@@ -381,67 +446,67 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-emerald-400 hover:bg-emerald-300 disabled:opacity-50 text-zinc-950 font-bold text-xs rounded-xl transition shadow-lg shadow-emerald-500/10 cursor-pointer"
+                className="w-full py-2.5 text-xs font-bold text-zinc-950 bg-emerald-400 hover:bg-emerald-300 rounded-xl transition shadow-lg shadow-emerald-500/20 disabled:opacity-50 cursor-pointer"
               >
                 {loading ? 'Kirilmoqda...' : 'Tizimga Kirish'}
               </button>
             </form>
           ) : (
             /* Signup Form */
-            <form onSubmit={handleSignup} className="space-y-4">
-              <div className="space-y-1.5">
+            <form onSubmit={handleSignup} className="space-y-3.5">
+              <div className="space-y-1">
                 <label className="text-xs font-semibold text-zinc-300">Ism va familiya</label>
                 <input
                   type="text"
                   required
-                  placeholder="Muhamad R."
+                  placeholder="Ali Valiyev"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-300">Email manzil</label>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-zinc-300">Email</label>
                 <input
                   type="email"
                   required
-                  placeholder="developer@example.com"
+                  placeholder="ali@company.uz"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <label className="text-xs font-semibold text-zinc-300">Parol</label>
                 <input
                   type="password"
                   required
-                  placeholder="Kamida 6 ta belgi"
+                  placeholder="Kamida 6 belgi"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-300">Rolingiz</label>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-zinc-300">Loyihadagi rolingiz</label>
                 <select
                   value={role}
-                  onChange={(e) => setRole(e.target.value as UserProfile['role'])}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
+                  onChange={(e) => setRole(e.target.value as any)}
+                  className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
                 >
-                  <option value="developer">Dasturchi (Developer)</option>
-                  <option value="qa_tester">QA Tester</option>
-                  <option value="team_lead">Team Lead</option>
+                  <option value="developer">Dasturchi (Software Engineer)</option>
+                  <option value="qa_tester">QA Tester (Bug Hunter)</option>
+                  <option value="team_lead">Team Lead / Tech Lead</option>
                   <option value="product_manager">Product Manager</option>
                 </select>
               </div>
@@ -449,18 +514,23 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-emerald-400 hover:bg-emerald-300 disabled:opacity-50 text-zinc-950 font-bold text-xs rounded-xl transition shadow-lg shadow-emerald-500/10 cursor-pointer"
+                className="w-full py-2.5 text-xs font-bold text-zinc-950 bg-emerald-400 hover:bg-emerald-300 rounded-xl transition shadow-lg shadow-emerald-500/20 disabled:opacity-50 cursor-pointer mt-2"
               >
-                {loading ? 'Yaratilmoqda...' : 'Hisob Yaratish & Kirish'}
+                {loading ? 'Yaratilmoqda...' : 'Ro‘yxatdan O‘tish'}
               </button>
             </form>
           )}
+
+          <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[11px] text-zinc-500">
+            <span>🔒 Xavfsiz Shifrlash</span>
+            <span>⚡ Next.js 15 & Supabase</span>
+          </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-zinc-900 py-4 text-center text-xs text-zinc-600">
-        <span>IFoundBug (IFB) — Developer-Grade Bug Tracking & Collaboration. Made by MR.</span>
+      <footer className="border-t border-zinc-900/80 py-4 text-center text-xs text-zinc-600">
+        IFoundBug • Professional Bug Triage Standard • Designed for Developers
       </footer>
     </div>
   );

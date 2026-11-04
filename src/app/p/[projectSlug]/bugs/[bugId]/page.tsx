@@ -284,8 +284,8 @@ export default function BugDetailPage() {
       <AppNavbar currentProject={project} user={user} onLogout={handleLogout} />
 
       {/* Breadcrumb Navigation */}
-      <div className="border-b border-zinc-800/80 bg-zinc-950/60 sticky top-15 z-30 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-4">
+      <div className="border-b border-white/[0.06] bg-zinc-950/70 sticky top-16 z-30 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-xs">
             <Link href="/" className="text-zinc-500 hover:text-zinc-300">
               Loyihalar
@@ -295,7 +295,7 @@ export default function BugDetailPage() {
               {project.name}
             </Link>
             <span className="text-zinc-600">/</span>
-            <span className="font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
+            <span className="font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-lg border border-emerald-500/30">
               {bug.code}
             </span>
           </div>
@@ -304,7 +304,7 @@ export default function BugDetailPage() {
             {/* Telegram Share */}
             <button
               onClick={handleShareTelegram}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 text-xs font-semibold transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 text-xs font-semibold transition cursor-pointer"
               title="Telegram guruhga yuborish"
             >
               <TelegramIcon className="w-3.5 h-3.5" />
@@ -314,7 +314,7 @@ export default function BugDetailPage() {
             {/* Copy Link */}
             <button
               onClick={handleCopyLink}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 text-xs font-semibold transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 text-xs font-semibold transition cursor-pointer"
               title="Havolani nusxalash"
             >
               {copiedLink ? <CheckIcon className="w-3.5 h-3.5 text-emerald-400" /> : <CopyIcon className="w-3.5 h-3.5" />}
@@ -324,7 +324,7 @@ export default function BugDetailPage() {
             {/* AI Fix Prompt */}
             <button
               onClick={() => setShowAIPrompt(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition cursor-pointer shadow-[0_0_12px_rgba(16,185,129,0.2)]"
               title="Claude Code / Cursor uchun prompt"
             >
               <SparklesIcon className="w-3.5 h-3.5" />
@@ -337,7 +337,7 @@ export default function BugDetailPage() {
       {/* Main Content Container */}
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Bug Header Card */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4 shadow-xl">
+        <div className="linear-card rounded-2xl p-6 space-y-4 border border-white/[0.08] shadow-2xl">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-mono font-bold text-sm bg-zinc-800 text-white px-2.5 py-1 rounded border border-zinc-700">
