@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ifoundbug-cache-v4';
+const CACHE_NAME = 'ifoundbug-cache-v5';
 
 // Force new service worker activation immediately
 self.addEventListener('install', () => {

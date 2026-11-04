@@ -5,6 +5,14 @@ export const metadata: Metadata = {
   title: "IFoundBug (IFB) — Developer Bug Tracking & Rapid Triage Platform",
   description: "Dasturchilar va jamoalar uchun tezkor, real-time bug tracking tizimi.",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -13,7 +21,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#09090b",
+  themeColor: "#090b0a",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
@@ -26,9 +34,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="uz" className="dark h-full antialiased">
-      <head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-      </head>
       <body className="min-h-full bg-zinc-950 text-zinc-100 flex flex-col selection:bg-emerald-500 selection:text-black font-sans">
         {children}
         <script
