@@ -1,10 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --background: #09090b;
-  --foreground: #f4f4f5;
-  --cyber-primary: #10b981;
-  --cyber-glow: rgba(16, 185, 129, 0.4);
+  color-scheme: dark;
+  --background: #090b0a;
+  --foreground: #f4f6f4;
+  --surface: #101311;
+  --surface-raised: #151a17;
+  --surface-muted: #0d100e;
+  --border: rgba(255,255,255,.075);
+  --border-strong: rgba(255,255,255,.12);
+  --muted: #8b958e;
+  --muted-strong: #aab3ac;
+  --accent: #34d399;
+  --accent-soft: rgba(52,211,153,.1);
+  --cyber-primary: #34d399;
+  --cyber-glow: rgba(52,211,153,.18);
 }
 
 @theme inline {
@@ -14,148 +24,136 @@
   --font-mono: var(--font-geist-mono);
 }
 
+* { box-sizing: border-box; }
+html { min-height: 100%; background: var(--background); }
 body {
-  background-color: #09090b;
-  color: #f4f4f5;
+  min-height: 100%;
   overflow-x: hidden;
-  selection-background-color: #10b981;
-  selection-color: #000000;
-  background-image: 
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(16, 185, 129, 0.12), transparent),
-    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.04) 1px, transparent 0);
-  background-size: 100% 100%, 24px 24px;
+  background: var(--background);
+  color: var(--foreground);
+  font-feature-settings: "ss01" on, "cv11" on;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
+::selection { background: rgba(52,211,153,.28); color: #ecfdf5; }
 
-/* Custom Scrollbars */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-::-webkit-scrollbar-track {
-  background: rgba(9, 9, 11, 0.8);
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(39, 39, 42, 0.8);
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #10b981;
-}
-
-/* Linear Glassmorphic Cards */
+/* Quiet, consistent surfaces: fewer gradients, glows and decorative effects. */
 .linear-card {
-  background: linear-gradient(180deg, rgba(24, 24, 27, 0.6) 0%, rgba(15, 15, 18, 0.75) 100%);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  transition: border-color .16s ease, background-color .16s ease;
 }
-
 .linear-card:hover {
-  border-color: rgba(255, 255, 255, 0.16);
-  box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.7), 0 0 20px -2px rgba(16, 185, 129, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
-  transform: translateY(-1px);
+  transform: none;
+  border-color: var(--border-strong);
+  background: var(--surface-raised);
+  box-shadow: none;
 }
+.glow-accent::before { display: none; }
 
-/* Interactive Glow Accent */
-.glow-accent {
-  position: relative;
+/* Shared controls across dashboard, forms, filters and dialogs. */
+button, input, textarea, select { font: inherit; }
+button { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid rgba(52,211,153,.8);
+  outline-offset: 2px;
 }
-.glow-accent::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  background: linear-gradient(90deg, #10b981, #06b6d4, #6366f1);
-  border-radius: inherit;
-  z-index: -1;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  filter: blur(8px);
-}
-.glow-accent:hover::before {
-  opacity: 0.6;
-}
-
-/* Shimmer animation */
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-.animate-shimmer {
-  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 3s infinite linear;
-}
-
-/* Pulse animation */
-@keyframes softPulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.03);
-    opacity: 1;
-  }
-}
-
-.soft-pulse {
-  animation: softPulse 3s ease-in-out infinite;
-}
-
-/* Keyboard hint badge */
-kbd {
-  font-family: var(--font-geist-mono, ui-monospace, SFMono-Regular, monospace);
-  font-size: 10px;
-  line-height: 1;
-  padding: 2px 5px;
-  border-radius: 4px;
-  background-color: rgba(39, 39, 42, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  color: #a1a1aa;
-}
-
-
-/* Unified dark, accessible dropdown styling across every screen. */
-select.ifb-select {
+input:not([type="checkbox"]):not([type="radio"]), textarea, select {
   color-scheme: dark;
-  color: #f4f4f5;
-  background-color: rgba(9, 9, 11, 0.94);
-  border: 1px solid rgba(63, 63, 70, 0.9);
-  border-radius: 12px;
-  min-height: 44px;
-  width: 100%;
-  padding: 0.625rem 2.75rem 0.625rem 0.875rem;
-  line-height: 1.35;
-  font: inherit;
-  font-size: 0.8125rem;
+  border-radius: 10px;
+}
+input::placeholder, textarea::placeholder { color: #68736b; opacity: 1; }
+input:disabled, textarea:disabled, select:disabled, button:disabled { cursor: not-allowed; opacity: .55; }
+
+/* Native dropdowns remain native and accessible, with a unified dark treatment. */
+select.ifb-select, select:not([multiple]) {
+  color: #e7ece8;
+  background-color: #111613;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  min-height: 40px;
+  padding: .55rem 2.5rem .55rem .8rem;
+  font-size: .8125rem;
   font-weight: 500;
-  cursor: pointer;
-  text-overflow: ellipsis;
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2395a198' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
-  background-size: 15px;
-  transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+  background-size: 14px;
+  transition: border-color .15s ease, background-color .15s ease;
 }
-select.ifb-select:hover { border-color: rgba(16, 185, 129, .55); background-color: rgba(24, 24, 27, .98); }
-select.ifb-select:focus-visible { outline: none; border-color: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, .14), 0 0 22px rgba(16, 185, 129, .08); }
-select.ifb-select:disabled { opacity: .48; cursor: not-allowed; }
-select.ifb-select option, select.ifb-select optgroup { color: #f4f4f5; background: #18181b; }
-select.ifb-select option:checked { color: #a7f3d0; background: #064e3b; }
-select.ifb-select option { padding: 10px 12px; }
-select.ifb-select:active { border-color: rgba(16, 185, 129, .8); }
-select.ifb-select:invalid { color: #a1a1aa; }
-select.ifb-select:focus { outline: none; }
+select:hover { border-color: rgba(52,211,153,.38); }
+select option, select optgroup { color: #e7ece8; background: #111613; }
+
+/* App chrome and popovers share one restrained surface language. */
+header.sticky, header[class*="backdrop-blur"] {
+  background: rgba(9,11,10,.94);
+  border-color: var(--border);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+[role="dialog"], [data-radix-popper-content-wrapper] > *, .shadow-2xl {
+  --tw-shadow: 0 20px 60px rgba(0,0,0,.38);
+}
+
+/* Remove noisy motion while retaining meaningful interaction feedback. */
+.animate-pulse, .soft-pulse { animation-duration: 2.8s; }
 @media (prefers-reduced-motion: reduce) {
-  select.ifb-select { transition: none; }
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+/* Slim, low-contrast scrollbars (kept visible for discoverability). */
+* { scrollbar-width: thin; scrollbar-color: #303a33 transparent; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #303a33; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #526158; }
+
+@media (max-width: 640px) {
+  button, a { -webkit-tap-highlight-color: transparent; }
+}
+
+/* Normalize the existing Tailwind-built screens without touching their behavior. */
+main { min-width: 0; }
+main h1 { letter-spacing: -.035em; }
+main h2 { letter-spacing: -.025em; }
+main h1, main h2, main h3 { text-wrap: balance; }
+main p { text-wrap: pretty; }
+
+/* Large nested radii made the interface feel overly soft; use a clear scale. */
+[class*="rounded-3xl"] { border-radius: 18px !important; }
+[class*="rounded-2xl"] { border-radius: 14px !important; }
+[class*="rounded-xl"] { border-radius: 10px !important; }
+
+/* Cards and panels: quiet borders, solid surfaces, no glassy gradients. */
+[class*="border-white/[0.06]"], [class*="border-white/[0.07]"], [class*="border-zinc-800"] {
+  border-color: var(--border) !important;
+}
+[class*="bg-zinc-900/"], [class*="bg-zinc-900 "] { background-color: var(--surface) !important; }
+[class*="bg-zinc-950/"] { background-color: rgba(9,11,10,.72) !important; }
+
+/* Form fields align in height and contrast on every route. */
+input:not([type="checkbox"]):not([type="radio"]), textarea {
+  background-color: #101512;
+  border-color: var(--border-strong);
+  color: #edf2ee;
+}
+input:not([type="checkbox"]):not([type="radio"]):hover, textarea:hover {
+  border-color: rgba(255,255,255,.2);
+}
+input:not([type="checkbox"]):not([type="radio"]):focus, textarea:focus {
+  border-color: rgba(52,211,153,.7);
+  box-shadow: 0 0 0 3px rgba(52,211,153,.09);
+  outline: none;
+}
+
+/* Touch targets and action hierarchy remain consistent on small screens. */
+@media (max-width: 640px) {
+  main { padding-left: 16px; padding-right: 16px; }
+  [class*="p-6"] { padding: 18px; }
+  [class*="gap-6"] { gap: 16px; }
 }
