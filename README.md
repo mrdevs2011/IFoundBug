@@ -60,13 +60,8 @@ pnpm install # yoki npm install
 ### 2. Muhit o'zgaruvchilari (`.env.local`):
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 NEXT_PUBLIC_APP_URL=http://localhost:3333
-
-# Ixtiyoriy Telegram Bot xabarnomalari:
-# TELEGRAM_BOT_TOKEN=123456789:ABC...
-# TELEGRAM_CHAT_ID=-1001234567890
 ```
 
 ### 3. Supabase Migratsiyalari:
