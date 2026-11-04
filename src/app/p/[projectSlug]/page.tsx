@@ -12,6 +12,8 @@ import { ShareInviteModal } from '@/components/ShareInviteModal';
 import { AIPromptModal } from '@/components/AIPromptModal';
 import CommandPalette from '@/components/CommandPalette';
 import AuthModal from '@/components/AuthModal';
+import OnboardingView from '@/components/OnboardingView';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import {
   SearchIcon,
   SparklesIcon,
@@ -19,6 +21,16 @@ import {
   ListIcon,
   ThumbsUpIcon,
 } from '@/components/icons';
+
+function getSavedUser(): UserProfile | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('ifb_active_user');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
 
 export default function ProjectWorkspacePage() {
   const params = useParams();
@@ -28,7 +40,7 @@ export default function ProjectWorkspacePage() {
   const [project, setProject] = useState<Project | null>(null);
   const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [bugs, setBugs] = useState<Bug[]>([]);
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(getSavedUser);
   const [notifications, setNotifications] = useState<BugNotification[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -48,8 +60,26 @@ export default function ProjectWorkspacePage() {
 
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Load project & bugs
+  // Load project & bugs & session
   useEffect(() => {
+    if (isSupabaseConfigured && supabase) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          const profile: UserProfile = {
+            id: session.user.id,
+            email: session.user.email || '',
+            full_name: (session.user.user_metadata?.full_name as string) || session.user.email?.split('@')[0] || 'Dasturchi',
+            role: (session.user.user_metadata?.role as UserProfile['role']) || 'developer',
+            created_at: session.user.created_at,
+          };
+          setUser(profile);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('ifb_active_user', JSON.stringify(profile));
+          }
+        }
+      });
+    }
+
     async function loadWorkspace() {
       setLoading(true);
       try {
@@ -244,6 +274,22 @@ export default function ProjectWorkspacePage() {
     );
   }
 
+  const handleLogout = async () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('ifb_active_user');
+    }
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.auth.signOut();
+      } catch {}
+    }
+    setUser(null);
+  };
+
+  if (!user && !loading) {
+    return <OnboardingView onAuthSuccess={(loggedUser) => setUser(loggedUser)} />;
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
       <AppNavbar
@@ -254,7 +300,7 @@ export default function ProjectWorkspacePage() {
         onOpenReportModal={() => setShowReportModal(true)}
         onOpenShareModal={() => setShowShareModal(true)}
         onOpenAuthModal={() => setShowAuthModal(true)}
-        onLogout={() => setUser(null)}
+        onLogout={handleLogout}
         onSelectBug={(bId) => router.push(`/p/${project.slug}/bugs/${bId}`)}
       />
 

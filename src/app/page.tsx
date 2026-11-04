@@ -10,11 +10,23 @@ import { ReportBugModal } from '@/components/ReportBugModal';
 import { ShareInviteModal } from '@/components/ShareInviteModal';
 import NewProjectModal from '@/components/NewProjectModal';
 import AuthModal from '@/components/AuthModal';
+import OnboardingView from '@/components/OnboardingView';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+
+function getSavedUser(): UserProfile | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('ifb_active_user');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
 
 export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [bugs, setBugs] = useState<Bug[]>([]);
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(getSavedUser);
   const [notifications] = useState<BugNotification[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,6 +38,24 @@ export default function DashboardPage() {
   const [selectedProjectForModal, setSelectedProjectForModal] = useState<Project | null>(null);
 
   useEffect(() => {
+    if (isSupabaseConfigured && supabase) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          const profile: UserProfile = {
+            id: session.user.id,
+            email: session.user.email || '',
+            full_name: (session.user.user_metadata?.full_name as string) || session.user.email?.split('@')[0] || 'Dasturchi',
+            role: (session.user.user_metadata?.role as UserProfile['role']) || 'developer',
+            created_at: session.user.created_at,
+          };
+          setUser(profile);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('ifb_active_user', JSON.stringify(profile));
+          }
+        }
+      });
+    }
+
     async function loadData() {
       setLoading(true);
       try {
@@ -100,6 +130,22 @@ export default function DashboardPage() {
   const inProgressBugs = bugs.filter((b) => b.status === 'IN_PROGRESS').length;
   const fixedBugs = bugs.filter((b) => b.status === 'FIXED' || b.status === 'VERIFIED').length;
 
+  const handleLogout = async () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('ifb_active_user');
+    }
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.auth.signOut();
+      } catch {}
+    }
+    setUser(null);
+  };
+
+  if (!user && !loading) {
+    return <OnboardingView onAuthSuccess={(loggedUser) => setUser(loggedUser)} />;
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
       <AppNavbar
@@ -114,7 +160,7 @@ export default function DashboardPage() {
         }}
         onOpenNewProjectModal={() => setShowNewProjectModal(true)}
         onOpenAuthModal={() => setShowAuthModal(true)}
-        onLogout={() => setUser(null)}
+        onLogout={handleLogout}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">

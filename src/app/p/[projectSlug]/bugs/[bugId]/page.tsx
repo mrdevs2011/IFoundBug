@@ -3,11 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Bug, Project, BugComment, BugStatus } from '@/types';
+import { Bug, Project, BugComment, BugStatus, UserProfile } from '@/types';
 import { DataService } from '@/lib/supabase/data-service';
 import { AppNavbar } from '@/components/AppNavbar';
 import { AIPromptModal } from '@/components/AIPromptModal';
 import { ImageAnnotator } from '@/components/ImageAnnotator';
+import OnboardingView from '@/components/OnboardingView';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import {
   SparklesIcon,
   ThumbsUpIcon,
@@ -20,6 +22,16 @@ import {
   CopyIcon,
   TelegramIcon,
 } from '@/components/icons';
+
+function getSavedUser(): UserProfile | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('ifb_active_user');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
 
 export default function BugDetailPage() {
   const params = useParams();
@@ -40,10 +52,29 @@ export default function BugDetailPage() {
   const [annotatingImageUrl, setAnnotatingImageUrl] = useState<string | null>(null);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [privacyMode, setPrivacyMode] = useState(false);
+  const [user, setUser] = useState<UserProfile | null>(getSavedUser);
   const [isUploading, setIsUploading] = useState(false);
 
-  // 1. Load Bug & Project
+  // 1. Load Bug & Project & Session
   useEffect(() => {
+    if (isSupabaseConfigured && supabase) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          const profile: UserProfile = {
+            id: session.user.id,
+            email: session.user.email || '',
+            full_name: (session.user.user_metadata?.full_name as string) || session.user.email?.split('@')[0] || 'Dasturchi',
+            role: (session.user.user_metadata?.role as UserProfile['role']) || 'developer',
+            created_at: session.user.created_at,
+          };
+          setUser(profile);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('ifb_active_user', JSON.stringify(profile));
+          }
+        }
+      });
+    }
+
     async function loadBugData() {
       setLoading(true);
       try {
@@ -232,9 +263,25 @@ export default function BugDetailPage() {
     );
   }
 
+  const handleLogout = async () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('ifb_active_user');
+    }
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.auth.signOut();
+      } catch {}
+    }
+    setUser(null);
+  };
+
+  if (!user && !loading) {
+    return <OnboardingView onAuthSuccess={(loggedUser) => setUser(loggedUser)} />;
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
-      <AppNavbar currentProject={project} />
+      <AppNavbar currentProject={project} user={user} onLogout={handleLogout} />
 
       {/* Breadcrumb Navigation */}
       <div className="border-b border-zinc-800/80 bg-zinc-950/60 sticky top-15 z-30 backdrop-blur-sm">
