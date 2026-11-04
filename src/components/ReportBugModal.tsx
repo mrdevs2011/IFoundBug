@@ -549,9 +549,10 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
             </button>
             <button
               type="submit"
-              className="bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold px-5 py-2 rounded-lg shadow-lg shadow-emerald-500/20 transition flex items-center gap-1.5"
+              disabled={isSubmitting}
+              className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 disabled:cursor-not-allowed text-black text-xs font-bold px-5 py-2 rounded-lg shadow-lg shadow-emerald-500/20 transition flex items-center gap-1.5"
             >
-              <CheckIcon className="w-4 h-4 text-black" /> Bugni Ro‘yxatga Olish
+              <CheckIcon className="w-4 h-4 text-black" /> {isSubmitting ? 'Saqlanmoqda...' : 'Bugni Ro‘yxatga Olish'}
             </button>
           </div>
         </form>
