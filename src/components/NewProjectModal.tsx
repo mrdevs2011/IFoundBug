@@ -7,8 +7,8 @@ import { BugIcon } from '@/components/icons';
 interface NewProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateProject?: (project: Project) => void;
-  onCreate?: (project: Project) => void;
+  onCreateProject?: (project: Project) => void | Promise<void>;
+  onCreate?: (project: Project) => void | Promise<void>;
 }
 
 export default function NewProjectModal({
@@ -22,12 +22,16 @@ export default function NewProjectModal({
   const [githubUrl, setGithubUrl] = useState('');
   const [techStackInput, setTechStackInput] = useState('');
   const [isPublic, setIsPublic] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || isSubmitting) return;
+    setIsSubmitting(true);
+    setSubmitError('');
 
     const techStack = techStackInput
       .split(',')
@@ -35,7 +39,8 @@ export default function NewProjectModal({
       .filter(Boolean);
 
     const project: Project = {
-      id: 'proj_' + Date.now(),
+      // Supabase ifb_projects.id is UUID; never send a prefixed timestamp.
+      id: crypto.randomUUID(),
       name: name.trim(),
       slug: name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       description: description.trim() || undefined,
@@ -48,9 +53,19 @@ export default function NewProjectModal({
       created_at: new Date().toISOString(),
     };
 
-    if (onCreate) onCreate(project);
-    if (onCreateProject) onCreateProject(project);
-    onClose();
+    try {
+      if (onCreate) await onCreate(project);
+      if (onCreateProject) await onCreateProject(project);
+      onClose();
+    } catch (error) {
+      console.error('Project creation failed:', error);
+      const message = error instanceof Error ? error.message : String((error as { message?: string })?.message || error);
+      setSubmitError(message.includes('duplicate key') || message.includes('ifb_projects_slug_uidx')
+        ? 'Bu loyiha slug’i band. Loyiha nomini biroz o‘zgartirib qayta urin.'
+        : message || 'Loyiha yaratilmadi. Qayta urinib ko‘r.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -74,6 +89,7 @@ export default function NewProjectModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {submitError && <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-xs text-red-300">{submitError}</div>}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-zinc-300">
               Loyiha nomi <span className="text-emerald-400">*</span>

@@ -65,9 +65,13 @@ export const DataService = {
 
   async createProject(project: Partial<Project>): Promise<Project> {
     const newProj: Project = {
-      id: project.id || crypto.randomUUID(),
-      name: project.name || 'Yangi Loyiha',
-      slug: project.slug || `proj-${Date.now()}`,
+      // Database primary key is UUID. Ignore legacy UI IDs such as `proj_123`.
+      id: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(project.id || '')
+        ? project.id as string
+        : crypto.randomUUID(),
+      name: project.name?.trim() || 'Yangi Loyiha',
+      // Slugs are unique in the database; add a short suffix to avoid collisions.
+      slug: `${(project.slug || `proj-${Date.now()}`).toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80) || 'project'}-${crypto.randomUUID().slice(0, 8)}`,
       description: project.description || '',
       icon: project.icon || 'bug',
       color: project.color || '#10b981',
@@ -92,8 +96,9 @@ export const DataService = {
         if (data) return data as Project;
         throw new Error('Project creation returned no row.');
       } catch (err) {
-        console.error('Supabase createProject failed:', err);
-        throw err;
+        const detail = err && typeof err === 'object' ? err as { message?: string; code?: string; details?: string; hint?: string } : null;
+        console.error('Supabase createProject failed:', { message: detail?.message || String(err), code: detail?.code, details: detail?.details, hint: detail?.hint });
+        throw new Error(detail?.message || 'Supabase loyiha yaratishni rad etdi. Database schema va permissions ni tekshir.');
       }
     }
     throw new Error('Supabase is not configured; project creation is disabled.');
