@@ -4,7 +4,7 @@ The only application SQL file is `IFOUNDBUG_UNIVERSAL.sql`. Run that complete fi
 
 ## Required Supabase Auth setting
 
-This app maps usernames to synthetic addresses (`username@ifoundbug.dev`). In **Authentication → Providers → Email**, turn **Confirm email** off if signup must create an immediate session. SQL cannot change this Auth dashboard setting. Keep password policy at 8 characters or more.
+This app maps usernames to synthetic addresses (`username@ifoundbug.dev`). In **Authentication → Providers → Email**, keep the **Email provider enabled** and turn **Confirm email** off. This disables confirmation emails while preserving email/password sign-in and lets signup create an immediate session. SQL cannot change this Auth dashboard setting. Keep password policy at 8 characters or more.
 
 ## Required Vercel environment variables
 

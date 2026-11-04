@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { authErrorToUzbek, normalizeUsername, usernameToAuthEmail } from '@/lib/supabase/username-auth';
 import { BugIcon } from '@/components/icons';
 import { UserProfile } from '@/types';
 
@@ -17,7 +18,7 @@ export default function SignupPage() {
   const [errorMsg, setErrorMsg] = useState('');
 
   const cleanUserStr = (val: string) => {
-    return val.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+    return normalizeUsername(val);
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -45,7 +46,7 @@ export default function SignupPage() {
 
     if (isSupabaseConfigured && supabase) {
       try {
-        const authEmail = `${cleanUser}@ifoundbug.dev`;
+        const authEmail = usernameToAuthEmail(cleanUser);
 
         const { data, error } = await supabase.auth.signUp({
           email: authEmail,
@@ -60,7 +61,7 @@ export default function SignupPage() {
         });
 
         if (error) {
-          setErrorMsg(error.status === 401 ? 'Supabase API kaliti yaroqsiz yoki URL bilan boshqa loyihaga tegishli. Vercel Environment Variables sozlamalarini tekshir.' : error.message);
+          setErrorMsg(authErrorToUzbek(error));
           setLoading(false);
           return;
         }
@@ -148,7 +149,7 @@ export default function SignupPage() {
             <input
               type="password"
               required
-              placeholder="Kamida 6 belgi"
+              placeholder="Kamida 8 belgi"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500"

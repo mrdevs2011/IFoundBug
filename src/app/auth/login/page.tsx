@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { authErrorToUzbek, normalizeUsername, usernameToAuthEmail } from '@/lib/supabase/username-auth';
 import { BugIcon } from '@/components/icons';
 import { UserProfile } from '@/types';
 
@@ -15,7 +16,7 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState('');
 
   const cleanUserStr = (val: string) => {
-    return val.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+    return normalizeUsername(val);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -37,7 +38,7 @@ export default function LoginPage() {
 
     if (isSupabaseConfigured && supabase) {
       try {
-        const authEmail = `${cleanUser}@ifoundbug.dev`;
+        const authEmail = usernameToAuthEmail(cleanUser);
 
         const { data, error } = await supabase.auth.signInWithPassword({
           email: authEmail,
@@ -45,7 +46,7 @@ export default function LoginPage() {
         });
 
         if (error) {
-          setErrorMsg(error.status === 401 ? 'Supabase API kaliti yaroqsiz yoki URL bilan boshqa loyihaga tegishli. Vercel Environment Variables sozlamalarini tekshir.' : (error.message || 'Foydalanuvchi nomi yoki parol noto‘g‘ri.'));
+          setErrorMsg(authErrorToUzbek(error));
           setLoading(false);
           return;
         }

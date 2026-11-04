@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { authErrorToUzbek, normalizeUsername, usernameToAuthEmail } from '@/lib/supabase/username-auth';
 import { UserProfile } from '@/types';
 
 interface AuthModalProps {
@@ -22,7 +23,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   if (!isOpen) return null;
 
   const cleanUserStr = (val: string) => {
-    return val.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+    return normalizeUsername(val);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,8 +52,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           return;
         }
 
-        if (password.length < 6) {
-          setErrorMsg('Parol kamida 6 ta belgidan iborat bo‘lishi kerak.');
+        if (password.length < 8) {
+          setErrorMsg('Parol kamida 8 ta belgidan iborat bo‘lishi kerak.');
           setLoading(false);
           return;
         }
@@ -60,7 +61,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
         let userProfile: UserProfile | null = null;
 
         if (isSupabaseConfigured && supabase) {
-          const authEmail = `${cleanUser}@ifoundbug.dev`;
+          const authEmail = usernameToAuthEmail(cleanUser);
           const { data, error } = await supabase.auth.signUp({
             email: authEmail,
             password,
@@ -74,7 +75,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           });
 
           if (error) {
-            setErrorMsg(error.message);
+            setErrorMsg(authErrorToUzbek(error));
             setLoading(false);
             return;
           }
@@ -110,7 +111,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
         let userProfile: UserProfile | null = null;
 
         if (isSupabaseConfigured && supabase) {
-          const authEmail = `${cleanUser}@ifoundbug.dev`;
+          const authEmail = usernameToAuthEmail(cleanUser);
 
           const { data, error } = await supabase.auth.signInWithPassword({
             email: authEmail,
@@ -118,7 +119,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           });
 
           if (error) {
-            setErrorMsg(error.message || 'Foydalanuvchi nomi yoki parol noto‘g‘ri.');
+            setErrorMsg(authErrorToUzbek(error));
             setLoading(false);
             return;
           }

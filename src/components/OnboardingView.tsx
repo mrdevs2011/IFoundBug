@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { authErrorToUzbek, normalizeUsername, usernameToAuthEmail } from '@/lib/supabase/username-auth';
 import { UserProfile } from '@/types';
 import { BugIcon, CheckIcon, SparklesIcon, ShareIcon } from '@/components/icons';
 
@@ -30,7 +31,7 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
   }, []);
 
   const cleanUsernameStr = (val: string) => {
-    return val.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+    return normalizeUsername(val);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -52,7 +53,7 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
 
     if (isSupabaseConfigured && supabase) {
       try {
-        const authEmail = `${cleanUser}@ifoundbug.dev`;
+        const authEmail = usernameToAuthEmail(cleanUser);
 
         const { data, error } = await supabase.auth.signInWithPassword({
           email: authEmail,
@@ -77,7 +78,7 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
         return;
       } catch (err: unknown) {
         const error = err as Error;
-        setErrorMsg(error.message || 'Kirishda xatolik yuz berdi. Foydalanuvchi nomi yoki parolni tekshiring.');
+        setErrorMsg(authErrorToUzbek(error));
         setLoading(false);
         return;
       }
@@ -103,15 +104,15 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
       return;
     }
 
-    if (password.length < 6) {
-      setErrorMsg('Parol kamida 6 ta belgidan iborat bo‘lishi kerak.');
+    if (password.length < 8) {
+      setErrorMsg('Parol kamida 8 ta belgidan iborat bo‘lishi kerak.');
       setLoading(false);
       return;
     }
 
     if (isSupabaseConfigured && supabase) {
       try {
-        const authEmail = `${cleanUser}@ifoundbug.dev`;
+        const authEmail = usernameToAuthEmail(cleanUser);
 
         const { data, error } = await supabase.auth.signUp({
           email: authEmail,
@@ -149,7 +150,7 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
         return;
       } catch (err: unknown) {
         const error = err as Error;
-        setErrorMsg(error.message || 'Ro‘yxatdan o‘tishda xatolik yuz berdi. Bu foydalanuvchi nomi band bo‘lishi mumkin.');
+        setErrorMsg(authErrorToUzbek(error));
         setLoading(false);
         return;
       }
