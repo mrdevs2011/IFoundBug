@@ -1,0 +1,17 @@
+{
+  "name": "IFoundBug — Apex Collaborative Bug Tracking Platform",
+  "short_name": "IFoundBug",
+  "description": "Stop debugging in Telegram. Ship flawless software with AI-assisted bug tracking, telemetry capture, and realtime collaboration.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
