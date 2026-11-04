@@ -162,7 +162,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
               </span>
             </h3>
             <p className="text-xs text-zinc-400 mt-0.5">
-              Dasturchilar va Bug Hunterlar uchun hamkorlik platformasi
+              Telegramdagi chalkashlik o‘rniga IFB ishlatmaysizmi, bro?
             </p>
           </div>
 

@@ -80,7 +80,7 @@ export default function LoginPage() {
             <span className="font-mono font-bold text-lg text-emerald-400">IFB</span>
           </Link>
           <h1 className="text-xl font-extrabold text-white">Hisobga Kirish</h1>
-          <p className="text-xs text-zinc-400">Foydalanuvchi nomi va parol bilan kiring</p>
+          <p className="text-xs text-zinc-400">Telegramdagi chalkashlik o‘rniga IFB ishlatmaysizmi, bro?</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4 bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl">

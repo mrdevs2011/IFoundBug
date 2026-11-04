@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "IFoundBug (IFB) — Developer Bug Tracking & Rapid Triage Platform",
-  description: "Dasturchilar va jamoalar uchun tezkor, real-time bug tracking tizimi.",
+  title: "IFoundBug (IFB) — Telegram guruhlaridagi chalkashlik o‘rniga IFB",
+  description: "Telegram guruhlarida buglarni yo‘qotib yurish o‘rniga, IFB bilan loyihalaringizdagi xatoliklarni professional darajada nazorat qiling.",
   manifest: "/manifest.json",
   icons: {
     icon: [

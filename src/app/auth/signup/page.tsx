@@ -96,7 +96,7 @@ export default function SignupPage() {
             <span className="font-mono font-bold text-lg text-emerald-400">IFB</span>
           </Link>
           <h1 className="text-xl font-extrabold text-white">Ro‘yxatdan O‘tish</h1>
-          <p className="text-xs text-zinc-400">Faqat username va parol orqali yangi hisob yarating</p>
+          <p className="text-xs text-zinc-400">Telegramdagi chalkashlik o‘rniga IFB bilan boshlang, bro.</p>
         </div>
 
         <form onSubmit={handleSignup} className="space-y-4 bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl">

@@ -156,8 +156,8 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
                 <span className="font-mono font-black text-2xl tracking-widest text-emerald-400">IFB</span>
                 <span className="font-extrabold text-2xl tracking-tight text-white">IFoundBug</span>
               </div>
-              <p className="text-[11px] font-mono text-zinc-500 tracking-widest uppercase">
-                Apex Collaborative Bug Tracker
+              <p className="text-[11px] font-mono text-zinc-400 tracking-wider">
+                Telegramdagi chalkashlik o‘rniga — IFB.
               </p>
             </div>
             <div className="w-40 h-1 bg-zinc-900 rounded-full overflow-hidden mt-3">
@@ -188,7 +188,7 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
 
           <div className="flex items-center gap-3">
             <span className="text-xs text-zinc-400 font-medium hidden md:inline">
-              Find and fix bugs faster
+              Telegramdagi chalkashlik o‘rniga — IFB ishlatmaysizmi, bro?
             </span>
             <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/80 border border-zinc-800 text-xs text-zinc-300">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -204,27 +204,26 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
         <div className="flex-1 max-w-xl space-y-6 text-center lg:text-left">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-medium shadow-sm">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Developer-First Bug Tracking</span>
+            <span>Telegram guruhlaridagi betartiblikka barham bering</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-[1.15]">
-            Buglarni tartibli boshqarib,{' '}
+            Telegram guruhlaridagi chalkashlikdan charchadingizmi, bro?{' '}
             <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
-              chek qo‘ying.
+              IFB bilan boshqaring.
             </span>
           </h1>
 
           <p className="text-sm sm:text-base text-zinc-400 leading-relaxed font-normal">
-            Ilovalaringizdagi xatolarni audio yoki chalkash skrinshotlar orqali emas, balki
-            aniq qadamlar, telemetriya va Claude/Cursor AI promptlari bilan boshqaring.
+            Yo‘qolib ketadigan audio xabarlar, yuzlab chalkash skrinshotlar va unutilgan muammolar o‘rniga — har bir bug uchun aniq qadamlar, telemetriya va Claude/Cursor AI promptlari.
           </p>
 
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 space-y-2">
+          <div className="rounded-2xl border border-emerald-500/20 bg-emerald-950/10 p-5 space-y-2">
             <div className="flex items-center gap-2 text-emerald-400 text-xs font-semibold">
-              <CheckIcon className="w-4 h-4" /> Supabase PostgreSQL bilan ishlaydi
+              <CheckIcon className="w-4 h-4" /> Telegram chat emas, haqiqiy injiniring standarti
             </div>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              Loyihalar, buglar, izohlar, jamoa a’zolari va bildirishnomalar markaziy bazada saqlanadi va barcha qurilmalarda sinxron ko‘rinadi.
+              Buglar hech qachon xabarlar oqimida yo‘qolib ketmaydi: har bir xato o‘z kodi (masalan B01), jiddiylik darajasi, mas’ul dasturchisi va audit tarixi bilan markaziy bazada saqlanadi.
             </p>
           </div>
         </div>

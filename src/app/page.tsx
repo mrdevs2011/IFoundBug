@@ -269,14 +269,13 @@ export default function DashboardPage() {
               <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-medium">
                 Workspace Hub
               </span>
-              <span className="text-zinc-500 text-xs font-mono">Linear-Grade Bug Triage</span>
+              <span className="text-zinc-500 text-xs font-mono">Telegramdagi chalkashlik o‘rniga IFB</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               Boshqaruv Paneli & Faol Loyihalar
             </h1>
             <p className="text-xs sm:text-sm text-zinc-400 mt-1 max-w-2xl leading-relaxed">
-              Barcha ilovalaringiz xatoliklarini bitta markaziy platformada real-time kuzating
-              va jamoa bilan samarali hal qiling.
+              Telegram guruhlarida yo‘qolib ketadigan xabarlar o‘rniga barcha xatoliklarni yagona markazda tartibli kuzating va jamoangiz bilan hal qiling.
             </p>
           </div>
 
