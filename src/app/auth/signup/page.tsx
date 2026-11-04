@@ -26,6 +26,11 @@ export default function SignupPage() {
     setErrorMsg('');
 
     const cleanUser = cleanUserStr(username);
+    if (!isSupabaseConfigured || !supabase) {
+      setErrorMsg('Autentifikatsiya serveri sozlanmagan. Keyinroq qayta urinib ko‘ring.');
+      setLoading(false);
+      return;
+    }
     if (!cleanUser) {
       setErrorMsg('Foydalanuvchi nomini kiriting.');
       setLoading(false);
@@ -60,7 +65,13 @@ export default function SignupPage() {
           return;
         }
 
-        if (data?.user) {
+        if (!data?.user || !data.session) {
+          setErrorMsg('Hisob yaratildi, ammo email tasdiqlash talab qilinadi. Email tasdiqlangach tizimga kiring.');
+          setLoading(false);
+          return;
+        }
+
+        if (data?.user && data.session) {
           try {
             await supabase.from('ifb_profiles').upsert([
               {
@@ -94,18 +105,7 @@ export default function SignupPage() {
       }
     }
 
-    // Local / Guest fallback
-    if (typeof window !== 'undefined') {
-      const profile: UserProfile = {
-        id: `usr-${Date.now()}`,
-        email: cleanUser,
-        full_name: fullName.trim() || cleanUser,
-        role: role as UserProfile['role'],
-        created_at: new Date().toISOString(),
-      };
-      localStorage.setItem('ifb_active_user', JSON.stringify(profile));
-    }
-    router.push('/');
+
   };
 
   return (

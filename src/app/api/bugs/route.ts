@@ -1,7 +1,10 @@
+import { createAuthenticatedServerClient } from '@/lib/supabase/server-auth';
 import { NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 
 export async function POST(req: Request) {
+  const auth = await createAuthenticatedServerClient();
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { client: supabase } = auth;
   try {
     const body = await req.json();
     const {
@@ -50,7 +53,7 @@ export async function POST(req: Request) {
     };
 
     // If Supabase is connected, save into ifb_bugs
-    if (isSupabaseConfigured && supabase) {
+    if (supabase) {
       const { error } = await supabase.from('ifb_bugs').insert([newBug]);
       if (error) {
         console.error('Supabase insert bug error:', error);

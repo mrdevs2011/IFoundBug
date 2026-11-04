@@ -39,6 +39,11 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
     setErrorMsg('');
 
     const cleanUser = cleanUsernameStr(username);
+    if (!isSupabaseConfigured || !supabase) {
+      setErrorMsg('Autentifikatsiya serveri sozlanmagan. Keyinroq qayta urinib ko‘ring.');
+      setLoading(false);
+      return;
+    }
     if (!cleanUser) {
       setErrorMsg('Foydalanuvchi nomini kiriting.');
       setLoading(false);
@@ -90,18 +95,7 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
       }
     }
 
-    // Local authentication fallback
-    const localUser: UserProfile = {
-      id: `usr-${Date.now()}`,
-      email: cleanUser,
-      full_name: cleanUser,
-      role: 'developer',
-      created_at: new Date().toISOString(),
-    };
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('ifb_active_user', JSON.stringify(localUser));
-    }
-    onAuthSuccess(localUser);
+
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -110,6 +104,11 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
     setErrorMsg('');
 
     const cleanUser = cleanUsernameStr(username);
+    if (!isSupabaseConfigured || !supabase) {
+      setErrorMsg('Autentifikatsiya serveri sozlanmagan. Keyinroq qayta urinib ko‘ring.');
+      setLoading(false);
+      return;
+    }
     if (!cleanUser) {
       setErrorMsg('Foydalanuvchi nomini kiriting (faqat lotin harflari va raqamlar).');
       setLoading(false);
@@ -140,8 +139,14 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
 
         if (error) throw error;
 
+        if (!data.user || !data.session) {
+          setErrorMsg('Hisob yaratildi. Kirishni yakunlash uchun email tasdiqlash talab qilinadi.');
+          setLoading(false);
+          return;
+        }
+
         const profile: UserProfile = {
-          id: data.user?.id || `usr-${Date.now()}`,
+          id: data.user.id,
           email: cleanUser,
           full_name: fullName.trim() || cleanUser,
           role,
@@ -162,18 +167,7 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
       }
     }
 
-    // Local fallback
-    const localUser: UserProfile = {
-      id: `usr-${Date.now()}`,
-      email: cleanUser,
-      full_name: fullName.trim() || cleanUser,
-      role,
-      created_at: new Date().toISOString(),
-    };
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('ifb_active_user', JSON.stringify(localUser));
-    }
-    onAuthSuccess(localUser);
+
   };
 
   return (

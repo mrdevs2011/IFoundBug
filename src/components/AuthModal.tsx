@@ -37,6 +37,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
       return;
     }
 
+    if (!isSupabaseConfigured || !supabase) {
+      setErrorMsg('Autentifikatsiya serveri sozlanmagan. Keyinroq qayta urinib ko‘ring.');
+      setLoading(false);
+      return;
+    }
+
     try {
       if (tab === 'signup') {
         if (!fullName.trim() || !password.trim()) {
@@ -79,7 +85,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
             return;
           }
 
-          if (data.user) {
+          if (data.user && !data.session) {
+            setErrorMsg('Hisob yaratildi. Email tasdiqlangach tizimga kiring.');
+            setLoading(false);
+            return;
+          }
+
+          if (data.user && data.session) {
             userProfile = {
               id: data.user.id,
               email: cleanUser,
@@ -131,7 +143,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
             return;
           }
 
-          if (data.user) {
+          if (data.user && !data.session) {
+            setErrorMsg('Hisob yaratildi. Email tasdiqlangach tizimga kiring.');
+            setLoading(false);
+            return;
+          }
+
+          if (data.user && data.session) {
             userProfile = {
               id: data.user.id,
               email: cleanUser,

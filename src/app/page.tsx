@@ -13,20 +13,11 @@ import AuthModal from '@/components/AuthModal';
 import OnboardingView from '@/components/OnboardingView';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 
-function getSavedUser(): UserProfile | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem('ifb_active_user');
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
 
 export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [bugs, setBugs] = useState<Bug[]>([]);
-  const [user, setUser] = useState<UserProfile | null>(getSavedUser);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [notifications] = useState<BugNotification[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,48 +29,68 @@ export default function DashboardPage() {
   const [selectedProjectForModal, setSelectedProjectForModal] = useState<Project | null>(null);
 
   useEffect(() => {
-    if (isSupabaseConfigured && supabase) {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session?.user) {
-          const profile: UserProfile = {
-            id: session.user.id,
-            email: session.user.email || '',
-            full_name: (session.user.user_metadata?.full_name as string) || session.user.email?.split('@')[0] || 'Dasturchi',
-            role: (session.user.user_metadata?.role as UserProfile['role']) || 'developer',
-            created_at: session.user.created_at,
-          };
-          setUser(profile);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('ifb_active_user', JSON.stringify(profile));
-          }
-        }
-      });
-    }
+    let active = true;
 
-    async function loadData() {
-      setLoading(true);
+    async function initialize() {
+      if (!isSupabaseConfigured || !supabase) {
+        if (active) setLoading(false);
+        return;
+      }
+
+      const { data: { user: authUser }, error } = await supabase.auth.getUser();
+      if (!active) return;
+      if (error || !authUser) {
+        localStorage.removeItem('ifb_active_user');
+        setUser(null);
+        setProjects([]);
+        setBugs([]);
+        setLoading(false);
+        return;
+      }
+
+      const profile: UserProfile = {
+        id: authUser.id,
+        email: authUser.email || '',
+        full_name: (authUser.user_metadata?.full_name as string) || authUser.email?.split('@')[0] || 'Dasturchi',
+        role: (authUser.user_metadata?.role as UserProfile['role']) || 'developer',
+        created_at: authUser.created_at,
+      };
+      setUser(profile);
+      localStorage.setItem('ifb_active_user', JSON.stringify(profile));
+
       try {
         const projs = await DataService.fetchProjects();
+        if (!active) return;
         setProjects(projs);
-
-        // Fetch bugs for all projects
         const bugsList: Bug[] = [];
-        for (const p of projs) {
-          const projectBugs = await DataService.fetchBugs(p.id);
+        for (const project of projs) {
+          const projectBugs = await DataService.fetchBugs(project.id);
           bugsList.push(...projectBugs);
         }
+        if (!active) return;
         setBugs(bugsList);
-
-        if (projs.length > 0) {
-          setSelectedProjectForModal(projs[0]);
-        }
+        if (projs.length > 0) setSelectedProjectForModal(projs[0]);
       } catch (err) {
         console.error('Error loading dashboard data:', err);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     }
-    loadData();
+
+    initialize();
+    const { data: { subscription } } = supabase?.auth.onAuthStateChange((_event, session) => {
+      if (!session?.user) {
+        localStorage.removeItem('ifb_active_user');
+        setUser(null);
+        setProjects([]);
+        setBugs([]);
+      }
+    }) || { data: { subscription: null } };
+
+    return () => {
+      active = false;
+      subscription?.unsubscribe();
+    };
   }, []);
 
   const handleCreateProject = async (projData: Partial<Project>) => {
@@ -135,9 +146,7 @@ export default function DashboardPage() {
       localStorage.removeItem('ifb_active_user');
     }
     if (isSupabaseConfigured && supabase) {
-      try {
-        await supabase.auth.signOut();
-      } catch {}
+      await supabase.auth.signOut();
     }
     setUser(null);
   };

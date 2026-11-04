@@ -1,6 +1,9 @@
+import { getAuthenticatedUser } from '@/lib/supabase/server-auth';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
+  const user = await getAuthenticatedUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
     const { bot_token, chat_id, bug, project_name, project_slug, origin } = await req.json();
 

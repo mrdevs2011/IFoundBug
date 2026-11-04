@@ -22,15 +22,6 @@ import {
   ThumbsUpIcon,
 } from '@/components/icons';
 
-function getSavedUser(): UserProfile | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem('ifb_active_user');
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
 
 export default function ProjectWorkspacePage() {
   const params = useParams();
@@ -40,7 +31,7 @@ export default function ProjectWorkspacePage() {
   const [project, setProject] = useState<Project | null>(null);
   const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [bugs, setBugs] = useState<Bug[]>([]);
-  const [user, setUser] = useState<UserProfile | null>(getSavedUser);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [notifications, setNotifications] = useState<BugNotification[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -63,14 +54,14 @@ export default function ProjectWorkspacePage() {
   // Load project & bugs & session
   useEffect(() => {
     if (isSupabaseConfigured && supabase) {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session?.user) {
+      supabase.auth.getUser().then(({ data: { user: authUser, }, error }) => {
+        if (!error && authUser) {
           const profile: UserProfile = {
-            id: session.user.id,
-            email: session.user.email || '',
-            full_name: (session.user.user_metadata?.full_name as string) || session.user.email?.split('@')[0] || 'Dasturchi',
-            role: (session.user.user_metadata?.role as UserProfile['role']) || 'developer',
-            created_at: session.user.created_at,
+            id: authUser.id,
+            email: authUser.email || '',
+            full_name: (authUser.user_metadata?.full_name as string) || authUser.email?.split('@')[0] || 'Dasturchi',
+            role: (authUser.user_metadata?.role as UserProfile['role']) || 'developer',
+            created_at: authUser.created_at,
           };
           setUser(profile);
           if (typeof window !== 'undefined') {

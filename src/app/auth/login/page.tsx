@@ -24,6 +24,11 @@ export default function LoginPage() {
     setErrorMsg('');
 
     const cleanUser = cleanUserStr(username);
+    if (!isSupabaseConfigured || !supabase) {
+      setErrorMsg('Autentifikatsiya serveri sozlanmagan. Keyinroq qayta urinib ko‘ring.');
+      setLoading(false);
+      return;
+    }
     if (!cleanUser) {
       setErrorMsg('Foydalanuvchi nomini kiriting.');
       setLoading(false);
@@ -75,18 +80,7 @@ export default function LoginPage() {
       }
     }
 
-    // Local / Guest fallback
-    if (typeof window !== 'undefined') {
-      const profile: UserProfile = {
-        id: `usr-${Date.now()}`,
-        email: cleanUser,
-        full_name: cleanUser,
-        role: 'developer',
-        created_at: new Date().toISOString(),
-      };
-      localStorage.setItem('ifb_active_user', JSON.stringify(profile));
-    }
-    router.push('/');
+
   };
 
   return (

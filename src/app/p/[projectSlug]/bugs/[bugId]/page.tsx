@@ -24,15 +24,6 @@ import {
   TelegramIcon,
 } from '@/components/icons';
 
-function getSavedUser(): UserProfile | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem('ifb_active_user');
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
 
 export default function BugDetailPage() {
   const params = useParams();
@@ -53,20 +44,20 @@ export default function BugDetailPage() {
   const [annotatingImageUrl, setAnnotatingImageUrl] = useState<string | null>(null);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [privacyMode, setPrivacyMode] = useState(false);
-  const [user, setUser] = useState<UserProfile | null>(getSavedUser);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   // 1. Load Bug & Project & Session
   useEffect(() => {
     if (isSupabaseConfigured && supabase) {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session?.user) {
+      supabase.auth.getUser().then(({ data: { user: authUser, }, error }) => {
+        if (!error && authUser) {
           const profile: UserProfile = {
-            id: session.user.id,
-            email: session.user.email || '',
-            full_name: (session.user.user_metadata?.full_name as string) || session.user.email?.split('@')[0] || 'Dasturchi',
-            role: (session.user.user_metadata?.role as UserProfile['role']) || 'developer',
-            created_at: session.user.created_at,
+            id: authUser.id,
+            email: authUser.email || '',
+            full_name: (authUser.user_metadata?.full_name as string) || authUser.email?.split('@')[0] || 'Dasturchi',
+            role: (authUser.user_metadata?.role as UserProfile['role']) || 'developer',
+            created_at: authUser.created_at,
           };
           setUser(profile);
           if (typeof window !== 'undefined') {

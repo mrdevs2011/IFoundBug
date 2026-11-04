@@ -1,7 +1,10 @@
+import { createAuthenticatedServerClient } from '@/lib/supabase/server-auth';
 import { NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 
 export async function POST(req: Request) {
+  const auth = await createAuthenticatedServerClient();
+  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { client: supabase } = auth;
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File;
@@ -14,7 +17,7 @@ export async function POST(req: Request) {
     const fileName = `evidence-${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
     const filePath = `bugs/${fileName}`;
 
-    if (isSupabaseConfigured && supabase) {
+    if (supabase) {
       try {
         const buffer = Buffer.from(await file.arrayBuffer());
         const { error: uploadError } = await supabase.storage
