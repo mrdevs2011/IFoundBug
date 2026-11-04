@@ -13,6 +13,8 @@ import {
   EyeOffIcon,
   MessageSquareIcon,
   SendIcon,
+  CopyIcon,
+  TelegramIcon,
 } from './icons';
 import { AIPromptModal } from './AIPromptModal';
 import { ImageAnnotator } from './ImageAnnotator';
@@ -47,6 +49,20 @@ export const BugDetailModal: React.FC<BugDetailModalProps> = ({
   const [annotatingImageUrl, setAnnotatingImageUrl] = useState<string | null>(null);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [localPrivacy, setLocalPrivacy] = useState(privacyMode || Boolean(bug.is_sensitive));
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const handleShareTelegram = () => {
+    const url = `${typeof window !== 'undefined' ? window.location.origin : ''}?bug=${bug.code}`;
+    const text = `🚨 [${bug.code}] ${bug.title}\n⚠️ Daraja: ${bug.severity} | Holat: ${bug.status}\n📍 Bo'lim: ${bug.section} (${bug.screen || 'Umumiy'})\n🔗 Ko'rish:`;
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  const handleCopyLink = () => {
+    const url = `${typeof window !== 'undefined' ? window.location.origin : ''}?bug=${bug.code}`;
+    navigator.clipboard.writeText(url);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
 
   const statusColors: Record<BugStatus, { bg: string; text: string; border: string }> = {
     REPORTED: { bg: 'bg-zinc-800', text: 'text-zinc-300', border: 'border-zinc-700' },
@@ -126,15 +142,35 @@ export const BugDetailModal: React.FC<BugDetailModalProps> = ({
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center space-x-2 shrink-0">
+          <div className="flex items-center space-x-1.5 shrink-0">
+            {/* Share to Telegram */}
+            <button
+              onClick={handleShareTelegram}
+              className="bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 text-xs font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition"
+              title="Telegram guruhga ulashish"
+            >
+              <TelegramIcon className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Telegram</span>
+            </button>
+
+            {/* Copy Link */}
+            <button
+              onClick={handleCopyLink}
+              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 text-xs font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition"
+              title="Bug havolasini nusxalash"
+            >
+              {copiedLink ? <CheckIcon className="w-3.5 h-3.5 text-emerald-400" /> : <CopyIcon className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline">{copiedLink ? 'Nusxalandi!' : 'Havola'}</span>
+            </button>
+
             {/* AI Fix Prompt Synthesizer */}
             <button
               onClick={() => setShowAIPrompt(true)}
-              className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition"
+              className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition"
               title="Claude Code / Cursor uchun prompt yaratish"
             >
               <SparklesIcon className="w-3.5 h-3.5" />
-              <span>AI Fix Prompt</span>
+              <span className="hidden md:inline">AI Fix</span>
             </button>
 
             {/* Upvote / Reproduced button */}

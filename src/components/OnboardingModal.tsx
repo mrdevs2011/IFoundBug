@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { UserProfile, Project } from '@/types';
-import { cyberSound } from '@/lib/cyber-sound';
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -34,7 +33,6 @@ export default function OnboardingModal({
   if (!isOpen) return null;
 
   const handleNext = () => {
-    cyberSound.playClick();
     if (step === 1) {
       if (!fullName.trim()) return;
       setStep(2);
@@ -61,7 +59,6 @@ export default function OnboardingModal({
         created_at: new Date().toISOString(),
       };
 
-      cyberSound.playSuccess();
       onComplete(newProject, {
         full_name: fullName,
         organization,
@@ -265,7 +262,6 @@ export default function OnboardingModal({
           {step > 1 ? (
             <button
               onClick={() => {
-                cyberSound.playClick();
                 setStep((prev) => (prev - 1) as 1 | 2);
               }}
               className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-400 hover:text-white transition"

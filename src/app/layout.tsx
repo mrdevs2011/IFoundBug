@@ -2,13 +2,13 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "IFound_a_Bug (IFB) — Apex Collaborative Bug Tracking Platform",
-  description: "Stop debugging in Telegram. Ship flawless software with AI-assisted bug tracking, telemetry capture, and realtime collaboration.",
+  title: "IFoundBug (IFB) — Developer Bug Tracking & Rapid Triage Platform",
+  description: "Telegram guruhlardagi tartibsizlikka chek qo‘ying. Dasturchilar va jamoalar uchun tezkor, realtime bug tracking tizimi.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "IFound_a_Bug",
+    title: "IFoundBug",
   },
 };
 
@@ -29,7 +29,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
-      <body className="min-h-full bg-zinc-950 text-zinc-100 flex flex-col selection:bg-emerald-500 selection:text-black">
+      <body className="min-h-full bg-zinc-950 text-zinc-100 flex flex-col selection:bg-emerald-500 selection:text-black font-sans">
         {children}
         <script
           dangerouslySetInnerHTML={{

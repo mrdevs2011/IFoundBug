@@ -67,6 +67,41 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
   const [evidenceUrls, setEvidenceUrls] = useState<string[]>([]);
   const [evidenceInput, setEvidenceInput] = useState('');
   const [annotatingImageUrl, setAnnotatingImageUrl] = useState<string | null>(null);
+  const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
+
+  // Clipboard Paste (Ctrl+V) listener
+  React.useEffect(() => {
+    const handlePaste = async (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const blob = items[i].getAsFile();
+          if (blob) {
+            e.preventDefault();
+            setIsUploadingEvidence(true);
+            try {
+              const formData = new FormData();
+              formData.append('file', blob);
+              const res = await fetch('/api/upload', { method: 'POST', body: formData });
+              const data = await res.json();
+              if (data.url) {
+                setEvidenceUrls((prev) => [...prev, data.url]);
+              }
+            } catch (err) {
+              console.error('Paste upload error:', err);
+            } finally {
+              setIsUploadingEvidence(false);
+            }
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, []);
 
   // Lazy-initialized telemetry without effect cascade
   const [telemetry] = useState<DeviceTelemetry>(getInitialTelemetry);
@@ -106,16 +141,23 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          setEvidenceUrls([...evidenceUrls, reader.result]);
+      setIsUploadingEvidence(true);
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.url) {
+          setEvidenceUrls((prev) => [...prev, data.url]);
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error('File upload error:', err);
+      } finally {
+        setIsUploadingEvidence(false);
+      }
     }
   };
 
@@ -410,7 +452,7 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
                 URL Qo‘shish
               </button>
               <label className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs px-3 py-2 rounded-lg border border-zinc-700 cursor-pointer transition">
-                Fayl yuklash
+                {isUploadingEvidence ? 'Yuklanmoqda...' : 'Fayl yuklash'}
                 <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
               </label>
             </div>

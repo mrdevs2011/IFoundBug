@@ -2,18 +2,20 @@
 
 import React, { useState } from 'react';
 import { Project } from '@/types';
-import { cyberSound } from '@/lib/cyber-sound';
+import { BugIcon } from '@/components/icons';
 
 interface NewProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateProject: (project: Project) => void;
+  onCreateProject?: (project: Project) => void;
+  onCreate?: (project: Project) => void;
 }
 
 export default function NewProjectModal({
   isOpen,
   onClose,
   onCreateProject,
+  onCreate,
 }: NewProjectModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -38,116 +40,113 @@ export default function NewProjectModal({
       slug: name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       description: description.trim() || undefined,
       github_repo_url: githubUrl.trim() || undefined,
-      tech_stack: techStack.length > 0 ? techStack : ['Custom'],
+      tech_stack: techStack.length > 0 ? techStack : ['Next.js', 'React'],
       is_public: isPublic,
       allow_guest_reports: true,
+      color: '#10b981',
+      icon: 'bug',
       created_at: new Date().toISOString(),
     };
 
-    cyberSound.playSuccess();
-    onCreateProject(project);
+    if (onCreate) onCreate(project);
+    if (onCreateProject) onCreateProject(project);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
-      <div
-        className="relative w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <span>🚀</span> Yangi Loyiha Yaratish
-          </h3>
-          <button
-            onClick={() => {
-              cyberSound.playClick();
-              onClose();
-            }}
-            className="text-zinc-500 hover:text-white p-1"
-          >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-zinc-800 bg-zinc-950/60 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <BugIcon className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-white">Yangi Loyiha Yaratish</h2>
+              <p className="text-[11px] text-zinc-400">Workspace / Ilova uchun bug tracking doskasi</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-zinc-500 hover:text-white text-sm p-1">
             ✕
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-3.5 text-xs">
-          <div>
-            <label className="block text-zinc-300 font-semibold mb-1">
-              Loyiha Nomi (Masalan: Mobil Ilova, Web Dashboard):
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-zinc-300">
+              Loyiha nomi <span className="text-emerald-400">*</span>
             </label>
             <input
               type="text"
               required
+              placeholder="Masalan: Barbershop Mobile App yoki SayDo"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Loyiha nomini kiriting..."
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:border-emerald-500 focus:outline-none"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500"
             />
           </div>
 
-          <div>
-            <label className="block text-zinc-300 font-semibold mb-1">
-              GitHub Repozitoriy URL (Ixtiyoriy):
-            </label>
-            <input
-              type="url"
-              value={githubUrl}
-              onChange={(e) => setGithubUrl(e.target.value)}
-              placeholder="https://github.com/org/repo"
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:border-emerald-500 focus:outline-none font-mono"
-            />
-          </div>
-
-          <div>
-            <label className="block text-zinc-300 font-semibold mb-1">
-              Texnologiyalar (Vergul bilan):
-            </label>
-            <input
-              type="text"
-              value={techStackInput}
-              onChange={(e) => setTechStackInput(e.target.value)}
-              placeholder="React, TypeScript, NestJS, Supabase"
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-zinc-300 font-semibold mb-1">Tavsif (Ixtiyoriy):</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-zinc-300">Tavsif (Description)</label>
             <textarea
               rows={2}
+              placeholder="Ilovaning asosiy maqsadi va vazifalari..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Loyiha haqida qisqacha ma'lumot..."
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:border-emerald-500 focus:outline-none resize-none"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500"
             />
           </div>
 
-          <label className="flex items-center gap-2 pt-1 cursor-pointer">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-zinc-300">Texnologiyalar (vergul bilan ajrating)</label>
             <input
-              type="checkbox"
-              checked={isPublic}
-              onChange={(e) => setIsPublic(e.target.checked)}
-              className="rounded border-zinc-700 text-emerald-500 focus:ring-emerald-500"
+              type="text"
+              placeholder="React Native, Expo, Supabase, TypeScript"
+              value={techStackInput}
+              onChange={(e) => setTechStackInput(e.target.value)}
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500"
             />
-            <span className="text-zinc-300">
-              Ommaviy rejim (jamoa a’zolari havola orqali ko‘ra oladi)
-            </span>
-          </label>
+          </div>
 
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-800">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-xl text-zinc-400 hover:text-white"
-            >
-              Bekor qilish
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold shadow-md shadow-emerald-500/20"
-            >
-              Loyiha Yaratish
-            </button>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-zinc-300">GitHub Repozitoriy Havolasi (ixtiyoriy)</label>
+            <input
+              type="url"
+              placeholder="https://github.com/mrdevs2011/my-app"
+              value={githubUrl}
+              onChange={(e) => setGithubUrl(e.target.value)}
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500"
+            />
+          </div>
+
+          <div className="pt-2 flex items-center justify-between border-t border-zinc-800">
+            <label className="flex items-center gap-2 cursor-pointer text-xs text-zinc-300 select-none">
+              <input
+                type="checkbox"
+                checked={isPublic}
+                onChange={(e) => setIsPublic(e.target.checked)}
+                className="w-4 h-4 rounded border-zinc-700 bg-zinc-950 text-emerald-500 focus:ring-0"
+              />
+              <span>Ochiq loyiha (Public workspace)</span>
+            </label>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-3.5 py-2 text-xs font-semibold text-zinc-400 hover:text-white rounded-xl bg-zinc-800 hover:bg-zinc-700 transition"
+              >
+                Bekor qilish
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 text-xs font-bold text-zinc-950 bg-emerald-400 hover:bg-emerald-300 rounded-xl transition shadow-md shadow-emerald-500/10 cursor-pointer"
+              >
+                Yaratish
+              </button>
+            </div>
           </div>
         </form>
       </div>

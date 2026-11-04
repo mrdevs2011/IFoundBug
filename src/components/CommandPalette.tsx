@@ -1,18 +1,19 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Bug } from '@/types';
-import { cyberSound } from '@/lib/cyber-sound';
+import { Bug, Project } from '@/types';
 
 interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
   bugs: Bug[];
+  currentProject?: Project;
   onSelectBug: (bug: Bug) => void;
-  onOpenReportModal: () => void;
-  onOpenAIPromptModal: () => void;
-  onOpenShareModal: () => void;
-  onSetViewMode: (mode: 'list' | 'kanban' | 'virtual-radar') => void;
+  onOpenReportModal?: () => void;
+  onOpenAIPromptModal?: () => void;
+  onOpenAIPrompt?: () => void;
+  onOpenShareModal?: () => void;
+  onSetViewMode?: (mode: 'list' | 'kanban') => void;
 }
 
 export default function CommandPalette({
@@ -22,6 +23,7 @@ export default function CommandPalette({
   onSelectBug,
   onOpenReportModal,
   onOpenAIPromptModal,
+  onOpenAIPrompt,
   onOpenShareModal,
   onSetViewMode,
 }: CommandPaletteProps) {
@@ -31,7 +33,6 @@ export default function CommandPalette({
 
   useEffect(() => {
     if (isOpen) {
-      cyberSound.playBlip(700);
       const timer = setTimeout(() => {
         setQuery('');
         setSelectedIndex(0);
@@ -51,17 +52,7 @@ export default function CommandPalette({
         category: 'Harakatlar',
         action: () => {
           onClose();
-          onOpenReportModal();
-        },
-      },
-      {
-        id: 'action-radar',
-        title: 'Virtual 3D Radar Studioni ochish',
-        icon: '📡',
-        category: 'Harakatlar',
-        action: () => {
-          onClose();
-          onSetViewMode('virtual-radar');
+          if (onOpenReportModal) onOpenReportModal();
         },
       },
       {
@@ -71,7 +62,7 @@ export default function CommandPalette({
         category: 'Harakatlar',
         action: () => {
           onClose();
-          onSetViewMode('kanban');
+          if (onSetViewMode) onSetViewMode('kanban');
         },
       },
       {
@@ -81,7 +72,7 @@ export default function CommandPalette({
         category: 'Harakatlar',
         action: () => {
           onClose();
-          onSetViewMode('list');
+          if (onSetViewMode) onSetViewMode('list');
         },
       },
       {
@@ -91,7 +82,8 @@ export default function CommandPalette({
         category: 'Harakatlar',
         action: () => {
           onClose();
-          onOpenAIPromptModal();
+          if (onOpenAIPromptModal) onOpenAIPromptModal();
+          if (onOpenAIPrompt) onOpenAIPrompt();
         },
       },
       {
@@ -101,21 +93,11 @@ export default function CommandPalette({
         category: 'Harakatlar',
         action: () => {
           onClose();
-          onOpenShareModal();
-        },
-      },
-      {
-        id: 'action-sound',
-        title: `Cyber Audio Sound FX: ${cyberSound.isEnabled() ? 'O‘chirish' : 'Yoqish'}`,
-        icon: '🔊',
-        category: 'Harakatlar',
-        action: () => {
-          cyberSound.toggle();
-          onClose();
+          if (onOpenShareModal) onOpenShareModal();
         },
       },
     ],
-    [onClose, onOpenReportModal, onOpenAIPromptModal, onOpenShareModal, onSetViewMode]
+    [onClose, onOpenReportModal, onOpenAIPromptModal, onOpenAIPrompt, onOpenShareModal, onSetViewMode]
   );
 
   // Filtered bug items
@@ -162,36 +144,37 @@ export default function CommandPalette({
         onClose();
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
-        cyberSound.playBlip(600);
-        setSelectedIndex((prev) => (prev + 1) % (combinedItems.length || 1));
+        setSelectedIndex((prev) => (prev + 1) % Math.max(1, combinedItems.length));
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        cyberSound.playBlip(600);
-        setSelectedIndex((prev) => (prev - 1 + combinedItems.length) % (combinedItems.length || 1));
+        setSelectedIndex((prev) => (prev - 1 + combinedItems.length) % Math.max(1, combinedItems.length));
       } else if (e.key === 'Enter') {
         e.preventDefault();
-        if (combinedItems[selectedIndex]) {
-          cyberSound.playClick();
-          combinedItems[selectedIndex].action();
+        const active = combinedItems[selectedIndex];
+        if (active) {
+          active.action();
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, combinedItems, selectedIndex, onClose]);
+  }, [isOpen, selectedIndex, combinedItems, onClose]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-150">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-start justify-center pt-20 px-4"
+    >
       <div
-        className="relative w-full max-w-xl rounded-2xl border border-emerald-500/40 bg-zinc-900/95 shadow-[0_20px_60px_rgba(0,0,0,0.9),0_0_30px_rgba(16,185,129,0.25)] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-xl bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
       >
-        {/* Search Input Bar */}
-        <div className="flex items-center px-4 py-3.5 border-b border-zinc-800 bg-zinc-950/70">
-          <span className="text-emerald-400 font-mono text-sm mr-2.5">⌘</span>
+        {/* Search Input */}
+        <div className="flex items-center px-4 py-3 border-b border-zinc-800 bg-zinc-950/70">
+          <span className="text-zinc-500 mr-2.5 text-sm">🔍</span>
           <input
             ref={inputRef}
             type="text"
@@ -200,54 +183,52 @@ export default function CommandPalette({
               setQuery(e.target.value);
               setSelectedIndex(0);
             }}
-            placeholder="Buyruq yoki xatoni qidiring (masalan: B01, Radar, AI, Telegram)..."
+            placeholder="Buyruqlar, amallar yoki buglarni qidiring..."
             className="w-full bg-transparent text-sm text-white placeholder-zinc-500 focus:outline-none"
           />
-          <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
+          <kbd className="text-[10px] font-mono text-zinc-500 border border-zinc-800 bg-zinc-950 px-1.5 py-0.5 rounded">
             ESC
           </kbd>
         </div>
 
-        {/* Results List */}
-        <div className="max-h-80 overflow-y-auto p-2 space-y-1">
+        {/* List items */}
+        <div className="max-h-80 overflow-y-auto p-2 divide-y divide-zinc-800/40">
           {combinedItems.length === 0 ? (
             <div className="py-8 text-center text-xs text-zinc-500 font-mono">
-              Hech qanday natija topilmadi
+              Hech qanday buyruq yoki bug topilmadi
             </div>
           ) : (
-            combinedItems.map((item, idx) => (
-              <div
-                key={item.id}
-                onClick={() => {
-                  cyberSound.playClick();
-                  item.action();
-                }}
-                onMouseEnter={() => setSelectedIndex(idx)}
-                className={`px-3 py-2 rounded-xl text-xs flex items-center justify-between cursor-pointer transition ${
-                  selectedIndex === idx
-                    ? 'bg-emerald-500/20 text-white border border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.2)]'
-                    : 'text-zinc-300 hover:bg-zinc-800/60 border border-transparent'
-                }`}
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="text-sm">{item.icon}</span>
-                  <span className="truncate font-medium">{item.title}</span>
+            combinedItems.map((item, idx) => {
+              const isSelected = idx === selectedIndex;
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => item.action()}
+                  onMouseEnter={() => setSelectedIndex(idx)}
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl cursor-pointer text-xs transition ${
+                    isSelected ? 'bg-emerald-500/10 text-white' : 'text-zinc-300 hover:bg-zinc-800/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="text-sm shrink-0">{item.icon}</span>
+                    <span className="font-medium truncate">{item.title}</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-zinc-500 shrink-0 uppercase tracking-wider">
+                    {item.category}
+                  </span>
                 </div>
-                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
-                  {item.category}
-                </span>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
         {/* Footer shortcuts */}
-        <div className="flex items-center justify-between px-4 py-2 border-t border-zinc-800/80 bg-zinc-950 text-[10px] font-mono text-zinc-500">
-          <div className="flex items-center gap-3">
-            <span>↑↓ Harakatlanish</span>
-            <span>↵ Tanlash</span>
+        <div className="px-4 py-2 bg-zinc-950/80 border-t border-zinc-800 flex items-center justify-between text-[11px] text-zinc-500">
+          <div className="flex items-center gap-3 font-mono">
+            <span>↑↓ tanlash</span>
+            <span>↵ ochish</span>
           </div>
-          <span>IFound_a_Bug Spotlight</span>
+          <span className="font-mono text-[10px]">IFB Spotlight</span>
         </div>
       </div>
     </div>

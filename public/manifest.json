@@ -1,7 +1,7 @@
 {
-  "name": "IFoundABug — Apex Collaborative Bug Tracking Platform",
-  "short_name": "IFoundABug",
-  "description": "Stop debugging in Telegram. Ship flawless software with AI-assisted bug tracking, telemetry capture, and realtime collaboration.",
+  "name": "IFoundBug (IFB) — Developer Bug Tracking Platform",
+  "short_name": "IFoundBug",
+  "description": "Telegram guruhlardagi tartibsizlikka chek qo‘ying. Dasturchilar va jamoalar uchun tezkor, realtime bug tracking tizimi.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -14,18 +14,6 @@
       "src": "/favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/x-icon"
-    },
-    {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
     }
   ]
 }

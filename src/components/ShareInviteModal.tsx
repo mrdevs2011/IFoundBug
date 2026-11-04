@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Project } from '@/types';
 import { ShareIcon, CopyIcon, CheckIcon, XIcon, TelegramIcon } from './icons';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 
 interface ShareInviteModalProps {
   project: Project;
@@ -20,8 +21,8 @@ export const ShareInviteModal: React.FC<ShareInviteModalProps> = ({ project, onC
   const [chatId, setChatId] = useState(project.telegram_chat_id || '');
   const [tgSaved, setTgSaved] = useState(false);
 
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ifoundbug.dev';
-  const inviteLink = `${baseUrl}/join?project=${project.slug}&token=${project.slug}-invite-${role}&role=${role}`;
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ifoundbug.app';
+  const inviteLink = `${baseUrl}/invite/${project.slug}-${role}-invite`;
   const publicShareLink = `${baseUrl}/p/${project.slug}`;
 
   const widgetSnippet = `<!-- IFoundBug Instant Reporter Widget -->
@@ -44,8 +45,22 @@ export const ShareInviteModal: React.FC<ShareInviteModalProps> = ({ project, onC
     setTimeout(() => setCopiedWidget(false), 2000);
   };
 
-  const handleSaveTelegram = (e: React.FormEvent) => {
+  const handleSaveTelegram = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase
+          .from('ifb_projects')
+          .update({
+            telegram_bot_token: botToken,
+            telegram_chat_id: chatId,
+            telegram_webhook_enabled: Boolean(botToken && chatId),
+          })
+          .eq('id', project.id);
+      } catch (err) {
+        console.warn('Failed to update telegram webhook settings:', err);
+      }
+    }
     setTgSaved(true);
     setTimeout(() => setTgSaved(false), 3000);
   };

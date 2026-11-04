@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { UserProfile } from '@/types';
-import { cyberSound } from '@/lib/cyber-sound';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -79,7 +78,6 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           }
         }
 
-        cyberSound.playSuccess();
         onSuccess(userProfile, true);
         onClose();
       } else {
@@ -121,7 +119,6 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           }
         }
 
-        cyberSound.playSuccess();
         onSuccess(userProfile, false);
         onClose();
       }
@@ -152,11 +149,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
         setErrorMsg(error.message);
       } else {
         setMagicLinkSent(true);
-        cyberSound.playSuccess();
       }
     } else {
       setMagicLinkSent(true);
-      cyberSound.playSuccess();
     }
     setLoading(false);
   };
@@ -188,7 +183,6 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
           <button
             onClick={() => {
-              cyberSound.playClick();
               onClose();
             }}
             className="text-zinc-500 hover:text-white transition p-1 text-base font-bold"
@@ -201,7 +195,6 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
         <div className="grid grid-cols-2 gap-2 mt-4 p-1 bg-zinc-900 border border-zinc-800 rounded-xl text-xs font-semibold">
           <button
             onClick={() => {
-              cyberSound.playClick();
               setTab('login');
               setErrorMsg('');
             }}
@@ -215,7 +208,6 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           </button>
           <button
             onClick={() => {
-              cyberSound.playClick();
               setTab('signup');
               setErrorMsg('');
             }}

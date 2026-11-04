@@ -2,7 +2,6 @@ import { supabase, isSupabaseConfigured } from './client';
 import { Bug, Project, BugComment, BugStatus, AcceptanceCriterion } from '@/types';
 import { INITIAL_PROJECTS, INITIAL_BUGS, INITIAL_COMMENTS } from '@/lib/mock-data';
 
-// Local storage keys for caching and optimistic updates
 const STORAGE_PROJECTS_KEY = 'ifb_cached_projects';
 const STORAGE_BUGS_KEY = 'ifb_cached_bugs';
 const STORAGE_COMMENTS_KEY = 'ifb_cached_comments';
@@ -45,6 +44,24 @@ export const DataService = {
     return getLocal<Project[]>(STORAGE_PROJECTS_KEY, INITIAL_PROJECTS);
   },
 
+  async fetchProjectBySlug(slug: string): Promise<Project | null> {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('ifb_projects')
+          .select('*')
+          .eq('slug', slug)
+          .single();
+
+        if (!error && data) return data as Project;
+      } catch (err) {
+        console.warn('Supabase fetchProjectBySlug error:', err);
+      }
+    }
+    const projects = await this.fetchProjects();
+    return projects.find((p) => p.slug === slug || p.id === slug) || null;
+  },
+
   async createProject(project: Partial<Project>): Promise<Project> {
     const newProj: Project = {
       id: project.id || `proj-${Date.now()}`,
@@ -58,6 +75,9 @@ export const DataService = {
       tech_stack: project.tech_stack || ['React', 'Next.js'],
       created_at: new Date().toISOString(),
       github_repo_url: project.github_repo_url,
+      telegram_bot_token: project.telegram_bot_token,
+      telegram_chat_id: project.telegram_chat_id,
+      telegram_webhook_enabled: project.telegram_webhook_enabled,
     };
 
     if (isSupabaseConfigured && supabase) {
@@ -100,7 +120,39 @@ export const DataService = {
     return allBugs.filter((b) => b.project_id === projectId);
   },
 
-  async createBug(newBug: Bug): Promise<Bug> {
+  async fetchBugByIdOrCode(
+    projectSlugOrId: string,
+    bugIdOrCode: string
+  ): Promise<{ bug: Bug; project: Project } | null> {
+    const project = await this.fetchProjectBySlug(projectSlugOrId);
+    if (!project) return null;
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('ifb_bugs')
+          .select('*')
+          .eq('project_id', project.id)
+          .or(`id.eq.${bugIdOrCode},code.eq.${bugIdOrCode}`)
+          .single();
+
+        if (!error && data) {
+          return { bug: data as Bug, project };
+        }
+      } catch (err) {
+        console.warn('Supabase fetchBugByIdOrCode error:', err);
+      }
+    }
+
+    const bugs = await this.fetchBugs(project.id);
+    const foundBug = bugs.find(
+      (b) => b.id === bugIdOrCode || b.code.toLowerCase() === bugIdOrCode.toLowerCase()
+    );
+    if (foundBug) return { bug: foundBug, project };
+    return null;
+  },
+
+  async createBug(newBug: Bug, project?: Project): Promise<Bug> {
     if (isSupabaseConfigured && supabase) {
       try {
         const { data, error } = await supabase
@@ -108,7 +160,13 @@ export const DataService = {
           .insert([newBug])
           .select()
           .single();
-        if (!error && data) return data as Bug;
+        if (!error && data) {
+          // Send Telegram notification if enabled
+          if (project?.telegram_bot_token && project?.telegram_chat_id) {
+            this.notifyTelegram(project, data as Bug);
+          }
+          return data as Bug;
+        }
       } catch (err) {
         console.warn('Supabase createBug fallback:', err);
       }
@@ -116,10 +174,15 @@ export const DataService = {
 
     const current = getLocal<Bug[]>(STORAGE_BUGS_KEY, INITIAL_BUGS);
     setLocal(STORAGE_BUGS_KEY, [newBug, ...current]);
+
+    if (project?.telegram_bot_token && project?.telegram_chat_id) {
+      this.notifyTelegram(project, newBug);
+    }
+
     return newBug;
   },
 
-  async updateBugStatus(bugId: string, status: BugStatus, actorName = 'Developer'): Promise<void> {
+  async updateBugStatus(bugId: string, status: BugStatus, actorName = 'Dasturchi'): Promise<void> {
     const resolvedAt = status === 'FIXED' ? new Date().toISOString() : null;
 
     if (isSupabaseConfigured && supabase) {
@@ -129,7 +192,6 @@ export const DataService = {
           .update({ status, resolved_at: resolvedAt, updated_at: new Date().toISOString() })
           .eq('id', bugId);
 
-        // Record audit log
         await supabase.from('ifb_bug_audit_logs').insert([
           {
             bug_id: bugId,
@@ -197,7 +259,6 @@ export const DataService = {
       }
     }
 
-    // Local fallback
     const allBugs = getLocal<Bug[]>(STORAGE_BUGS_KEY, INITIAL_BUGS);
     let newCount = 1;
     const updated = allBugs.map((b) => {
@@ -292,27 +353,55 @@ export const DataService = {
   },
 
   // 5. Invites
-  async validateInvite(token: string): Promise<{ project_id: string; role: string } | null> {
+  async validateInvite(token: string): Promise<{ project: Project; role: string } | null> {
     if (isSupabaseConfigured && supabase) {
       try {
         const { data, error } = await supabase
           .from('ifb_project_invites')
-          .select('*')
+          .select('*, project:ifb_projects(*)')
           .eq('token', token)
           .single();
 
         if (!error && data) {
-          // Increment uses
           await supabase
             .from('ifb_project_invites')
             .update({ uses_count: (data.uses_count || 0) + 1 })
             .eq('id', data.id);
-          return { project_id: data.project_id, role: data.role };
+
+          return { project: data.project as Project, role: data.role };
         }
       } catch (err) {
-        console.warn('Supabase validateInvite fallback:', err);
+        console.warn('Supabase validateInvite error:', err);
       }
     }
+
+    // Local fallback
+    const projects = await this.fetchProjects();
+    const found = projects.find((p) => token.includes(p.slug));
+    if (found) {
+      return { project: found, role: 'developer' };
+    }
     return null;
+  },
+
+  // 6. Telegram webhook sender
+  async notifyTelegram(project: Project, bug: Bug) {
+    if (!project.telegram_bot_token || !project.telegram_chat_id) return;
+    try {
+      await fetch('/api/telegram/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bot_token: project.telegram_bot_token,
+          chat_id: project.telegram_chat_id,
+          project_name: project.name,
+          project_slug: project.slug,
+          bug,
+          origin: typeof window !== 'undefined' ? window.location.origin : '',
+        }),
+      });
+    } catch (err) {
+      console.warn('Failed to send telegram notification:', err);
+    }
   },
 };
