@@ -354,8 +354,8 @@ export default function IFoundBugApp() {
 
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-zinc-200 to-emerald-400 bg-clip-text text-transparent">
-                  IFoundBug
+                <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-zinc-200 to-emerald-400 bg-clip-text text-transparent inline-flex items-baseline">
+                  IFound<sub className="text-emerald-400 text-xs font-mono font-bold px-0.5 relative -bottom-0.5 not-italic select-none">a</sub>Bugs
                 </span>
                 <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                   IFB v2.0
@@ -742,7 +742,9 @@ export default function IFoundBugApp() {
       <footer className="border-t border-zinc-800/80 bg-zinc-950 py-6 text-xs text-zinc-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center space-x-2">
-            <span className="font-bold text-zinc-300">IFoundBug (IFB)</span>
+            <span className="font-bold text-zinc-300 inline-flex items-baseline">
+              IFound<sub className="text-emerald-400 text-[10px] font-mono font-bold px-0.5 relative -bottom-0.5 not-italic select-none">a</sub>Bugs (IFB)
+            </span>
             <span>—</span>
             <span>Dasturchilar va Bug Hunterlar uchun mukammal hamkorlik platformasi.</span>
           </div>
