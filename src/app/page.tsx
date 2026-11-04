@@ -73,6 +73,24 @@ export default function IFoundBugApp() {
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [selectedBugIdsForSprint, setSelectedBugIdsForSprint] = useState<string[]>([]);
+  const [installPrompt, setInstallPrompt] = useState<{ prompt: () => Promise<void> } | null>(null);
+
+  useEffect(() => {
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e as unknown as { prompt: () => Promise<void> });
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+  }, []);
+
+  const handleInstallPWA = async () => {
+    if (installPrompt) {
+      cyberSound.playClick();
+      await installPrompt.prompt();
+      setInstallPrompt(null);
+    }
+  };
 
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -486,6 +504,18 @@ export default function IFoundBugApp() {
               <ShareIcon className="w-3.5 h-3.5" />
               <span className="hidden md:inline">Ulashish</span>
             </button>
+
+            {/* Native PWA Desktop Install Button */}
+            {installPrompt && (
+              <button
+                onClick={handleInstallPWA}
+                className="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold flex items-center gap-1.5 transition animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.25)]"
+                title="Desktop Ilova sifatida o‘rnatish"
+              >
+                <span>📥</span>
+                <span className="hidden sm:inline">Desktop App O‘rnatish</span>
+              </button>
+            )}
 
             {/* User Auth Profile / Login Button */}
             {user ? (

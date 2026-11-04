@@ -119,3 +119,15 @@ export interface UserProfile {
   organization?: string;
   created_at: string;
 }
+
+export interface BugNotification {
+  id: string;
+  bug_id: string;
+  bug_code: string;
+  title: string;
+  message: string;
+  type: 'status_change' | 'new_comment' | 'new_bug' | 'mention';
+  read: boolean;
+  created_at: string;
+}
+
