@@ -50,22 +50,55 @@ async function handle(request: NextRequest) {
   const audit = async (method:string, toolName:string|null, success:boolean, errorCode:string|null=null) => { await db.from('ifb_mcp_audit_logs').insert({token_id:tokenRow.id,profile_id:profile.id,method,tool_name:toolName,success,error_code:errorCode}); };
   
   const requireScope = (scope: string) => { if (!has(scope)) throw new Error(`Permission denied: missing ${scope}`); };
+  const checkAccess = async (project: Record<string, unknown>) => {
+    const { data: member } = await db.from('ifb_project_members').select('role').eq('project_id', project.id).eq('user_id', profile.id).maybeSingle();
+    const isPrivileged = project.created_by === profile.id || ['owner', 'admin'].includes(profile.role);
+    const effectiveMember = member || (isPrivileged ? { role: 'owner' } : null);
+    if (!effectiveMember && !project.is_public) throw new Error(`You do not have access to private space "${project.name}".`);
+    return { project, member: effectiveMember };
+  };
   const resolveProject = async (value: string) => {
-    const query = db.from('ifb_projects').select('*');
-    const { data, error } = /^[0-9a-f-]{36}$/i.test(value) ? await query.eq('id', value).maybeSingle() : await query.eq('slug', value).maybeSingle();
-    if (error || !data) throw new Error('Project/space not found.');
-    const { data: member } = await db.from('ifb_project_members').select('role').eq('project_id', data.id).eq('user_id', profile.id).maybeSingle();
-    if (!member && !data.is_public) throw new Error('You do not have access to this private space.');
-    return { project: data, member };
+    const raw = String(value || '').trim();
+    if (!raw) throw new Error('Project identifier is required.');
+    if (/^[0-9a-f-]{36}$/i.test(raw)) {
+      const { data } = await db.from('ifb_projects').select('*').eq('id', raw).maybeSingle();
+      if (data) return checkAccess(data);
+    }
+    const lower = raw.toLowerCase();
+    const { data: bySlug } = await db.from('ifb_projects').select('*').ilike('slug', lower).maybeSingle();
+    if (bySlug) return checkAccess(bySlug);
+    const { data: byName } = await db.from('ifb_projects').select('*').ilike('name', raw).maybeSingle();
+    if (byName) return checkAccess(byName);
+    const slugified = lower.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    if (slugified && slugified !== lower) {
+      const { data: bySlugified } = await db.from('ifb_projects').select('*').ilike('slug', slugified).maybeSingle();
+      if (bySlugified) return checkAccess(bySlugified);
+    }
+    const cleanSearch = lower.replace(/[%_,]/g, ' ').trim();
+    if (cleanSearch) {
+      const { data: partialList } = await db.from('ifb_projects').select('*').or(`slug.ilike.%${cleanSearch}%,name.ilike.%${cleanSearch}%`).limit(10);
+      if (partialList && partialList.length > 0) {
+        const best = partialList.find((p) => p.slug.toLowerCase() === lower || p.name.toLowerCase() === lower) || partialList.find((p) => p.slug.toLowerCase().includes(cleanSearch) || p.name.toLowerCase().includes(cleanSearch)) || partialList[0];
+        return checkAccess(best);
+      }
+    }
+    throw new Error(`Project/space "${raw}" not found.`);
   };
   const resolveBug = async (value: string) => {
-    const query = db.from('ifb_bugs').select('*');
-    const { data: bug, error } = /^[0-9a-f-]{36}$/i.test(value) ? await query.eq('id', value).maybeSingle() : await query.eq('code', value).maybeSingle();
-    if (error || !bug) throw new Error('Bug not found.');
+    const raw = String(value || '').trim();
+    if (!raw) throw new Error('Bug identifier is required.');
+    let q = db.from('ifb_bugs').select('*');
+    if (/^[0-9a-f-]{36}$/i.test(raw)) {
+      q = q.eq('id', raw);
+    } else {
+      q = q.ilike('code', raw);
+    }
+    const { data: bug, error } = await q.maybeSingle();
+    if (error || !bug) throw new Error(`Bug "${raw}" not found.`);
     const { project, member } = await resolveProject(bug.project_id);
     return { bug, project, member };
   };
-  const canWrite = (member: { role: string } | null) => Boolean(member && ['owner','admin','developer','qa_tester','team_lead','product_manager'].includes(member.role));
+  const canWrite = (member: { role: string } | null) => Boolean((member && ['owner','admin','developer','qa_tester','team_lead','product_manager'].includes(member.role)) || ['owner','admin'].includes(profile.role));
 
   const callTool = async (name: string, a: Record<string, unknown>) => {
     switch (name) {
@@ -78,11 +111,18 @@ async function handle(request: NextRequest) {
       case 'list_projects': {
         requireScope('projects:read');
         const { data: memberships } = await db.from('ifb_project_members').select('project_id,role').eq('user_id', profile.id);
-        const ids = (memberships || []).map((m) => m.project_id);
-        const q = db.from('ifb_projects').select('id,name,slug,description,is_public,allow_guest_reports,tech_stack,created_at').order('created_at', { ascending: false }).limit(100);
+        const memberProjectIds = new Set((memberships || []).map((m) => m.project_id));
+        const q = db.from('ifb_projects').select('id,name,slug,description,is_public,allow_guest_reports,tech_stack,created_by,created_at').order('created_at', { ascending: false }).limit(100);
         const { data: rows, error } = await q;
         if (error) throw error;
-        return (rows || []).filter((p) => ids.includes(p.id) || (a.include_public !== false && p.is_public)).map((p) => ({ ...p, membership_role: (memberships || []).find((m) => m.project_id === p.id)?.role || null }));
+        const isGlobalAdmin = ['owner', 'admin'].includes(profile.role);
+        return (rows || [])
+          .filter((p) => memberProjectIds.has(p.id) || p.created_by === profile.id || isGlobalAdmin || (a.include_public !== false && p.is_public))
+          .map((p) => {
+            const memberRow = (memberships || []).find((m) => m.project_id === p.id);
+            const role = memberRow?.role || (p.created_by === profile.id || isGlobalAdmin ? 'owner' : null);
+            return { ...p, membership_role: role };
+          });
       }
       case 'discover_public_spaces': {
         requireScope('spaces:discover');
@@ -96,7 +136,20 @@ async function handle(request: NextRequest) {
         if (a.status) q=q.eq('status',a.status); if(a.severity) q=q.eq('severity',a.severity); if(a.search) q=q.ilike('title',`%${String(a.search).slice(0,80)}%`);
         const {data,error}=await q;if(error)throw error;return data||[];
       }
-      case 'get_bug': { requireScope('bugs:read'); const {project}=await resolveProject(String(a.project)); const {data,error}=await db.from('ifb_bugs').select('*').eq('project_id',project.id).or(`id.eq.${String(a.bug)},code.eq.${String(a.bug)}`).maybeSingle(); if(error||!data)throw new Error('Bug not found in this project.'); return {project:{id:project.id,name:project.name,slug:project.slug},bug:data}; }
+      case 'get_bug': {
+        requireScope('bugs:read');
+        const { project } = await resolveProject(String(a.project));
+        const rawBug = String(a.bug || '').trim();
+        let q = db.from('ifb_bugs').select('*').eq('project_id', project.id);
+        if (/^[0-9a-f-]{36}$/i.test(rawBug)) {
+          q = q.eq('id', rawBug);
+        } else {
+          q = q.ilike('code', rawBug);
+        }
+        const { data, error } = await q.maybeSingle();
+        if (error || !data) throw new Error(`Bug "${rawBug}" not found in project "${project.name}".`);
+        return { project: { id: project.id, name: project.name, slug: project.slug }, bug: data };
+      }
       case 'create_bug': {
         requireScope('bugs:create'); const {project,member}=await resolveProject(String(a.project)); if(member && !canWrite(member))throw new Error('Your project role does not allow creating bugs.'); if(!member && !(project.is_public && project.allow_guest_reports))throw new Error('This public space does not accept guest bug reports.');
         const title=String(a.title||'').trim();if(!title||title.length>180)throw new Error('Title is required and must be at most 180 characters.');
@@ -130,7 +183,20 @@ async function handle(request: NextRequest) {
   if (body.method === 'tools/list') { await audit(body.method,null,true); return NextResponse.json(jsonRpc(body.id,{tools})); }
   if (body.method === 'tools/call') {
     const name=body.params?.name;const args=body.params?.arguments||{};if(typeof name!=='string')return NextResponse.json(rpcError(body.id,-32602,'Tool name is required.'));
-    try { const result=await callTool(name,args); await audit(body.method,name,true); return NextResponse.json(jsonRpc(body.id,{content:[{type:'text',text:JSON.stringify(result)}],structuredContent:result,isError:false})); }
+    try {
+      const result = await callTool(name, args);
+      await audit(body.method, name, true);
+      const structuredContent: Record<string, unknown> = Array.isArray(result)
+        ? { items: result, count: result.length, [name]: result }
+        : (typeof result === 'object' && result !== null
+            ? (result as Record<string, unknown>)
+            : { value: result });
+      return NextResponse.json(jsonRpc(body.id, {
+        content: [{ type: 'text', text: typeof result === 'string' ? result : JSON.stringify(result, null, 2) }],
+        structuredContent,
+        isError: false,
+      }));
+    }
     catch(error){ await audit(body.method,name,false,'TOOL_EXECUTION_FAILED'); return NextResponse.json(jsonRpc(body.id,{content:[{type:'text',text:error instanceof Error?error.message:'Tool execution failed.'}],isError:true}));}
   }
   if (body.method === 'resources/list') { await audit(body.method,null,true); return NextResponse.json(jsonRpc(body.id,{resources:[{uri:'ifoundbug://account',name:'Account context',description:'Authenticated account and token scopes.',mimeType:'application/json'}]})); }
