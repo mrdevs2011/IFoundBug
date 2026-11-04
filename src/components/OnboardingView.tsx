@@ -444,7 +444,7 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
                 <label className="text-xs font-semibold text-zinc-300">Loyihadagi rolingiz</label>
                 <select
                   value={role}
-                  onChange={(e) => setRole(e.target.value as any)}
+                  onChange={(e) => setRole(e.target.value as UserProfile['role'])}
                   className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
                 >
                   <option value="developer">Dasturchi (Software Engineer)</option>
