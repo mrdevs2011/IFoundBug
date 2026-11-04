@@ -226,7 +226,7 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
               </span>
             </div>
             <span className="text-[10px] text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-700">
-              Avto-aniqlandi ✓
+              Avto-aniqlandi
             </span>
           </div>
 
@@ -289,10 +289,10 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
                 onChange={(e) => setSeverity(e.target.value as Severity)}
                 className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none"
               >
-                <option value="CRITICAL">🔴 CRITICAL (Blocker)</option>
-                <option value="HIGH">🟠 HIGH (Jiddiy)</option>
-                <option value="MEDIUM">🟡 MEDIUM (O‘rtacha)</option>
-                <option value="LOW">🟢 LOW (Kichik)</option>
+                <option value="CRITICAL">CRITICAL (Blocker)</option>
+                <option value="HIGH">HIGH (Jiddiy)</option>
+                <option value="MEDIUM">MEDIUM (O‘rtacha)</option>
+                <option value="LOW">LOW (Kichik)</option>
               </select>
             </div>
 
@@ -329,7 +329,7 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-red-400 mb-1">
-                ❌ Hozirgi Xato (Actual Behavior) *
+                Hozirgi Xato (Actual Behavior) *
               </label>
               <textarea
                 required
@@ -343,7 +343,7 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
 
             <div>
               <label className="block text-xs font-semibold text-emerald-400 mb-1">
-                ✅ Kutilgan Natija (Expected Behavior) *
+                Kutilgan Natija (Expected Behavior) *
               </label>
               <textarea
                 required

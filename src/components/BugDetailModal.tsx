@@ -53,7 +53,7 @@ export const BugDetailModal: React.FC<BugDetailModalProps> = ({
 
   const handleShareTelegram = () => {
     const url = `${typeof window !== 'undefined' ? window.location.origin : ''}?bug=${bug.code}`;
-    const text = `🚨 [${bug.code}] ${bug.title}\n⚠️ Daraja: ${bug.severity} | Holat: ${bug.status}\n📍 Bo'lim: ${bug.section} (${bug.screen || 'Umumiy'})\n🔗 Ko'rish:`;
+    const text = `[${bug.code}] ${bug.title}\nDaraja: ${bug.severity} | Holat: ${bug.status}\nBo'lim: ${bug.section} (${bug.screen || 'Umumiy'})\nKo'rish:`;
     window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -117,7 +117,7 @@ export const BugDetailModal: React.FC<BugDetailModalProps> = ({
                 <option value="IN_PROGRESS">IN_PROGRESS (Jarayonda)</option>
                 <option value="READY_FOR_QA">READY_FOR_QA (Testga tayyor)</option>
                 <option value="VERIFIED">VERIFIED (Tasdiqlandi)</option>
-                <option value="FIXED">FIXED (Tuzatildi ✓)</option>
+                <option value="FIXED">FIXED (Tuzatildi)</option>
                 <option value="CLOSED">CLOSED (Yopildi)</option>
                 <option value="WONT_FIX">WONT_FIX (Tuzatilmaydi)</option>
               </select>
@@ -250,14 +250,14 @@ export const BugDetailModal: React.FC<BugDetailModalProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-red-950/20 border border-red-900/30 rounded-xl p-4">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-red-400 uppercase tracking-wider mb-2">
-                    <span>❌ Hozirgi Xato (Actual Behavior)</span>
+                    <span>Hozirgi Xato (Actual Behavior)</span>
                   </div>
                   <p className="text-xs text-zinc-200 leading-relaxed whitespace-pre-wrap">{bug.actual_behavior}</p>
                 </div>
 
                 <div className="bg-emerald-950/20 border border-emerald-900/30 rounded-xl p-4">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2">
-                    <span>✅ Kutilgan Natija (Expected Behavior)</span>
+                    <span>Kutilgan Natija (Expected Behavior)</span>
                   </div>
                   <p className="text-xs text-zinc-200 leading-relaxed whitespace-pre-wrap">{bug.expected_behavior}</p>
                 </div>
@@ -267,7 +267,7 @@ export const BugDetailModal: React.FC<BugDetailModalProps> = ({
               {bug.steps_to_reproduce && bug.steps_to_reproduce.length > 0 && (
                 <div className="bg-zinc-950/50 border border-zinc-800 rounded-xl p-4">
                   <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-wider mb-3">
-                    🔁 Qayta Hosil Qilish Qadamlari (Steps to Reproduce)
+                    Qayta Hosil Qilish Qadamlari (Steps to Reproduce)
                   </h4>
                   <ol className="space-y-2 text-xs text-zinc-300 list-decimal list-inside">
                     {bug.steps_to_reproduce.map((step, idx) => (
@@ -327,7 +327,7 @@ export const BugDetailModal: React.FC<BugDetailModalProps> = ({
               {bug.dev_notes && (
                 <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4">
                   <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <span>🛠 Texnik Tahlil & Fayl Ko‘rsatkichlari (Dev Notes)</span>
+                    <span>Texnik Tahlil & Fayl Ko‘rsatkichlari (Dev Notes)</span>
                   </h4>
                   <pre className="text-xs font-mono text-zinc-300 whitespace-pre-wrap leading-relaxed">
                     {bug.dev_notes}
@@ -340,7 +340,7 @@ export const BugDetailModal: React.FC<BugDetailModalProps> = ({
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
-                      📸 Dalil Skrinshotlari ({bug.evidence_urls.length})
+                      Dalil Skrinshotlari ({bug.evidence_urls.length})
                     </h4>
                     {localPrivacy && (
                       <span className="text-[11px] text-amber-400 flex items-center gap-1">

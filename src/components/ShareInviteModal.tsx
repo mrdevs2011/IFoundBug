@@ -242,7 +242,7 @@ export const ShareInviteModal: React.FC<ShareInviteModalProps> = ({ project, onC
                   type="submit"
                   className="bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs px-4 py-2 rounded-lg transition"
                 >
-                  {tgSaved ? 'Saqlandi! ✓' : 'Webhookni Saqlash'}
+                  {tgSaved ? 'Saqlandi!' : 'Webhookni Saqlash'}
                 </button>
               </div>
             </form>

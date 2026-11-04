@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Bug, Project } from '@/types';
+import { SearchIcon, PlusIcon, KanbanIcon, ListIcon, SparklesIcon, ShareIcon, BugIcon } from './icons';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -48,7 +49,7 @@ export default function CommandPalette({
       {
         id: 'action-create',
         title: 'Yangi Bug yaratish (Report Defect)',
-        icon: '🐛',
+        iconNode: <PlusIcon className="w-4 h-4 text-emerald-400" />,
         category: 'Harakatlar',
         action: () => {
           onClose();
@@ -58,7 +59,7 @@ export default function CommandPalette({
       {
         id: 'action-kanban',
         title: 'Kanban taxtasiga o‘tish',
-        icon: '📋',
+        iconNode: <KanbanIcon className="w-4 h-4 text-sky-400" />,
         category: 'Harakatlar',
         action: () => {
           onClose();
@@ -68,7 +69,7 @@ export default function CommandPalette({
       {
         id: 'action-list',
         title: 'Ro‘yxat ko‘rinishiga o‘tish',
-        icon: '📜',
+        iconNode: <ListIcon className="w-4 h-4 text-zinc-400" />,
         category: 'Harakatlar',
         action: () => {
           onClose();
@@ -78,7 +79,7 @@ export default function CommandPalette({
       {
         id: 'action-ai',
         title: 'AI Fix Promptlarini ochish (Cursor/Claude)',
-        icon: '✨',
+        iconNode: <SparklesIcon className="w-4 h-4 text-purple-400" />,
         category: 'Harakatlar',
         action: () => {
           onClose();
@@ -89,7 +90,7 @@ export default function CommandPalette({
       {
         id: 'action-share',
         title: 'Loyiha Taklif Havolasi & Telegram Bot',
-        icon: '🔗',
+        iconNode: <ShareIcon className="w-4 h-4 text-cyan-400" />,
         category: 'Harakatlar',
         action: () => {
           onClose();
@@ -116,7 +117,7 @@ export default function CommandPalette({
       .map((b) => ({
         id: `bug-${b.id}`,
         title: `${b.code}: ${b.title}`,
-        icon: '🐞',
+        iconNode: <BugIcon className="w-4 h-4 text-emerald-400" />,
         category: 'Xatolar',
         action: () => {
           onClose();
@@ -174,7 +175,7 @@ export default function CommandPalette({
       >
         {/* Search Input */}
         <div className="flex items-center px-4 py-3 border-b border-zinc-800 bg-zinc-950/70">
-          <span className="text-zinc-500 mr-2.5 text-sm">🔍</span>
+          <SearchIcon className="w-4 h-4 text-zinc-500 mr-2.5 shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -210,7 +211,7 @@ export default function CommandPalette({
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="text-sm shrink-0">{item.icon}</span>
+                    <span className="shrink-0">{item.iconNode}</span>
                     <span className="font-medium truncate">{item.title}</span>
                   </div>
                   <span className="text-[10px] font-mono text-zinc-500 shrink-0 uppercase tracking-wider">

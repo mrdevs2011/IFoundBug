@@ -223,7 +223,6 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
         {magicLinkSent ? (
           <div className="mt-6 p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-center space-y-2">
-            <span className="text-2xl">✉️</span>
             <h4 className="text-sm font-bold text-emerald-300">Sehrli havola yuborildi!</h4>
             <p className="text-xs text-zinc-300">
               <strong>{email}</strong> pochtangizga bir martalik kirish havolasi yuborildi. Pochtani tekshiring va havola orqali kiring.
@@ -268,10 +267,10 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                     onChange={(e) => setRole(e.target.value as typeof role)}
                     className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:border-emerald-500 focus:outline-none cursor-pointer"
                   >
-                    <option value="developer">💻 Dasturchi (Frontend / Backend / Fullstack)</option>
-                    <option value="qa_tester">🐞 QA Tester / Bug Hunter</option>
-                    <option value="team_lead">🚀 Team Lead / Tech Lead</option>
-                    <option value="product_manager">📊 Product / Project Manager</option>
+                    <option value="developer">Dasturchi (Frontend / Backend / Fullstack)</option>
+                    <option value="qa_tester">QA Tester / Bug Hunter</option>
+                    <option value="team_lead">Team Lead / Tech Lead</option>
+                    <option value="product_manager">Product / Project Manager</option>
                   </select>
                 </div>
               </>

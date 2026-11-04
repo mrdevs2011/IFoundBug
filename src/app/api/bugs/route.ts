@@ -62,7 +62,7 @@ export async function POST(req: Request) {
     const tgChat = process.env.TELEGRAM_CHAT_ID;
     if (tgToken && tgChat) {
       try {
-        const text = `🚨 *Yangi Bug Topildi!* [${newBug.code}]\n\n📌 *Sarlavha:* ${title}\n📍 *Bo‘lim:* ${section}\n🔴 *Jiddiylik:* ${severity} (${priority})\n📱 *Telemetriya:* ${device_telemetry.os || 'N/A'}, ${device_telemetry.browser || 'N/A'}\n\n❌ *Xato:* ${actual_behavior}\n✅ *Kutilgan:* ${expected_behavior}\n\n👤 *Xabar beruvchi:* ${reporter_name}`;
+        const text = `*[Yangi Bug Qayd Etildi]* [${newBug.code}]\n\n*Sarlavha:* ${title}\n*Bo‘lim:* ${section}\n*Jiddiylik:* ${severity} (${priority})\n*Telemetriya:* ${device_telemetry.os || 'N/A'}, ${device_telemetry.browser || 'N/A'}\n\n*Xato:* ${actual_behavior}\n*Kutilgan:* ${expected_behavior}\n\n*Xabar beruvchi:* ${reporter_name}`;
         await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

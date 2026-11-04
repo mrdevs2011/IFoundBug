@@ -16,7 +16,7 @@ const COLUMNS: { status: BugStatus; label: string; dot: string }[] = [
   { status: 'TRIAGED', label: 'Triaged', dot: 'bg-sky-400' },
   { status: 'IN_PROGRESS', label: 'In Progress', dot: 'bg-amber-400' },
   { status: 'READY_FOR_QA', label: 'Ready for QA', dot: 'bg-purple-400' },
-  { status: 'FIXED', label: 'Fixed ✓', dot: 'bg-emerald-400' },
+  { status: 'FIXED', label: 'Fixed', dot: 'bg-emerald-400' },
 ];
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({

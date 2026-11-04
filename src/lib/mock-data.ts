@@ -1365,7 +1365,7 @@ export const INITIAL_COMMENTS: BugComment[] = [
     author_avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
     content: "O‘zbekcha tarjima kalitlarini tekshirib chiqdim. navigation.json da tab nomlari inglizcha qolib ketgan ekan. Bugun pull request tayyorlayman.",
     is_internal: false,
-    reactions: { "👍": ["Muhamad R.", "Sarvar Tester"], "🚀": ["Muhamad R."] },
+    reactions: { "like": ["Muhamad R.", "Sarvar Tester"], "agree": ["Muhamad R."] },
     created_at: new Date(Date.now() - 3600000 * 5).toISOString()
   },
   {
@@ -1375,7 +1375,7 @@ export const INITIAL_COMMENTS: BugComment[] = [
     author_avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150",
     content: "Ajoyib! Pastki navigatsiyadan tashqari profil sozlamalaridagi ba'zi yorliqlar ham inglizcha ko‘rinayotganini payqadim (#B04 ga qarang).",
     is_internal: false,
-    reactions: { "👀": ["Alisher Qodirov (Dev)"] },
+    reactions: { "seen": ["Alisher Qodirov (Dev)"] },
     created_at: new Date(Date.now() - 3600000 * 2).toISOString()
   },
   {
@@ -1385,7 +1385,7 @@ export const INITIAL_COMMENTS: BugComment[] = [
     author_avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
     content: "Apostrof masalasida butun ilovada U+02BB yoki U+2019 glifini standart qilamiz. Regex qoidasini CI lint tekshiruviga kiritib qo‘yamiz.",
     is_internal: true,
-    reactions: { "🔥": ["Alisher Qodirov (Dev)"] },
+    reactions: { "noted": ["Alisher Qodirov (Dev)"] },
     created_at: new Date(Date.now() - 3600000 * 1).toISOString()
   }
 ];

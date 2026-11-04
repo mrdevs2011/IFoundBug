@@ -169,7 +169,7 @@ export default function DashboardPage() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-medium">
-                ⚡ Workspace Hub
+                Workspace Hub
               </span>
               <span className="text-zinc-500 text-xs font-mono">Linear-Grade Bug Triage</span>
             </div>

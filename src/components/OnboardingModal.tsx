@@ -142,10 +142,10 @@ export default function OnboardingModal({
                   onChange={(e) => setRole(e.target.value as typeof role)}
                   className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-white focus:border-emerald-500 focus:outline-none cursor-pointer"
                 >
-                  <option value="developer">💻 Frontend / Backend / Fullstack Dasturchi</option>
-                  <option value="qa_tester">🐞 QA Tester / Bug Hunter</option>
-                  <option value="team_lead">🚀 Team Lead / CTO</option>
-                  <option value="product_manager">📊 Product Manager</option>
+                  <option value="developer">Frontend / Backend / Fullstack Dasturchi</option>
+                  <option value="qa_tester">QA Tester / Bug Hunter</option>
+                  <option value="team_lead">Team Lead / CTO</option>
+                  <option value="product_manager">Product Manager</option>
                 </select>
               </div>
             </div>
@@ -232,7 +232,7 @@ export default function OnboardingModal({
             <div className="space-y-3 text-xs">
               <div className="p-3.5 rounded-xl bg-zinc-900/90 border border-zinc-800 space-y-2">
                 <span className="font-semibold text-emerald-400 flex items-center gap-1.5">
-                  <span>✨</span> Telegram Tartibsizligiga Chek Qo‘yish:
+                  Telegram Tartibsizligiga Chek Qo‘yish:
                 </span>
                 <p className="text-zinc-400 leading-relaxed">
                   Har bir bug uchun alohida tokenli havola, ekran skrinshoti annotatsiyasi, PII blur va AI Fix Promptlari yaratiladi. Telegram guruhga faqat tayyor tizimli hisobot boradi.
@@ -276,7 +276,7 @@ export default function OnboardingModal({
             onClick={handleNext}
             className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-extrabold text-xs shadow-lg shadow-emerald-500/20 transition transform active:scale-95"
           >
-            {step === 3 ? '🎉 Boshlash va Loyihani Ochish' : 'Davom etish →'}
+            {step === 3 ? 'Boshlash va Loyihani Ochish' : 'Davom etish →'}
           </button>
         </div>
       </div>

@@ -341,10 +341,10 @@ export default function ProjectWorkspacePage() {
               className="bg-zinc-900/80 border border-zinc-800 text-xs font-semibold text-zinc-300 rounded-xl px-3 py-2 focus:outline-none focus:border-zinc-700 cursor-pointer"
             >
               <option value="ALL">Barcha darajalar</option>
-              <option value="CRITICAL">🔥 CRITICAL</option>
-              <option value="HIGH">🚨 HIGH</option>
-              <option value="MEDIUM">⚠️ MEDIUM</option>
-              <option value="LOW">💡 LOW</option>
+              <option value="CRITICAL">CRITICAL</option>
+              <option value="HIGH">HIGH</option>
+              <option value="MEDIUM">MEDIUM</option>
+              <option value="LOW">LOW</option>
             </select>
 
             {/* Status Filter */}

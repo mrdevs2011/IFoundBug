@@ -10,7 +10,7 @@ interface OnboardingViewProps {
 }
 
 export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
-  const [tab, setTab] = useState<'demo' | 'login' | 'signup'>('demo');
+  const [tab, setTab] = useState<'login' | 'signup'>('login');
   const [showSplash, setShowSplash] = useState(true);
 
   // Form states
@@ -21,7 +21,7 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // 1. Silky 1.2-second splash screen like TekinMail & MYplan
+  // 1. Silky 1.2-second splash screen
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
@@ -135,23 +135,9 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
     onAuthSuccess(localUser);
   };
 
-  const handleDemoLogin = (demoRole: 'developer' | 'qa_tester' | 'team_lead', name: string) => {
-    const demoUser: UserProfile = {
-      id: `demo-${demoRole}`,
-      email: `${demoRole}@ifoundbug.dev`,
-      full_name: name,
-      role: demoRole,
-      created_at: new Date().toISOString(),
-    };
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('ifb_active_user', JSON.stringify(demoUser));
-    }
-    onAuthSuccess(demoUser);
-  };
-
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col justify-between selection:bg-emerald-500 selection:text-black relative overflow-hidden font-sans">
-      {/* 0. SILKY INTRO SPLASH SCREEN */}
+      {/* 0. Intro Splash Screen */}
       {showSplash && (
         <div className="fixed inset-0 z-50 bg-zinc-950 flex flex-col items-center justify-center transition-all duration-700 ease-out">
           <div className="flex flex-col items-center space-y-5 animate-fade-in">
@@ -224,7 +210,7 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
           </h1>
 
           <p className="text-sm sm:text-base text-zinc-400 leading-relaxed font-normal">
-            Ilovalaringizdagi xatolarni audio yoki betartib skrinshotlar orqali emas, balki
+            Ilovalaringizdagi xatolarni audio yoki chalkash skrinshotlar orqali emas, balki
             aniq qadamlar, telemetriya, bir bosishda Telegram kartalari va Claude/Cursor AI promptlari bilan boshqaring.
           </p>
 
@@ -273,9 +259,9 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
 
             {/* Actions Bar inside Preview */}
             <div className="flex items-center justify-between pt-2 border-t border-zinc-800/80">
-              <div className="flex items-center gap-2 text-[11px] text-zinc-400">
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-mono font-semibold">
-                  👍 6 ta dasturchi tasdiqladi
+              <div className="flex items-center gap-2 text-[11px] text-zinc-400 font-mono">
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-semibold">
+                  6 ta dasturchi tasdiqladi
                 </span>
               </div>
 
@@ -293,37 +279,23 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
           </div>
         </div>
 
-        {/* Right Side: Elite Segmented Authentication Box */}
+        {/* Right Side: Authentication Box */}
         <div className="w-full max-w-md linear-card rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 relative border border-white/[0.08]">
-          {/* Segmented Control Switcher */}
-          <div className="p-1 rounded-2xl bg-zinc-950/80 border border-zinc-800/80 grid grid-cols-3 gap-1">
-            <button
-              type="button"
-              onClick={() => {
-                setTab('demo');
-                setErrorMsg('');
-              }}
-              className={`py-2 text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-1 ${
-                tab === 'demo'
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <span>⚡ Demo</span>
-            </button>
+          {/* Segmented Control Switcher: Only Login and Signup */}
+          <div className="p-1 rounded-2xl bg-zinc-950/80 border border-zinc-800/80 grid grid-cols-2 gap-1">
             <button
               type="button"
               onClick={() => {
                 setTab('login');
                 setErrorMsg('');
               }}
-              className={`py-2 text-xs font-bold rounded-xl transition cursor-pointer ${
+              className={`py-2.5 text-xs font-bold rounded-xl transition cursor-pointer ${
                 tab === 'login'
                   ? 'bg-zinc-800 text-white shadow-sm'
                   : 'text-zinc-400 hover:text-white'
               }`}
             >
-              Kirish
+              Kirish (Login)
             </button>
             <button
               type="button"
@@ -331,99 +303,23 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
                 setTab('signup');
                 setErrorMsg('');
               }}
-              className={`py-2 text-xs font-bold rounded-xl transition cursor-pointer ${
+              className={`py-2.5 text-xs font-bold rounded-xl transition cursor-pointer ${
                 tab === 'signup'
                   ? 'bg-zinc-800 text-white shadow-sm'
                   : 'text-zinc-400 hover:text-white'
               }`}
             >
-              Ro‘yxatdan
+              Ro‘yxatdan o‘tish
             </button>
           </div>
 
           {errorMsg && (
-            <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-xl leading-relaxed flex items-center gap-2">
-              <span className="text-sm">⚠️</span>
-              <span>{errorMsg}</span>
+            <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-xl leading-relaxed">
+              {errorMsg}
             </div>
           )}
 
-          {tab === 'demo' ? (
-            /* 1-Click Demo Profiles */
-            <div className="space-y-4">
-              <div className="text-center space-y-1">
-                <h3 className="text-sm font-bold text-white">1-Bosishda Kirish (Tezkor Demo)</h3>
-                <p className="text-xs text-zinc-400">
-                  Parol kiritmasdan, to‘g‘ridan-to‘g‘ri dasturchi yoki lead sifatida sinab ko‘ring:
-                </p>
-              </div>
-
-              <div className="space-y-2.5">
-                <button
-                  type="button"
-                  onClick={() => handleDemoLogin('team_lead', 'Muhamad R. (Lead)')}
-                  className="w-full p-3.5 rounded-2xl bg-zinc-950/70 border border-zinc-800/80 hover:border-emerald-500/60 hover:bg-zinc-900/80 flex items-center justify-between text-left transition group cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center font-bold text-emerald-400 text-sm group-hover:scale-105 transition">
-                      MR
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-white group-hover:text-emerald-400 transition">
-                        Muhamad R.
-                      </h4>
-                      <span className="text-[10px] text-zinc-400 font-mono">Team Lead / Creator</span>
-                    </div>
-                  </div>
-                  <span className="text-xs text-emerald-400 font-bold group-hover:translate-x-1 transition flex items-center gap-1">
-                    Kirish →
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleDemoLogin('developer', 'Alisher Qodirov')}
-                  className="w-full p-3.5 rounded-2xl bg-zinc-950/70 border border-zinc-800/80 hover:border-emerald-500/60 hover:bg-zinc-900/80 flex items-center justify-between text-left transition group cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center font-bold text-cyan-400 text-sm group-hover:scale-105 transition">
-                      AQ
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-white group-hover:text-emerald-400 transition">
-                        Alisher Qodirov
-                      </h4>
-                      <span className="text-[10px] text-zinc-400 font-mono">Mobile & Frontend Dev</span>
-                    </div>
-                  </div>
-                  <span className="text-xs text-emerald-400 font-bold group-hover:translate-x-1 transition flex items-center gap-1">
-                    Kirish →
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleDemoLogin('qa_tester', 'Sarvar Tester')}
-                  className="w-full p-3.5 rounded-2xl bg-zinc-950/70 border border-zinc-800/80 hover:border-emerald-500/60 hover:bg-zinc-900/80 flex items-center justify-between text-left transition group cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center font-bold text-amber-400 text-sm group-hover:scale-105 transition">
-                      ST
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-white group-hover:text-emerald-400 transition">
-                        Sarvar Tester
-                      </h4>
-                      <span className="text-[10px] text-zinc-400 font-mono">QA Engineer / Hunter</span>
-                    </div>
-                  </div>
-                  <span className="text-xs text-emerald-400 font-bold group-hover:translate-x-1 transition flex items-center gap-1">
-                    Kirish →
-                  </span>
-                </button>
-              </div>
-            </div>
-          ) : tab === 'login' ? (
+          {tab === 'login' ? (
             /* Login Form */
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-1.5">
@@ -502,7 +398,7 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value as any)}
-                  className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
                 >
                   <option value="developer">Dasturchi (Software Engineer)</option>
                   <option value="qa_tester">QA Tester (Bug Hunter)</option>
@@ -521,15 +417,15 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
             </form>
           )}
 
-          <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[11px] text-zinc-500">
-            <span>🔒 Xavfsiz Shifrlash</span>
-            <span>⚡ Next.js 15 & Supabase</span>
+          <div className="pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+            <span>Xavfsiz Shifrlash</span>
+            <span>Next.js 15 & Supabase</span>
           </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-zinc-900/80 py-4 text-center text-xs text-zinc-600">
+      <footer className="border-t border-zinc-900/80 py-4 text-center text-xs text-zinc-600 font-mono">
         IFoundBug • Professional Bug Triage Standard • Designed for Developers
       </footer>
     </div>

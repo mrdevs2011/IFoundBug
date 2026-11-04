@@ -26,29 +26,29 @@ export const AIPromptModal: React.FC<AIPromptModalProps> = ({ bugs, onClose }) =
 
 Sen ushbu loyihaning yetakchi dasturchisisan. Quyidagi xatolikni tuzatib, to‘liq tekshiruvdan o‘tkaz.
 
-## 📌 Asosiy ma'lumotlar
+## Asosiy ma'lumotlar
 - **Ekran / Bo‘lim:** ${b.screen || b.section}
 - **Jiddiylik:** ${b.severity} (Prioritet: ${b.priority})
 - **Muhit:** ${b.environment}
 - **Xabar beruvchi:** ${b.reporter_name}
 
-## ❌ Hozirgi xato (Actual Behavior)
+## Hozirgi xato (Actual Behavior)
 ${b.actual_behavior}
 
-## ✅ Kutilgan natija (Expected Behavior)
+## Kutilgan natija (Expected Behavior)
 ${b.expected_behavior}
 
-## 🔁 Qayta hosil qilish qadamlari (Steps to Reproduce)
+## Qayta hosil qilish qadamlari (Steps to Reproduce)
 ${b.steps_to_reproduce.length > 0 ? b.steps_to_reproduce.map((s, idx) => `${idx + 1}. ${s}`).join('\n') : '1. Ilovani oching va tegishli ekranga o‘ting.'}
 
-${b.dev_notes ? `## 🛠 Texnik tahlil va Ko‘rsatmalar (Dev Notes)\n${b.dev_notes}\n` : ''}
+${b.dev_notes ? `## Texnik tahlil va Ko‘rsatmalar (Dev Notes)\n${b.dev_notes}\n` : ''}
 
-## 📋 Qabul mezonlari (Acceptance Criteria)
+## Qabul mezonlari (Acceptance Criteria)
 ${b.acceptance_criteria.length > 0 ? b.acceptance_criteria.map((ac) => `- [${ac.checked ? 'x' : ' '}] ${ac.text}`).join('\n') : '- [ ] Xatolik to‘liq bartaraf etildi\n- [ ] Hech qanday regressiya yuzaga kelmadi'}
 
-${b.evidence_urls.length > 0 ? `## 📸 Dalillar (Evidence Screenshots)\n${b.evidence_urls.map((u) => `- ${u}`).join('\n')}\n` : ''}
+${b.evidence_urls.length > 0 ? `## Dalillar (Evidence Screenshots)\n${b.evidence_urls.map((u) => `- ${u}`).join('\n')}\n` : ''}
 
-## 🚀 Talablar va Cheklovlar:
+## Talablar va Cheklovlar:
 1. Boshqa ekranlar va mavjud biznes mantiqini aslo buzmang.
 2. O‘zgarishlarni minimal va xavfsiz bajaring.
 3. Ish yakunlangach, o‘zgargan fayllar va qanday tekshirilganini qisqa hisobot qilib yozing.
@@ -78,7 +78,7 @@ ${b.acceptance_criteria.map((ac) => `  - [ ] ${ac.text}`).join('\n')}
 
 ---
 
-## 🛡 Umumiy qoidalar:
+## Umumiy qoidalar:
 1. Har doim kod bazasidagi mavjud konvensiyalarni saqlang.
 2. Xatolikni bartaraf etgach, loyihani build/test qilib tekshiring.
 3. Har bir bug bo‘yicha o‘zgartirilgan fayllar ro‘yxatini keltiring.

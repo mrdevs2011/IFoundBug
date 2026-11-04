@@ -8,30 +8,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'Telegram bot_token yoki chat_id berilmagan' }, { status: 400 });
     }
 
-    const appOrigin = origin || process.env.NEXT_PUBLIC_APP_URL || 'https://ifoundbug.app';
+    const appOrigin = origin || process.env.NEXT_PUBLIC_APP_URL || 'https://i-found-bug.vercel.app';
     const bugUrl = `${appOrigin}/p/${project_slug}/bugs/${bug.code || bug.id}`;
 
-    const severityEmoji = {
-      CRITICAL: '🔥 [CRITICAL]',
-      HIGH: '🚨 [HIGH]',
-      MEDIUM: '⚠️ [MEDIUM]',
-      LOW: '💡 [LOW]',
-    }[bug.severity as 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'] || '⚠️ [BUG]';
+    const severityTag = {
+      CRITICAL: '[CRITICAL]',
+      HIGH: '[HIGH]',
+      MEDIUM: '[MEDIUM]',
+      LOW: '[LOW]',
+    }[bug.severity as 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'] || '[BUG]';
 
     const text = `
-${severityEmoji} *${bug.title}*
+${severityTag} *${bug.title}*
 ━━━━━━━━━━━━━━━━━━
-🆔 *Kod:* \`${bug.code}\`
-📱 *Loyiha:* *${project_name}*
-📌 *Bo'lim:* ${bug.section} • ${bug.screen || 'Asosiy'}
-⚙️ *Holat:* ${bug.status} | *Muhit:* ${bug.environment}
-👤 *Report:* ${bug.reporter_name || 'Dasturchi'}
+*Kod:* \`${bug.code}\`
+*Loyiha:* *${project_name}*
+*Bo'lim:* ${bug.section} • ${bug.screen || 'Asosiy'}
+*Holat:* ${bug.status} | *Muhit:* ${bug.environment}
+*Report:* ${bug.reporter_name || 'Dasturchi'}
 
-📝 *Haqiqiy holat:*
+*Haqiqiy holat:*
 ${bug.actual_behavior}
 
-🔗 *Batafsil ko'rish & tekshirish:*
-[👉 IFoundBug orqali ochish](${bugUrl})
+*Havola:*
+[IFoundBug orqali ochish](${bugUrl})
 `.trim();
 
     const response = await fetch(`https://api.telegram.org/bot${bot_token}/sendMessage`, {

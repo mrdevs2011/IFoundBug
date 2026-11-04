@@ -217,7 +217,7 @@ export default function BugDetailPage() {
   const handleShareTelegram = () => {
     if (!bug || !project) return;
     const url = typeof window !== 'undefined' ? window.location.href : '';
-    const text = `🚨 *[${bug.code}] ${bug.title}*\n📱 *Loyiha:* ${project.name}\n⚠️ *Daraja:* ${bug.severity} | *Holat:* ${bug.status}\n📍 *Bo'lim:* ${bug.section} (${bug.screen || 'Asosiy'})\n🔗 *Ko'rish:*`;
+    const text = `*[${bug.code}] ${bug.title}*\n*Loyiha:* ${project.name}\n*Daraja:* ${bug.severity} | *Holat:* ${bug.status}\n*Bo'lim:* ${bug.section} (${bug.screen || 'Asosiy'})\n*Ko'rish:*`;
     window.open(
       `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
       '_blank'
@@ -357,7 +357,7 @@ export default function BugDetailPage() {
                 <option value="IN_PROGRESS">IN_PROGRESS (Jarayonda)</option>
                 <option value="READY_FOR_QA">READY_FOR_QA (QA Testda)</option>
                 <option value="VERIFIED">VERIFIED (Tasdiqlandi)</option>
-                <option value="FIXED">FIXED (Tuzatildi ✓)</option>
+                <option value="FIXED">FIXED (Tuzatildi)</option>
                 <option value="CLOSED">CLOSED (Yopildi)</option>
                 <option value="WONT_FIX">WONT_FIX (Bekor)</option>
               </select>
