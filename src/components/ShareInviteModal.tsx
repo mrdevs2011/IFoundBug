@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Project } from '@/types';
 import { ShareIcon, CopyIcon, CheckIcon, XIcon, TelegramIcon } from './icons';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { copyToClipboard } from '@/lib/clipboard';
 
 interface ShareInviteModalProps {
   project: Project;
@@ -33,16 +34,20 @@ export const ShareInviteModal: React.FC<ShareInviteModalProps> = ({ project, onC
   defer>
 </script>`;
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(inviteLink);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
+  const handleCopyLink = async () => {
+    const ok = await copyToClipboard(inviteLink);
+    if (ok) {
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    }
   };
 
-  const handleCopyWidget = () => {
-    navigator.clipboard.writeText(widgetSnippet);
-    setCopiedWidget(true);
-    setTimeout(() => setCopiedWidget(false), 2000);
+  const handleCopyWidget = async () => {
+    const ok = await copyToClipboard(widgetSnippet);
+    if (ok) {
+      setCopiedWidget(true);
+      setTimeout(() => setCopiedWidget(false), 2000);
+    }
   };
 
   const handleSaveTelegram = async (e: React.FormEvent) => {
@@ -185,11 +190,11 @@ export const ShareInviteModal: React.FC<ShareInviteModalProps> = ({ project, onC
                     className="flex-1 bg-zinc-950/60 border border-zinc-800/80 rounded-lg px-3 py-1.5 text-xs text-zinc-400 font-mono select-all focus:outline-none"
                   />
                   <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(publicShareLink);
+                    onClick={async () => {
+                      await copyToClipboard(publicShareLink);
                       alert('Public havola nusxalandi!');
                     }}
-                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs px-3 py-1.5 rounded-lg border border-zinc-700 transition"
+                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs px-3 py-1.5 rounded-lg border border-zinc-700 transition cursor-pointer"
                   >
                     Nusxa
                   </button>

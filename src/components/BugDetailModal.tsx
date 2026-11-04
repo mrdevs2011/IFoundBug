@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Bug, BugComment, BugStatus } from '@/types';
+import { copyToClipboard } from '@/lib/clipboard';
 import {
   XIcon,
   SparklesIcon,
@@ -57,11 +58,13 @@ export const BugDetailModal: React.FC<BugDetailModalProps> = ({
     window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
   };
 
-  const handleCopyLink = () => {
+  const handleCopyLink = async () => {
     const url = `${typeof window !== 'undefined' ? window.location.origin : ''}?bug=${bug.code}`;
-    navigator.clipboard.writeText(url);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
+    const ok = await copyToClipboard(url);
+    if (ok) {
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    }
   };
 
   const statusColors: Record<BugStatus, { bg: string; text: string; border: string }> = {

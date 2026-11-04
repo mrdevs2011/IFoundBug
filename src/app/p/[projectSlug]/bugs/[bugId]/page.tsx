@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Bug, Project, BugComment, BugStatus, UserProfile } from '@/types';
 import { DataService } from '@/lib/supabase/data-service';
+import { copyToClipboard } from '@/lib/clipboard';
 import { AppNavbar } from '@/components/AppNavbar';
 import { AIPromptModal } from '@/components/AIPromptModal';
 import { ImageAnnotator } from '@/components/ImageAnnotator';
@@ -224,11 +225,13 @@ export default function BugDetailPage() {
     );
   };
 
-  const handleCopyLink = () => {
+  const handleCopyLink = async () => {
     if (typeof window !== 'undefined') {
-      navigator.clipboard.writeText(window.location.href);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2000);
+      const ok = await copyToClipboard(window.location.href);
+      if (ok) {
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2000);
+      }
     }
   };
 

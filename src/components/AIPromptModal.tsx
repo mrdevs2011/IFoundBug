@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Bug } from '@/types';
+import { copyToClipboard } from '@/lib/clipboard';
 import { SparklesIcon, CopyIcon, CheckIcon, XIcon, DownloadIcon } from './icons';
 
 interface AIPromptModalProps {
@@ -87,10 +88,12 @@ ${b.acceptance_criteria.map((ac) => `  - [ ] ${ac.text}`).join('\n')}
 
   const promptText = generatePrompt();
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(promptText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+  const handleCopy = async () => {
+    const ok = await copyToClipboard(promptText);
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
   };
 
   const handleDownload = () => {
