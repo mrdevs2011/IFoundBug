@@ -15,6 +15,7 @@ interface AppNavbarProps {
   onOpenReportModal?: () => void;
   onOpenShareModal?: () => void;
   onOpenNewProjectModal?: () => void;
+  onOpenSettings?: () => void;
   onOpenAuthModal?: () => void;
   onLogout?: () => void;
   onMarkNotificationRead?: (id: string) => void;
@@ -28,6 +29,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
   notifications = [],
   onOpenReportModal,
   onOpenShareModal,
+  onOpenSettings,
   onOpenAuthModal,
   onLogout,
   onMarkNotificationRead = () => {},
@@ -83,6 +85,12 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
             >
               <ShareIcon className="w-3.5 h-3.5 text-zinc-400" />
               <span>Ulashish</span>
+            </button>
+          )}
+
+          {user && onOpenSettings && (
+            <button onClick={onOpenSettings} title="Settings" aria-label="Settings" className="grid h-9 w-9 place-items-center rounded-xl border border-white/[0.07] bg-zinc-900/80 text-zinc-400 transition hover:border-emerald-500/30 hover:bg-zinc-800 hover:text-emerald-300">
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/><path strokeLinecap="round" strokeLinejoin="round" d="m19.4 15 .1.1a1.8 1.8 0 0 1-2.5 2.5l-.1-.1a1.8 1.8 0 0 0-3 .9v.2a1.8 1.8 0 0 1-3.6 0v-.2a1.8 1.8 0 0 0-3-.9l-.1.1a1.8 1.8 0 0 1-2.5-2.5l.1-.1a1.8 1.8 0 0 0-.9-3h-.2a1.8 1.8 0 0 1 0-3.6h.2a1.8 1.8 0 0 0 .9-3l-.1-.1a1.8 1.8 0 0 1 2.5-2.5l.1.1a1.8 1.8 0 0 0 3-.9v-.2a1.8 1.8 0 0 1 3.6 0v.2a1.8 1.8 0 0 0 3 .9l.1-.1a1.8 1.8 0 0 1 2.5 2.5l-.1.1a1.8 1.8 0 0 0 .9 3h.2a1.8 1.8 0 0 1 0 3.6h-.2a1.8 1.8 0 0 0-.9 3Z"/></svg>
             </button>
           )}
 

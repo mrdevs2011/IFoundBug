@@ -12,6 +12,7 @@ import { ShareInviteModal } from '@/components/ShareInviteModal';
 import NewProjectModal from '@/components/NewProjectModal';
 import AuthModal from '@/components/AuthModal';
 import OnboardingView from '@/components/OnboardingView';
+import MCPSettingsModal from '@/components/MCPSettingsModal';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 
 
@@ -29,6 +30,7 @@ export default function DashboardPage() {
   const [showReportModal, setShowReportModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showMCPSettings, setShowMCPSettings] = useState(false);
   const [selectedProjectForModal, setSelectedProjectForModal] = useState<Project | null>(null);
 
   useEffect(() => {
@@ -180,6 +182,7 @@ export default function DashboardPage() {
         }}
         onOpenNewProjectModal={() => setShowNewProjectModal(true)}
         onOpenAuthModal={() => setShowAuthModal(true)}
+        onOpenSettings={() => setShowMCPSettings(true)}
         onLogout={handleLogout}
       />
 
@@ -486,6 +489,8 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+
+      {showMCPSettings && <MCPSettingsModal onClose={() => setShowMCPSettings(false)} />}
 
       {/* Modals */}
       {showNewProjectModal && (

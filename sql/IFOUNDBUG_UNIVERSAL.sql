@@ -597,6 +597,43 @@ revoke all on function public.ifb_prepare_comment_insert() from public, anon, au
 revoke all on function public.ifb_notify_bug_event() from public, anon, authenticated;
 revoke all on function public.ifb_notify_comment() from public, anon, authenticated;
 
+-- 8. ACCOUNT-SCOPED MCP ACCESS TOKENS ----------------------------------------
+-- Raw bearer tokens are NEVER stored. The application stores SHA-256 digests.
+create table if not exists public.ifb_mcp_tokens (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid not null references public.ifb_profiles(id) on delete cascade,
+  name text not null default 'AI Agent' check (char_length(name) between 1 and 64),
+  token_hash text not null unique check (token_hash ~ '^[a-f0-9]{64}$'),
+  token_prefix text not null,
+  scopes text[] not null default array['projects:read','projects:create','invites:create','invites:read','invites:revoke','spaces:discover','bugs:read','bugs:create','bugs:update','comments:read','comments:create','members:read'],
+  expires_at timestamptz,
+  last_used_at timestamptz,
+  revoked_at timestamptz,
+  created_at timestamptz not null default now()
+);
+alter table public.ifb_mcp_tokens alter column scopes set default array['projects:read','projects:create','invites:create','invites:read','invites:revoke','spaces:discover','bugs:read','bugs:create','bugs:update','comments:read','comments:create','members:read'];
+create index if not exists ifb_mcp_tokens_profile_created_idx on public.ifb_mcp_tokens(profile_id, created_at desc);
+create index if not exists ifb_mcp_tokens_active_hash_idx on public.ifb_mcp_tokens(token_hash) where revoked_at is null;
+
+create table if not exists public.ifb_mcp_audit_logs (
+  id uuid primary key default gen_random_uuid(), token_id uuid references public.ifb_mcp_tokens(id) on delete set null, profile_id uuid references public.ifb_profiles(id) on delete set null, method text not null, tool_name text, success boolean not null default true, error_code text, created_at timestamptz not null default now()
+);
+create index if not exists ifb_mcp_audit_token_time_idx on public.ifb_mcp_audit_logs(token_id, created_at desc);
+create index if not exists ifb_mcp_audit_profile_time_idx on public.ifb_mcp_audit_logs(profile_id, created_at desc);
+alter table public.ifb_mcp_audit_logs enable row level security;
+revoke all on public.ifb_mcp_audit_logs from anon, authenticated;
+alter table public.ifb_mcp_tokens enable row level security;
+drop policy if exists ifb_mcp_tokens_select_own on public.ifb_mcp_tokens;
+create policy ifb_mcp_tokens_select_own on public.ifb_mcp_tokens for select to authenticated
+  using (profile_id = (select id from public.ifb_profiles where auth_user_id = auth.uid()));
+drop policy if exists ifb_mcp_tokens_insert_own on public.ifb_mcp_tokens;
+create policy ifb_mcp_tokens_insert_own on public.ifb_mcp_tokens for insert to authenticated
+  with check (profile_id = (select id from public.ifb_profiles where auth_user_id = auth.uid()));
+drop policy if exists ifb_mcp_tokens_revoke_own on public.ifb_mcp_tokens;
+revoke update on public.ifb_mcp_tokens from authenticated;
+grant select, insert on public.ifb_mcp_tokens to authenticated;
+revoke all on public.ifb_mcp_tokens from anon;
+
 notify pgrst, 'reload schema';
 notify pgrst, 'reload config';
 
