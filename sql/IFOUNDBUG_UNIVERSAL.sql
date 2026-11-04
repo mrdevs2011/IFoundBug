@@ -235,8 +235,10 @@ create or replace function public.ifb_set_project_owner()
 returns trigger language plpgsql security definer set search_path = public, auth as $$
 declare v_profile_id uuid;
 begin
-  if auth.uid() is not null and new.created_by is null then
+  if auth.uid() is not null then
     select id into v_profile_id from public.ifb_profiles where auth_user_id = auth.uid();
+    if v_profile_id is null then raise exception 'Authenticated profile not found'; end if;
+    -- Do not allow clients to assign project ownership to another profile.
     new.created_by := v_profile_id;
   end if;
   return new;

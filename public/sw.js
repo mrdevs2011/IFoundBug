@@ -1,7 +1,7 @@
 const CACHE_NAME = 'ifoundbug-cache-v3';
 
 // Force new service worker activation immediately
-self.addEventListener('install', (event) => {
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
