@@ -246,42 +246,76 @@ export const DataService = {
   },
 
   // 4. Realtime Subscriptions
-  subscribeToProject(projectId: string, onBugChange: (bug: Bug, eventType: string) => void) {
+  subscribeToWorkspace(
+    onChange: (event: { table: string; eventType: string; new: Record<string, unknown>; old: Record<string, unknown> }) => void,
+    onStatus?: (status: string) => void,
+  ) {
     if (!isSupabaseConfigured || !supabase) return null;
+    const tables = [
+      'ifb_profiles', 'ifb_projects', 'ifb_project_members', 'ifb_project_invites',
+      'ifb_bugs', 'ifb_bug_comments', 'ifb_bug_audit_logs', 'ifb_bug_upvotes', 'ifb_notifications',
+    ] as const;
+    let channel = supabase.channel(`ifb-workspace-${crypto.randomUUID()}`);
+    for (const table of tables) {
+      channel = channel.on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => {
+        onChange({
+          table,
+          eventType: payload.eventType,
+          new: (payload.new || {}) as Record<string, unknown>,
+          old: (payload.old || {}) as Record<string, unknown>,
+        });
+      });
+    }
+    return channel.subscribe((status) => onStatus?.(status));
+  },
 
+  subscribeToProject(
+    projectId: string,
+    onBugChange: (bug: Bug, eventType: string) => void,
+    onProjectChange?: (project: Project, eventType: string) => void,
+    onStatus?: (status: string) => void,
+  ) {
+    if (!isSupabaseConfigured || !supabase) return null;
     const channel = supabase
-      .channel(`project-bugs-${projectId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'ifb_bugs', filter: `project_id=eq.${projectId}` },
-        (payload) => {
-          if (payload.new) {
-            onBugChange(payload.new as Bug, payload.eventType);
-          }
-        }
-      )
-      .subscribe();
-
+      .channel(`project-live-${projectId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ifb_bugs', filter: `project_id=eq.${projectId}` }, (payload) => {
+        const row = (payload.new || payload.old) as Bug | undefined;
+        if (row) onBugChange(row, payload.eventType);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ifb_projects', filter: `id=eq.${projectId}` }, (payload) => {
+        const row = (payload.new || payload.old) as Project | undefined;
+        if (row) onProjectChange?.(row, payload.eventType);
+      })
+      .subscribe((status) => onStatus?.(status));
     return channel;
   },
 
-  subscribeToBugComments(bugId: string, onNewComment: (comment: BugComment) => void) {
+  subscribeToBug(
+    bugId: string,
+    onChange: (bug: Bug, eventType: string) => void,
+    onStatus?: (status: string) => void,
+  ) {
     if (!isSupabaseConfigured || !supabase) return null;
+    return supabase.channel(`bug-live-${bugId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ifb_bugs', filter: `id=eq.${bugId}` }, (payload) => {
+        const row = (payload.new || payload.old) as Bug | undefined;
+        if (row) onChange(row, payload.eventType);
+      })
+      .subscribe((status) => onStatus?.(status));
+  },
 
-    const channel = supabase
-      .channel(`bug-comments-${bugId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'ifb_bug_comments', filter: `bug_id=eq.${bugId}` },
-        (payload) => {
-          if (payload.new) {
-            onNewComment(payload.new as BugComment);
-          }
-        }
-      )
-      .subscribe();
-
-    return channel;
+  subscribeToBugComments(
+    bugId: string,
+    onCommentChange: (comment: BugComment, eventType: string) => void,
+    onStatus?: (status: string) => void,
+  ) {
+    if (!isSupabaseConfigured || !supabase) return null;
+    return supabase.channel(`bug-comments-${bugId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ifb_bug_comments', filter: `bug_id=eq.${bugId}` }, (payload) => {
+        const row = (payload.new || payload.old) as BugComment | undefined;
+        if (row) onCommentChange(row, payload.eventType);
+      })
+      .subscribe((status) => onStatus?.(status));
   },
 
   // 5. Invites

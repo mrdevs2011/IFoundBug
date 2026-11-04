@@ -551,20 +551,32 @@ create policy ifb_authenticated_delete_bug_attachments on storage.objects for de
   using (bucket_id = 'bug-attachments' and owner_id = auth.uid()::text);
 
 -- 9. REALTIME -----------------------------------------------------------------
+-- Publish every user-visible workspace entity so dashboards, boards, comments,
+-- profiles and team changes stay synchronized across sessions/devices.
+alter table public.ifb_profiles replica identity full;
+alter table public.ifb_projects replica identity full;
+alter table public.ifb_project_members replica identity full;
+alter table public.ifb_project_invites replica identity full;
+alter table public.ifb_bugs replica identity full;
+alter table public.ifb_bug_comments replica identity full;
+alter table public.ifb_bug_audit_logs replica identity full;
+alter table public.ifb_bug_upvotes replica identity full;
+alter table public.ifb_notifications replica identity full;
+
 do $$
+declare target_table text;
 begin
-  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='ifb_bugs') then
-    alter publication supabase_realtime add table public.ifb_bugs;
-  end if;
-  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='ifb_bug_comments') then
-    alter publication supabase_realtime add table public.ifb_bug_comments;
-  end if;
-  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='ifb_bug_audit_logs') then
-    alter publication supabase_realtime add table public.ifb_bug_audit_logs;
-  end if;
-  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='ifb_notifications') then
-    alter publication supabase_realtime add table public.ifb_notifications;
-  end if;
+  foreach target_table in array array[
+    'ifb_profiles','ifb_projects','ifb_project_members','ifb_project_invites',
+    'ifb_bugs','ifb_bug_comments','ifb_bug_audit_logs','ifb_bug_upvotes','ifb_notifications'
+  ] loop
+    if not exists (
+      select 1 from pg_publication_tables
+      where pubname='supabase_realtime' and schemaname='public' and tablename=target_table
+    ) then
+      execute format('alter publication supabase_realtime add table public.%I', target_table);
+    end if;
+  end loop;
 end $$;
 
 -- 10. API PERMISSIONS + SCHEMA CACHE ------------------------------------------

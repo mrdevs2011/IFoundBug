@@ -83,17 +83,49 @@ export default function BugDetailPage() {
   }, [projectSlug, bugId]);
 
   // 2. Realtime Comments Channel
+  const realtimeBugId = bug?.id;
   useEffect(() => {
-    if (!bug) return;
+    if (!realtimeBugId) return;
 
-    const channel = DataService.subscribeToBugComments(bug.id, (newComment) => {
-      setComments((prev) => [newComment, ...prev.filter((c) => c.id !== newComment.id)]);
+    const channel = DataService.subscribeToBugComments(realtimeBugId, (comment, eventType) => {
+      setComments((prev) => eventType === 'DELETE'
+        ? prev.filter((item) => item.id !== comment.id)
+        : [comment, ...prev.filter((item) => item.id !== comment.id)]);
     });
 
     return () => {
       if (channel) channel.unsubscribe();
     };
-  }, [bug]);
+  }, [realtimeBugId]);
+
+  // Keep bug details (status, criteria, counters, assignment) live across devices.
+  useEffect(() => {
+    if (!bug?.id) return;
+    let hasConnected = false;
+    const channel = DataService.subscribeToBug(bug.id, (updatedBug, eventType) => {
+      if (eventType === 'DELETE') {
+        setBug(null);
+        return;
+      }
+      setBug(updatedBug);
+      setPrivacyMode(Boolean(updatedBug.is_sensitive));
+    }, (status) => {
+      if (status === 'SUBSCRIBED') {
+        if (hasConnected) {
+          void Promise.all([DataService.fetchBugByIdOrCode(projectSlug, bugId), DataService.fetchComments(bug.id)])
+            .then(([fresh, freshComments]) => {
+              if (fresh) setBug(fresh.bug);
+              setComments(freshComments);
+            })
+            .catch((error) => console.error('Bug detail reconnect reconciliation failed:', error));
+        }
+        hasConnected = true;
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        console.warn('Bug detail Realtime connection interrupted:', status);
+      }
+    });
+    return () => { if (channel) void channel.unsubscribe(); };
+  }, [bug?.id, bugId, projectSlug]);
 
   // 3. Clipboard Paste Listener (Ctrl+V) for screenshots
   useEffect(() => {

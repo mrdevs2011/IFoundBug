@@ -111,30 +111,38 @@ export default function ProjectWorkspacePage() {
   };
 
   // Realtime subscription on project bugs
+  const realtimeProjectId = project?.id;
   useEffect(() => {
-    if (!project) return;
+    if (!realtimeProjectId) return;
 
-    const channel = DataService.subscribeToProject(project.id, (updatedBug, eventType) => {
-      setBugs((prev) => {
-        if (eventType === 'INSERT') {
-          return [updatedBug, ...prev.filter((b) => b.id !== updatedBug.id)];
+    let hasConnected = false;
+    const channel = DataService.subscribeToProject(realtimeProjectId, (updatedBug, eventType) => {
+      setBugs((prev) => eventType === 'DELETE'
+        ? prev.filter((b) => b.id !== updatedBug.id)
+        : [updatedBug, ...prev.filter((b) => b.id !== updatedBug.id)]);
+    }, (updatedProject, eventType) => {
+      if (eventType === 'DELETE') setProject(null);
+      else setProject(updatedProject);
+    }, (status) => {
+      if (status === 'SUBSCRIBED') {
+        if (hasConnected) {
+          void Promise.all([DataService.fetchProjectBySlug(projectSlug), DataService.fetchBugs(realtimeProjectId)])
+            .then(([freshProject, freshBugs]) => {
+              if (freshProject) setProject(freshProject);
+              setBugs(freshBugs);
+            })
+            .catch((error) => console.error('Project reconnect reconciliation failed:', error));
         }
-        if (eventType === 'UPDATE') {
-          return prev.map((b) => (b.id === updatedBug.id ? updatedBug : b));
-        }
-        if (eventType === 'DELETE') {
-          return prev.filter((b) => b.id !== updatedBug.id);
-        }
-        return prev;
-      });
-
-
+        hasConnected = true;
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        console.warn('Project Realtime connection interrupted:', status);
+      }
     });
 
     return () => {
       if (channel) channel.unsubscribe();
     };
-  }, [project]);
+  }, [realtimeProjectId, projectSlug]);
 
   // Keyboard Shortcuts
   useEffect(() => {

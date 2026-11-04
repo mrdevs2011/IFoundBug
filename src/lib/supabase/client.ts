@@ -13,6 +13,6 @@ export const isSupabaseConfigured = Boolean(
 
 export const supabase = isSupabaseConfigured
   ? createBrowserClient(supabaseUrl, supabasePublishableKey, {
-      realtime: { params: { eventsPerSecond: 10 } },
+      realtime: { params: { eventsPerSecond: 100 } },
     })
   : null;

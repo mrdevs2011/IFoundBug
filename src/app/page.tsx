@@ -132,6 +132,51 @@ export default function DashboardPage() {
     return () => { channel?.unsubscribe(); };
   }, [user?.id]);
 
+  // One workspace-wide stream keeps every open dashboard in sync. Database
+  // changes are authoritative; handlers reconcile rows by primary key.
+  useEffect(() => {
+    if (!user?.id) return;
+    let hasConnected = false;
+    const channel = DataService.subscribeToWorkspace(({ table, eventType, new: row, old }) => {
+      if (table === 'ifb_projects') {
+        const project = (eventType === 'DELETE' ? old : row) as unknown as Project;
+        if (!project?.id) return;
+        setProjects((prev) => eventType === 'DELETE'
+          ? prev.filter((item) => item.id !== project.id)
+          : [project, ...prev.filter((item) => item.id !== project.id)]);
+        setSelectedProjectForModal((prev) => prev?.id === project.id
+          ? (eventType === 'DELETE' ? null : project) : prev);
+      } else if (table === 'ifb_bugs') {
+        const bug = (eventType === 'DELETE' ? old : row) as unknown as Bug;
+        if (!bug?.id) return;
+        setBugs((prev) => eventType === 'DELETE'
+          ? prev.filter((item) => item.id !== bug.id)
+          : [bug, ...prev.filter((item) => item.id !== bug.id)]);
+      } else if (table === 'ifb_profiles' && row.auth_user_id === user.id) {
+        void DataService.fetchProfile(user.id, user.email).then(setUser).catch((error) =>
+          console.error('Realtime profile reconciliation failed:', error));
+      }
+    }, (status) => {
+      if (status === 'SUBSCRIBED') {
+        if (hasConnected) {
+          // Reconcile missed events after a network interruption/reconnect.
+          void Promise.all([DataService.fetchProjects(), DataService.fetchNotifications(user.id)])
+            .then(async ([freshProjects, freshNotifications]) => {
+              const groups = await Promise.all(freshProjects.map((project) => DataService.fetchBugs(project.id)));
+              setProjects(freshProjects);
+              setBugs(groups.flat());
+              setNotifications(freshNotifications);
+            })
+            .catch((error) => console.error('Workspace reconnect reconciliation failed:', error));
+        }
+        hasConnected = true;
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        console.warn('Workspace Realtime connection interrupted:', status);
+      }
+    });
+    return () => { if (channel) void channel.unsubscribe(); };
+  }, [user?.id, user?.email]);
+
   const handleMarkNotificationRead = async (id: string) => {
     await DataService.markNotificationRead(id);
     setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
