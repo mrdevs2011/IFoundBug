@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
   if (action !== 'create') return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
   const name = typeof body.name === 'string' ? body.name.trim().slice(0, 64) : 'AI Agent';
-  const allowed = ['projects:read','projects:create','invites:create','invites:read','invites:revoke','bugs:read','bugs:create','bugs:update','comments:read','comments:create','members:read','spaces:discover'];
+  const allowed = ['projects:read','projects:create','projects:update','notifications:read','notifications:update','activity:read','invites:create','invites:read','invites:revoke','bugs:read','bugs:create','bugs:update','comments:read','comments:create','members:read','spaces:discover'];
   const scopes = Array.isArray(body.scopes) ? [...new Set(body.scopes.filter((s: unknown) => typeof s === 'string' && allowed.includes(s as string)))] : allowed;
   if (!scopes.length) return NextResponse.json({ error: 'At least one permission is required' }, { status: 400 });
   const token = `ifbm_${randomBytes(32).toString('base64url')}`;

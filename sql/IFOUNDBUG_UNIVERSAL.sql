@@ -605,13 +605,13 @@ create table if not exists public.ifb_mcp_tokens (
   name text not null default 'AI Agent' check (char_length(name) between 1 and 64),
   token_hash text not null unique check (token_hash ~ '^[a-f0-9]{64}$'),
   token_prefix text not null,
-  scopes text[] not null default array['projects:read','projects:create','invites:create','invites:read','invites:revoke','spaces:discover','bugs:read','bugs:create','bugs:update','comments:read','comments:create','members:read'],
+  scopes text[] not null default array['projects:read','projects:create','projects:update','notifications:read','notifications:update','activity:read','invites:create','invites:read','invites:revoke','spaces:discover','bugs:read','bugs:create','bugs:update','comments:read','comments:create','members:read'],
   expires_at timestamptz,
   last_used_at timestamptz,
   revoked_at timestamptz,
   created_at timestamptz not null default now()
 );
-alter table public.ifb_mcp_tokens alter column scopes set default array['projects:read','projects:create','invites:create','invites:read','invites:revoke','spaces:discover','bugs:read','bugs:create','bugs:update','comments:read','comments:create','members:read'];
+alter table public.ifb_mcp_tokens alter column scopes set default array['projects:read','projects:create','projects:update','notifications:read','notifications:update','activity:read','invites:create','invites:read','invites:revoke','spaces:discover','bugs:read','bugs:create','bugs:update','comments:read','comments:create','members:read'];
 create index if not exists ifb_mcp_tokens_profile_created_idx on public.ifb_mcp_tokens(profile_id, created_at desc);
 create index if not exists ifb_mcp_tokens_active_hash_idx on public.ifb_mcp_tokens(token_hash) where revoked_at is null;
 

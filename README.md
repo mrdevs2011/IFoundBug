@@ -114,7 +114,7 @@ ifoundbug/
 
 ## MCP Server for AI agents
 
-IFoundBug exposes an account-scoped MCP Streamable HTTP endpoint at `/api/mcp`. Open **Settings → MCP** to create a Bearer token, select granular scopes, set expiry and revoke tokens. Supported tools include account identity, project creation and discovery, public-space discovery, bug search/read/create/update, comments, project-member lookup and role-limited invitation management. Private spaces require membership; public bug submissions require guest reports to be enabled.
+IFoundBug exposes an account-scoped MCP Streamable HTTP endpoint at `/api/mcp`. Open **Settings → MCP** to create a Bearer token, select granular scopes, set expiry and revoke tokens. Supported tools include account identity, project create/update/discovery, public-space discovery, bug search/read/create/update and activity history, comments, notifications, project-member lookup and role-limited invitation management. Private spaces require membership; public bug submissions require guest reports to be enabled.
 
 Set `SUPABASE_SERVICE_ROLE_KEY` as a server-only Vercel environment variable and `NEXT_PUBLIC_APP_URL` to the canonical site origin. Never expose the service key or bearer token in client code, commits or public prompts. Run the complete `sql/IFOUNDBUG_UNIVERSAL.sql` in Supabase SQL Editor before using MCP.
 
