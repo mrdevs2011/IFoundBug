@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ifoundbug-cache-v3';
+const CACHE_NAME = 'ifoundbug-cache-v4';
 
 // Force new service worker activation immediately
 self.addEventListener('install', () => {
@@ -28,11 +28,13 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // Always bypass cache for Supabase APIs, Next.js data, and chrome-extensions
+  // Never serve stale application bundles: Next.js JS/CSS contains build-time
+  // public environment values and must always match the active deployment.
+  // Supabase/API requests must also always go directly to the network.
   if (
     url.hostname.includes('supabase.co') ||
     url.pathname.startsWith('/api/') ||
-    url.pathname.startsWith('/_next/data/')
+    url.pathname.startsWith('/_next/')
   ) {
     return;
   }
