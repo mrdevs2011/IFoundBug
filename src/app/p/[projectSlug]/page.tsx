@@ -202,7 +202,7 @@ export default function ProjectWorkspacePage() {
     if (!project) return;
     const nextCodeNumber = bugs.length + 1;
     const newBug: Bug = {
-      id: `bug-${Date.now()}`,
+      id: crypto.randomUUID(),
       code: `B${nextCodeNumber < 10 ? '0' + nextCodeNumber : nextCodeNumber}`,
       project_id: project.id,
       title: bugData.title || 'Nomsiz bug',
@@ -329,7 +329,7 @@ export default function ProjectWorkspacePage() {
             <select
               value={selectedSeverity}
               onChange={(e) => setSelectedSeverity(e.target.value)}
-              className="bg-zinc-900/80 border border-zinc-800 text-xs font-semibold text-zinc-300 rounded-xl px-3 py-2 focus:outline-none focus:border-zinc-700 cursor-pointer"
+              className="ifb-select bg-zinc-900/80 border border-zinc-800 text-xs font-semibold text-zinc-300 rounded-xl px-3 py-2 focus:outline-none focus:border-zinc-700 cursor-pointer"
             >
               <option value="ALL">Barcha darajalar</option>
               <option value="CRITICAL">CRITICAL</option>
@@ -342,7 +342,7 @@ export default function ProjectWorkspacePage() {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="bg-zinc-900/80 border border-zinc-800 text-xs font-semibold text-zinc-300 rounded-xl px-3 py-2 focus:outline-none focus:border-zinc-700 cursor-pointer"
+              className="ifb-select bg-zinc-900/80 border border-zinc-800 text-xs font-semibold text-zinc-300 rounded-xl px-3 py-2 focus:outline-none focus:border-zinc-700 cursor-pointer"
             >
               <option value="ALL">Barcha holatlar</option>
               <option value="OPEN">Faqat Ochiq</option>
@@ -355,7 +355,7 @@ export default function ProjectWorkspacePage() {
               <select
                 value={selectedSection}
                 onChange={(e) => setSelectedSection(e.target.value)}
-                className="bg-zinc-900/80 border border-zinc-800 text-xs font-semibold text-zinc-300 rounded-xl px-3 py-2 focus:outline-none focus:border-zinc-700 cursor-pointer hidden md:block"
+                className="ifb-select bg-zinc-900/80 border border-zinc-800 text-xs font-semibold text-zinc-300 rounded-xl px-3 py-2 focus:outline-none focus:border-zinc-700 cursor-pointer hidden md:block"
               >
                 <option value="ALL">Barcha bo‘limlar</option>
                 {sections.map((s) => (

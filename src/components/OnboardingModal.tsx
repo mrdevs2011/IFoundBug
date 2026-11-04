@@ -140,7 +140,7 @@ export default function OnboardingModal({
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value as typeof role)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-white focus:border-emerald-500 focus:outline-none cursor-pointer"
+                  className="ifb-select w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-white focus:border-emerald-500 focus:outline-none cursor-pointer"
                 >
                   <option value="developer">Frontend / Backend / Fullstack Dasturchi</option>
                   <option value="qa_tester">QA Tester / Bug Hunter</option>

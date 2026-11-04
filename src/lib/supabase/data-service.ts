@@ -1,6 +1,6 @@
 import { supabase, isSupabaseConfigured } from './client';
 import { Bug, Project, BugComment, BugStatus, AcceptanceCriterion } from '@/types';
-import { INITIAL_PROJECTS, INITIAL_BUGS, INITIAL_COMMENTS } from '@/lib/mock-data';
+import { INITIAL_BUGS, INITIAL_COMMENTS } from '@/lib/mock-data';
 
 const STORAGE_PROJECTS_KEY = 'ifb_cached_projects';
 const STORAGE_BUGS_KEY = 'ifb_cached_bugs';
@@ -33,15 +33,16 @@ export const DataService = {
           .select('*')
           .order('created_at', { ascending: true });
 
-        if (!error && data && data.length > 0) {
-          setLocal(STORAGE_PROJECTS_KEY, data);
-          return data as Project[];
-        }
+        if (error) throw error;
+        const projects = (data || []) as Project[];
+        setLocal(STORAGE_PROJECTS_KEY, projects);
+        return projects;
       } catch (err) {
-        console.warn('Supabase fetchProjects fallback:', err);
+        console.error('Supabase fetchProjects failed:', err);
+        throw err;
       }
     }
-    return getLocal<Project[]>(STORAGE_PROJECTS_KEY, INITIAL_PROJECTS);
+    throw new Error('Supabase is not configured; cloud data is unavailable.');
   },
 
   async fetchProjectBySlug(slug: string): Promise<Project | null> {
@@ -64,7 +65,7 @@ export const DataService = {
 
   async createProject(project: Partial<Project>): Promise<Project> {
     const newProj: Project = {
-      id: project.id || `proj-${Date.now()}`,
+      id: project.id || crypto.randomUUID(),
       name: project.name || 'Yangi Loyiha',
       slug: project.slug || `proj-${Date.now()}`,
       description: project.description || '',
@@ -87,15 +88,15 @@ export const DataService = {
           .insert([newProj])
           .select()
           .single();
-        if (!error && data) return data as Project;
+        if (error) throw error;
+        if (data) return data as Project;
+        throw new Error('Project creation returned no row.');
       } catch (err) {
-        console.warn('Supabase createProject fallback:', err);
+        console.error('Supabase createProject failed:', err);
+        throw err;
       }
     }
-
-    const current = getLocal<Project[]>(STORAGE_PROJECTS_KEY, INITIAL_PROJECTS);
-    setLocal(STORAGE_PROJECTS_KEY, [newProj, ...current]);
-    return newProj;
+    throw new Error('Supabase is not configured; project creation is disabled.');
   },
 
   // 2. Bugs
@@ -108,16 +109,14 @@ export const DataService = {
           .eq('project_id', projectId)
           .order('created_at', { ascending: false });
 
-        if (!error && data && data.length > 0) {
-          return data as Bug[];
-        }
+        if (error) throw error;
+        return (data || []) as Bug[];
       } catch (err) {
-        console.warn('Supabase fetchBugs fallback:', err);
+        console.error('Supabase fetchBugs failed:', err);
+        throw err;
       }
     }
-
-    const allBugs = getLocal<Bug[]>(STORAGE_BUGS_KEY, INITIAL_BUGS);
-    return allBugs.filter((b) => b.project_id === projectId);
+    throw new Error('Supabase is not configured; cloud data is unavailable.');
   },
 
   async fetchBugByIdOrCode(
@@ -160,7 +159,8 @@ export const DataService = {
           .insert([newBug])
           .select()
           .single();
-        if (!error && data) {
+        if (error) throw error;
+        if (data) {
           // Send Telegram notification if enabled
           if (project?.telegram_bot_token && project?.telegram_chat_id) {
             this.notifyTelegram(project, data as Bug);
@@ -168,18 +168,11 @@ export const DataService = {
           return data as Bug;
         }
       } catch (err) {
-        console.warn('Supabase createBug fallback:', err);
+        console.error('Supabase createBug failed:', err);
+        throw err;
       }
     }
-
-    const current = getLocal<Bug[]>(STORAGE_BUGS_KEY, INITIAL_BUGS);
-    setLocal(STORAGE_BUGS_KEY, [newBug, ...current]);
-
-    if (project?.telegram_bot_token && project?.telegram_chat_id) {
-      this.notifyTelegram(project, newBug);
-    }
-
-    return newBug;
+    throw new Error('Supabase is not configured; bug creation is disabled.');
   },
 
   async updateBugStatus(bugId: string, status: BugStatus, actorName = 'Dasturchi'): Promise<void> {
@@ -187,12 +180,13 @@ export const DataService = {
 
     if (isSupabaseConfigured && supabase) {
       try {
-        await supabase
+        const { error: updateError } = await supabase
           .from('ifb_bugs')
           .update({ status, resolved_at: resolvedAt, updated_at: new Date().toISOString() })
           .eq('id', bugId);
+        if (updateError) throw updateError;
 
-        await supabase.from('ifb_bug_audit_logs').insert([
+        const { error: auditError } = await supabase.from('ifb_bug_audit_logs').insert([
           {
             bug_id: bugId,
             actor_name: actorName,
@@ -200,9 +194,13 @@ export const DataService = {
             details: { new_status: status },
           },
         ]);
+        if (auditError) throw auditError;
       } catch (err) {
-        console.warn('Supabase updateBugStatus fallback:', err);
+        console.error('Supabase updateBugStatus failed:', err);
+        throw err;
       }
+    } else {
+      throw new Error('Supabase is not configured; bug updates are disabled.');
     }
 
     const allBugs = getLocal<Bug[]>(STORAGE_BUGS_KEY, INITIAL_BUGS);
@@ -224,10 +222,14 @@ export const DataService = {
         if (allChecked) {
           updatePayload.status = 'READY_FOR_QA';
         }
-        await supabase.from('ifb_bugs').update(updatePayload).eq('id', bugId);
+        const { error } = await supabase.from('ifb_bugs').update(updatePayload).eq('id', bugId);
+        if (error) throw error;
       } catch (err) {
-        console.warn('Supabase updateBugCriteria fallback:', err);
+        console.error('Supabase updateBugCriteria failed:', err);
+        throw err;
       }
+    } else {
+      throw new Error('Supabase is not configured; bug updates are disabled.');
     }
 
     const allBugs = getLocal<Bug[]>(STORAGE_BUGS_KEY, INITIAL_BUGS);

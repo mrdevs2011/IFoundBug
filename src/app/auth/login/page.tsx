@@ -29,24 +29,15 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
-    if (!cleanUser) {
-      setErrorMsg('Foydalanuvchi nomini kiriting.');
+    if (!/^[a-z0-9_.-]{3,32}$/.test(cleanUser)) {
+      setErrorMsg('Username 3–32 belgidan iborat bo‘lsin: a-z, 0-9, nuqta, _ yoki -.');
       setLoading(false);
       return;
     }
 
     if (isSupabaseConfigured && supabase) {
       try {
-        let authEmail = cleanUser.includes('@') ? cleanUser : `${cleanUser}@ifoundbug.dev`;
-
-        try {
-          const { data: rpcEmail } = await supabase.rpc('ifb_get_email_by_username', {
-            p_username: cleanUser,
-          });
-          if (rpcEmail) {
-            authEmail = rpcEmail;
-          }
-        } catch {}
+        const authEmail = `${cleanUser}@ifoundbug.dev`;
 
         const { data, error } = await supabase.auth.signInWithPassword({
           email: authEmail,
@@ -54,12 +45,18 @@ export default function LoginPage() {
         });
 
         if (error) {
-          setErrorMsg(error.message || 'Foydalanuvchi nomi yoki parol noto‘g‘ri.');
+          setErrorMsg(error.status === 401 ? 'Supabase API kaliti yaroqsiz yoki URL bilan boshqa loyihaga tegishli. Vercel Environment Variables sozlamalarini tekshir.' : (error.message || 'Foydalanuvchi nomi yoki parol noto‘g‘ri.'));
           setLoading(false);
           return;
         }
 
-        if (data.user && typeof window !== 'undefined') {
+        if (!data.user || !data.session) {
+          setErrorMsg('Supabase sessiyasi olinmadi. Qayta urinib ko‘ring.');
+          setLoading(false);
+          return;
+        }
+
+        if (data.user && data.session && typeof window !== 'undefined') {
           const profile: UserProfile = {
             id: data.user.id,
             email: cleanUser,

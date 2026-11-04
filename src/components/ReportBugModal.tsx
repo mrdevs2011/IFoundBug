@@ -253,7 +253,7 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
               <select
                 value={section}
                 onChange={(e) => setSection(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none"
+                className="ifb-select w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none"
               >
                 <option value="UI">UI / Dizayn</option>
                 <option value="Auth">Autentifikatsiya / Kirish</option>
@@ -287,7 +287,7 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
               <select
                 value={severity}
                 onChange={(e) => setSeverity(e.target.value as Severity)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none"
+                className="ifb-select w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none"
               >
                 <option value="CRITICAL">CRITICAL (Blocker)</option>
                 <option value="HIGH">HIGH (Jiddiy)</option>
@@ -301,7 +301,7 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as Priority)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none"
+                className="ifb-select w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none"
               >
                 <option value="P0">P0 (Zudlik bilan)</option>
                 <option value="P1">P1 (Tezkor)</option>
@@ -315,7 +315,7 @@ export const ReportBugModal: React.FC<ReportBugModalProps> = ({ project, onClose
               <select
                 value={environment}
                 onChange={(e) => setEnvironment(e.target.value as Environment)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none"
+                className="ifb-select w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none"
               >
                 <option value="PRODUCTION">Production (Jonli)</option>
                 <option value="STAGING">Staging / Test</option>

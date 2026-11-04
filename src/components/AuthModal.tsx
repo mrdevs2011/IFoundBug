@@ -57,13 +57,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           return;
         }
 
-        let userProfile: UserProfile = {
-          id: 'user_' + Date.now(),
-          email: cleanUser,
-          full_name: fullName.trim() || cleanUser,
-          role,
-          created_at: new Date().toISOString(),
-        };
+        let userProfile: UserProfile | null = null;
 
         if (isSupabaseConfigured && supabase) {
           const authEmail = `${cleanUser}@ifoundbug.dev`;
@@ -85,8 +79,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
             return;
           }
 
-          if (data.user && !data.session) {
-            setErrorMsg('Hisob yaratildi. Email tasdiqlangach tizimga kiring.');
+          if (!data.user || !data.session) {
+            setErrorMsg('Hisob yaratildi, lekin Supabase sessiya bermadi. Supabase Auth ichida email tasdiqlashni o‘chirish kerak.');
             setLoading(false);
             return;
           }
@@ -102,35 +96,21 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           }
         }
 
+        if (!userProfile) throw new Error('Supabase sessiyasi olinmadi.');
         onSuccess(userProfile, true);
         onClose();
       } else {
-        // Login with Username
+        // Canonical username-based Supabase identity.
         if (!password.trim()) {
           setErrorMsg('Iltimos, parolni kiriting.');
           setLoading(false);
           return;
         }
 
-        let userProfile: UserProfile = {
-          id: 'user_' + Date.now(),
-          email: cleanUser,
-          full_name: cleanUser,
-          role: 'developer',
-          created_at: new Date().toISOString(),
-        };
+        let userProfile: UserProfile | null = null;
 
         if (isSupabaseConfigured && supabase) {
-          let authEmail = cleanUser.includes('@') ? cleanUser : `${cleanUser}@ifoundbug.dev`;
-
-          try {
-            const { data: rpcEmail } = await supabase.rpc('ifb_get_email_by_username', {
-              p_username: cleanUser,
-            });
-            if (rpcEmail) {
-              authEmail = rpcEmail;
-            }
-          } catch {}
+          const authEmail = `${cleanUser}@ifoundbug.dev`;
 
           const { data, error } = await supabase.auth.signInWithPassword({
             email: authEmail,
@@ -143,8 +123,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
             return;
           }
 
-          if (data.user && !data.session) {
-            setErrorMsg('Hisob yaratildi. Email tasdiqlangach tizimga kiring.');
+          if (!data.user || !data.session) {
+            setErrorMsg('Hisob yaratildi, lekin Supabase sessiya bermadi. Supabase Auth ichida email tasdiqlashni o‘chirish kerak.');
             setLoading(false);
             return;
           }
@@ -160,6 +140,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           }
         }
 
+        if (!userProfile) throw new Error('Supabase sessiyasi olinmadi.');
         onSuccess(userProfile, false);
         onClose();
       }
@@ -263,7 +244,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value as typeof role)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:border-emerald-500 focus:outline-none cursor-pointer"
+                  className="ifb-select w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white focus:border-emerald-500 focus:outline-none cursor-pointer"
                 >
                   <option value="developer">Dasturchi (Frontend / Backend / Fullstack)</option>
                   <option value="qa_tester">QA Tester / Bug Hunter</option>

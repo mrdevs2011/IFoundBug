@@ -31,14 +31,14 @@ export default function SignupPage() {
       setLoading(false);
       return;
     }
-    if (!cleanUser) {
-      setErrorMsg('Foydalanuvchi nomini kiriting.');
+    if (!/^[a-z0-9_.-]{3,32}$/.test(cleanUser)) {
+      setErrorMsg('Username 3–32 belgidan iborat bo‘lsin: a-z, 0-9, nuqta, _ yoki -.');
       setLoading(false);
       return;
     }
 
-    if (password.length < 6) {
-      setErrorMsg('Parol kamida 6 ta belgidan iborat bo‘lishi kerak.');
+    if (password.length < 8) {
+      setErrorMsg('Parol kamida 8 ta belgidan iborat bo‘lishi kerak.');
       setLoading(false);
       return;
     }
@@ -60,29 +60,17 @@ export default function SignupPage() {
         });
 
         if (error) {
-          setErrorMsg(error.message);
+          setErrorMsg(error.status === 401 ? 'Supabase API kaliti yaroqsiz yoki URL bilan boshqa loyihaga tegishli. Vercel Environment Variables sozlamalarini tekshir.' : error.message);
           setLoading(false);
           return;
         }
 
         if (!data?.user || !data.session) {
-          setErrorMsg('Hisob yaratildi, ammo email tasdiqlash talab qilinadi. Email tasdiqlangach tizimga kiring.');
+          setErrorMsg('Hisob yaratildi, lekin Supabase sessiya bermadi. Username asosidagi signup uchun Supabase Auth ichida email tasdiqlashni o‘chirish kerak.');
           setLoading(false);
           return;
         }
-
         if (data?.user && data.session) {
-          try {
-            await supabase.from('ifb_profiles').upsert([
-              {
-                auth_user_id: data.user.id,
-                username: cleanUser,
-                full_name: fullName.trim() || cleanUser,
-                role,
-              },
-            ]);
-          } catch {}
-
           if (typeof window !== 'undefined') {
             const profile: UserProfile = {
               id: data.user.id,
@@ -172,7 +160,7 @@ export default function SignupPage() {
             <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
+              className="ifb-select w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
             >
               <option value="developer">Dasturchi (Software Engineer)</option>
               <option value="qa_tester">QA Tester (Bug Hunter)</option>

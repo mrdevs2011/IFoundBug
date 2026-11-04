@@ -111,7 +111,7 @@ export const BugDetailModal: React.FC<BugDetailModalProps> = ({
               <select
                 value={bug.status}
                 onChange={(e) => onStatusChange(e.target.value as BugStatus)}
-                className={`text-xs font-bold px-2.5 py-1 rounded-md border focus:outline-none transition cursor-pointer ${
+                className={`ifb-select text-xs font-bold px-2.5 py-1 rounded-md border focus:outline-none transition cursor-pointer ${
                   statusColors[bug.status].bg
                 } ${statusColors[bug.status].text} ${statusColors[bug.status].border}`}
               >

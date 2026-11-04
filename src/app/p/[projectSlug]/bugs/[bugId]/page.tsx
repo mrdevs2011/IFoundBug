@@ -342,7 +342,7 @@ export default function BugDetailPage() {
               <select
                 value={bug.status}
                 onChange={(e) => handleStatusChange(e.target.value as BugStatus)}
-                className={`text-xs font-bold px-3 py-1.5 rounded-lg border focus:outline-none cursor-pointer transition ${
+                className={`ifb-select text-xs font-bold px-3 py-1.5 rounded-lg border focus:outline-none cursor-pointer transition ${
                   statusColors[bug.status].bg
                 } ${statusColors[bug.status].text} ${statusColors[bug.status].border}`}
               >

@@ -103,7 +103,7 @@ export default function DashboardPage() {
     if (!selectedProjectForModal) return;
     const nextCodeNumber = bugs.length + 1;
     const newBug: Bug = {
-      id: `bug-${Date.now()}`,
+      id: crypto.randomUUID(),
       code: `B${nextCodeNumber < 10 ? '0' + nextCodeNumber : nextCodeNumber}`,
       project_id: selectedProjectForModal.id,
       title: bugData.title || 'Nomsiz bug',

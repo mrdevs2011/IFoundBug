@@ -52,19 +52,7 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
 
     if (isSupabaseConfigured && supabase) {
       try {
-        let authEmail = cleanUser.includes('@') ? cleanUser : `${cleanUser}@ifoundbug.dev`;
-
-        // Check if there is a custom email linked to this username in public.ifb_profiles
-        try {
-          const { data: rpcEmail } = await supabase.rpc('ifb_get_email_by_username', {
-            p_username: cleanUser,
-          });
-          if (rpcEmail) {
-            authEmail = rpcEmail;
-          }
-        } catch {
-          // RPC may not exist yet, fallback to default synthetic email
-        }
+        const authEmail = `${cleanUser}@ifoundbug.dev`;
 
         const { data, error } = await supabase.auth.signInWithPassword({
           email: authEmail,
@@ -140,7 +128,7 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
         if (error) throw error;
 
         if (!data.user || !data.session) {
-          setErrorMsg('Hisob yaratildi. Kirishni yakunlash uchun email tasdiqlash talab qilinadi.');
+          setErrorMsg('Hisob yaratildi, lekin Supabase sessiya bermadi. Supabase Auth ichida email tasdiqlashni o‘chirish kerak.');
           setLoading(false);
           return;
         }
@@ -439,7 +427,7 @@ export default function OnboardingView({ onAuthSuccess }: OnboardingViewProps) {
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value as UserProfile['role'])}
-                  className="w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
+                  className="ifb-select w-full bg-zinc-950/80 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
                 >
                   <option value="developer">Dasturchi (Software Engineer)</option>
                   <option value="qa_tester">QA Tester (Bug Hunter)</option>
