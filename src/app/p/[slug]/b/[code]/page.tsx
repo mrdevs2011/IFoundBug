@@ -9,7 +9,7 @@ import { errMsg, getBug, getProject, listComments, myRole } from '@/lib/db';
 import { useMe } from '@/lib/useMe';
 import type { Bug, BugComment, Project } from '@/types';
 import { supabase } from '@/lib/supabase/client';
-import { ArrowLeftIcon } from '@/components/icons';
+import { RepoHeader } from '@/components/gh';
 
 export default function BugPage() {
   const { slug, code } = useParams<{ slug: string; code: string }>();
@@ -69,7 +69,8 @@ export default function BugPage() {
   return (
     <>
       <Nav />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
+      {state === 'ready' && project && <RepoHeader project={project} active="issues" />}
+      <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 py-6 md:px-6 lg:px-8">
         {state === 'loading' && <Spinner label="Loading…" />}
         {state === 'missing' && (
           <Empty title="Issue not found" hint="This URL may be invalid, the issue may have been deleted, or it may require a private link.">
@@ -79,7 +80,6 @@ export default function BugPage() {
         {error && <ErrorBox message={error} />}
         {state === 'ready' && project && bug && (
           <>
-            <Link href={`/p/${project.slug}`} className="mb-4 inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300"><ArrowLeftIcon className="h-3.5 w-3.5" />{project.name}</Link>
             <BugView project={project} bug={bug} comments={comments} me={me} role={role} onBug={setBug} onComments={setComments} />
           </>
         )}

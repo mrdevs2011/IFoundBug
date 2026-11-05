@@ -5,12 +5,13 @@ import { useParams } from 'next/navigation';
 import { Nav } from '@/components/Nav';
 import { TeamPanel } from '@/components/TeamPanel';
 import { AIPromptModal } from '@/components/AIPromptModal';
-import { Empty, ErrorBox, SeverityBadge, Spinner, StatusBadge, btnGhost, btnPrimary, inputCls } from '@/components/ui';
-import { SEVERITY_DOT, SEVERITY_LABEL, SEVERITY_ORDER, STATUS_LABEL, STATUS_ORDER, timeAgo } from '@/lib/constants';
+import { Empty, ErrorBox, Spinner, btnGhost } from '@/components/ui';
+import { IssueClosedIcon, IssueLabels, IssueOpenedIcon, IssueStateIcon, LockIcon, PersonIcon, RepoHeader, ghBtn, ghBtnPrimary, ghInput, isClosed } from '@/components/gh';
+import { SEVERITY_LABEL, SEVERITY_ORDER, STATUS_LABEL, STATUS_ORDER, timeAgo } from '@/lib/constants';
 import { errMsg, getProject, myRole } from '@/lib/db';
 import { copyToClipboard } from '@/lib/clipboard';
 import { useMe } from '@/lib/useMe';
-import { ThumbsUpIcon, PlusIcon, SparklesIcon } from '@/components/icons';
+import { ThumbsUpIcon, SearchIcon, SparklesIcon } from '@/components/icons';
 import type { Bug, BugStatus, Project, Severity } from '@/types';
 import { supabase } from '@/lib/supabase/client';
 import { parseIssueQuery } from '@/lib/issues/search';
@@ -126,80 +127,96 @@ export default function ProjectPage() {
   if (project === null) return <><Nav /><main className="mx-auto max-w-5xl flex-1 px-4 py-10"><Empty title="Repository not found" hint="This repository may have an invalid or outdated URL."><Link href="/" className={btnGhost}>Home</Link></Empty></main></>;
 
   const isAdmin = role === 'owner' || role === 'admin';
+  const pages = Math.max(1, Math.ceil(total / 50));
+  const setTabTo = (k: Tab) => { setPage(1); setTab(k); };
   return (
     <>
       <Nav />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
-        {error && <ErrorBox message={error} />}
+      {project && (
+        <RepoHeader project={project} active="issues" openCount={counts.open} actions={<>
+          <button className={ghBtn} onClick={async () => { if (await copyToClipboard(location.href)) { setCopied(true); if (copyTimer.current) clearTimeout(copyTimer.current); copyTimer.current = setTimeout(() => setCopied(false), 1500); } }}>{copied ? 'Copied!' : 'Copy link'}</button>
+          <button className={ghBtn} onClick={() => setTeam(true)}><PersonIcon className="text-[#9198a1]" />People</button>
+        </>} />
+      )}
+      <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 py-6 md:px-6 lg:px-8">
+        {error && <div className="mb-4"><ErrorBox message={error} /></div>}
         {project && (
           <>
-            <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0">
-                <h1 className="truncate text-2xl font-bold text-white">{project.name}</h1>
-                {project.description && <p className="mt-1 text-sm text-zinc-400">{project.description}</p>}
-                <div className="mt-2 flex flex-wrap gap-1.5">{(project.tech_stack ?? []).map((t) => <span key={t} className="rounded-md bg-white/5 px-1.5 py-0.5 text-[10px] text-zinc-400">{t}</span>)}</div>
-              </div>
-              <div className="flex shrink-0 flex-wrap gap-2">
-                <button className={btnGhost} onClick={async () => { if (await copyToClipboard(location.href)) { setCopied(true); if (copyTimer.current) clearTimeout(copyTimer.current); copyTimer.current = setTimeout(() => setCopied(false), 1500); } }}>{copied ? 'Copied' : 'Copy link'}</button>
-                <button className={btnGhost} onClick={() => setTeam(true)}>People</button>
-                <Link href={`/p/${project.slug}/new`} className={btnPrimary}><PlusIcon className="h-4 w-4" />New issue</Link>
-              </div>
-            </header>
-
+            {project.description && <p className="mb-4 text-sm text-[#9198a1]">{project.description}</p>}
             <div className="mb-4 flex flex-wrap items-center gap-2">
-              <div className="flex rounded-xl border border-white/10 p-0.5 text-sm" role="tablist">
-                {([['open', 'Open'], ['done', 'Closed'], ['all', 'All']] as [Tab, string][]).map(([k, l]) => (
-                  <button key={k} role="tab" aria-selected={tab === k} onClick={() => { setPage(1); setTab(k); }} className={`rounded-lg px-3 py-1.5 ${tab === k ? 'bg-emerald-400/15 text-emerald-300' : 'text-zinc-400 hover:text-white'}`}>{l} <span className="text-xs opacity-60">{counts[k]}</span></button>
-                ))}
+              <div className="relative min-w-[220px] flex-1">
+                <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9198a1]" />
+                <input className={`${ghInput} pl-8`} value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} placeholder="Search all issues  status:in_progress priority:P1 assignee:me" aria-label="Search issues" data-issue-search />
               </div>
-              <input className={`${inputCls} min-w-40 flex-1 !py-2`} value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} placeholder="Search issues… status:in_progress priority:P1 assignee:me" aria-label="Search issues" />
-              <select aria-label="Severity" value={severity} onChange={(e) => { setPage(1); setSeverity(e.target.value as Severity | ''); }} className="rounded-xl border border-white/10 bg-zinc-900 px-2.5 py-2 text-sm text-zinc-300">
-                <option value="">Severity</option>{SEVERITY_ORDER.map((s) => <option key={s} value={s}>{SEVERITY_LABEL[s]}</option>)}
-              </select>
-              <select aria-label="Status" value={status} onChange={(e) => { setPage(1); setStatus(e.target.value as BugStatus | ''); }} className="rounded-xl border border-white/10 bg-zinc-900 px-2.5 py-2 text-sm text-zinc-300">
-                <option value="">Status</option>{STATUS_ORDER.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
-              </select>
-              <select aria-label="Sort" value={sort} onChange={(e) => { setPage(1); setSort(e.target.value as typeof sort); }} className="rounded-xl border border-white/10 bg-zinc-900 px-2.5 py-2 text-sm text-zinc-300">
-                <option value="new">Newest</option><option value="votes">Most votes</option><option value="severity">Severity</option>
-              </select>
+              <Link href={`/p/${project.slug}/new`} className={ghBtnPrimary}>New issue</Link>
             </div>
 
-            {!parsedQuery.ok && <p role="alert" className="mb-3 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-300">{parsedQuery.error}</p>}
-            {loadingIssues && !bugs && <Spinner />}
-            {bugs && visible.length === 0 && (
-              <Empty title={total ? 'No issues match these filters' : 'No issues yet'} hint={total ? undefined : 'Report the first issue in this repository.'}>
-                {!total && <Link href={`/p/${project.slug}/new`} className={btnPrimary}><PlusIcon className="h-4 w-4" />New issue</Link>}
-              </Empty>
-            )}
-            {visible.length > 0 && (
-              <>
-                <ul className="divide-y divide-white/[0.06] overflow-hidden rounded-2xl border border-white/[0.08]">
+            {!parsedQuery.ok && <p role="alert" className="mb-3 rounded-md border border-[#f85149]/40 bg-[#f85149]/10 px-3 py-2 text-xs text-[#ff7b72]">{parsedQuery.error}</p>}
+
+            <div className="overflow-hidden rounded-md border border-[#3d444d]">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#3d444d] bg-[#151b23] px-4 py-3 text-sm">
+                <div className="flex items-center gap-4" role="tablist">
+                  <button role="tab" aria-selected={tab === 'open'} onClick={() => setTabTo('open')} className={`flex items-center gap-1.5 ${tab === 'open' ? 'font-semibold text-[#f0f6fc]' : 'text-[#9198a1] hover:text-[#f0f6fc]'}`}><IssueOpenedIcon />{counts.open} Open</button>
+                  <button role="tab" aria-selected={tab === 'done'} onClick={() => setTabTo('done')} className={`flex items-center gap-1.5 ${tab === 'done' ? 'font-semibold text-[#f0f6fc]' : 'text-[#9198a1] hover:text-[#f0f6fc]'}`}><IssueClosedIcon />{counts.done} Closed</button>
+                  <button role="tab" aria-selected={tab === 'all'} onClick={() => setTabTo('all')} className={`${tab === 'all' ? 'font-semibold text-[#f0f6fc]' : 'text-[#9198a1] hover:text-[#f0f6fc]'}`}>All</button>
+                </div>
+                <div className="flex flex-wrap items-center gap-1 text-[#9198a1]">
+                  <select aria-label="Severity" value={severity} onChange={(e) => { setPage(1); setSeverity(e.target.value as Severity | ''); }} className="gh-menu-select">
+                    <option value="">Severity</option>{SEVERITY_ORDER.map((s) => <option key={s} value={s}>{SEVERITY_LABEL[s]}</option>)}
+                  </select>
+                  <select aria-label="Status" value={status} onChange={(e) => { setPage(1); setStatus(e.target.value as BugStatus | ''); }} className="gh-menu-select">
+                    <option value="">Status</option>{STATUS_ORDER.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+                  </select>
+                  <select aria-label="Sort" value={sort} onChange={(e) => { setPage(1); setSort(e.target.value as typeof sort); }} className="gh-menu-select">
+                    <option value="new">Newest</option><option value="votes">Most reactions</option><option value="severity">Severity</option>
+                  </select>
+                </div>
+              </div>
+
+              {loadingIssues && !bugs && <Spinner />}
+              {bugs && visible.length === 0 && (
+                <div className="px-6 py-16 text-center">
+                  <IssueOpenedIcon className="mx-auto mb-3 h-6 w-6 text-[#9198a1]" />
+                  <h3 className="text-xl font-semibold text-[#f0f6fc]">{total || search || severity || status ? 'No results matched your search.' : 'Welcome to issues!'}</h3>
+                  <p className="mx-auto mt-2 max-w-md text-sm text-[#9198a1]">{total || search || severity || status ? 'Try a different search or clear the filters.' : 'Issues are used to track bugs and work in this repository.'}</p>
+                  {!total && !search && <Link href={`/p/${project.slug}/new`} className={`${ghBtnPrimary} mt-4`}>New issue</Link>}
+                </div>
+              )}
+              {visible.length > 0 && (
+                <ul>
                   {visible.map((b) => (
-                    <li key={b.id}>
-                      <Link href={`/p/${project.slug}/b/${b.code}`} className="flex items-center gap-3 px-4 py-3 transition hover:bg-white/[0.03]">
-                        <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${SEVERITY_DOT[b.severity]}`} title={SEVERITY_LABEL[b.severity]} />
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-medium text-zinc-100">{b.title}</span>
-                          <span className="mt-0.5 block truncate text-[11px] text-zinc-500">
-                            {b.code.slice(0, 7)} · {b.reporter_name} · {timeAgo(b.created_at)}{b.share_token ? ' · via private link' : ''}
-                          </span>
-                        </span>
-                        <span className="hidden sm:block"><SeverityBadge severity={b.severity} /></span>
-                        <StatusBadge status={b.status} />
-                        <span className="flex w-10 shrink-0 items-center justify-end gap-1 text-xs text-zinc-400"><ThumbsUpIcon className="h-3.5 w-3.5" />{b.upvotes_count}</span>
-                      </Link>
+                    <li key={b.id} className="flex items-start gap-3 border-b border-[#3d444d] px-4 py-2.5 last:border-b-0 hover:bg-[#151b23]">
+                      <IssueStateIcon status={b.status} className="mt-1" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                          <Link href={`/p/${project.slug}/b/${b.code}`} className="text-base font-semibold text-[#f0f6fc] hover:text-[#4493f8]">{b.title}</Link>
+                          <IssueLabels bug={b} />
+                          {b.share_token && <span className="inline-flex items-center gap-1 text-xs text-[#9198a1]" title="Visible only through a private link"><LockIcon className="h-3 w-3" />private link</span>}
+                        </div>
+                        <p className="mt-1 text-xs text-[#9198a1]">{b.code} · {isClosed(b.status) ? 'closed' : 'opened'} {timeAgo(isClosed(b.status) && b.resolved_at ? b.resolved_at : b.created_at)} by {b.reporter_name}</p>
+                      </div>
+                      {b.upvotes_count > 0 && <span className="mt-1 hidden shrink-0 items-center gap-1 text-xs text-[#9198a1] sm:flex" title="Reactions"><ThumbsUpIcon className="h-3.5 w-3.5" />{b.upvotes_count}</span>}
                     </li>
                   ))}
                 </ul>
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                  <span className="text-xs text-zinc-500">{total.toLocaleString()} issues · Page {page} of {Math.max(1, Math.ceil(total / 50))}{loadingIssues ? ' · Updating…' : ''}</span>
-                  <div className="flex items-center gap-2">
-                    <button className={btnGhost} disabled={page <= 1 || loadingIssues} onClick={() => setPage((value) => Math.max(1, value - 1))}>Previous</button>
-                    <button className={btnGhost} disabled={page >= Math.ceil(total / 50) || loadingIssues} onClick={() => setPage((value) => value + 1)}>Next</button>
-                    <button className={btnGhost} onClick={() => setAi(true)}><SparklesIcon className="h-4 w-4" />Generate an AI task from {visible.length} issues</button>
-                  </div>
+              )}
+            </div>
+
+            {visible.length > 0 && (
+              <div className="mt-4 flex flex-col items-center gap-3">
+                {pages > 1 && (
+                  <nav className="flex items-center gap-1 text-sm" aria-label="Pagination">
+                    <button className="rounded-md px-3 py-1 text-[#4493f8] hover:bg-[#151b23] disabled:text-[#656c76] disabled:hover:bg-transparent" disabled={page <= 1 || loadingIssues} onClick={() => setPage((v) => Math.max(1, v - 1))}>‹ Previous</button>
+                    <span className="rounded-md bg-[#1f6feb] px-3 py-1 font-semibold text-white">{page}</span>
+                    <span className="px-2 text-[#9198a1]">of {pages}</span>
+                    <button className="rounded-md px-3 py-1 text-[#4493f8] hover:bg-[#151b23] disabled:text-[#656c76] disabled:hover:bg-transparent" disabled={page >= pages || loadingIssues} onClick={() => setPage((v) => v + 1)}>Next ›</button>
+                  </nav>
+                )}
+                <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-[#9198a1]">
+                  <span>{total.toLocaleString()} issues{loadingIssues ? ' · Updating…' : ''}</span>
+                  <button className="inline-flex items-center gap-1 text-[#4493f8] hover:underline" onClick={() => setAi(true)}><SparklesIcon className="h-3.5 w-3.5" />Generate an AI task from {visible.length} issues</button>
                 </div>
-              </>
+              </div>
             )}
           </>
         )}

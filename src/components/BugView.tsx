@@ -3,7 +3,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import type { Bug, BugComment, BugStatus, Project, Severity } from '@/types';
 import { LoginHint } from '@/components/Nav';
 import { AIPromptModal } from '@/components/AIPromptModal';
-import { ErrorBox, SeverityBadge, StatusBadge, btnGhost, btnPrimary, inputCls } from '@/components/ui';
+import { ErrorBox, inputCls } from '@/components/ui';
+import { Avatar, IssueClosedIcon, IssueLabels, IssueOpenedIcon, IssueStatePill, LockIcon, ghBtn, ghBtnPrimary, ghInput, isClosed } from '@/components/gh';
 import { ENV_LABEL, SEVERITY_LABEL, SEVERITY_ORDER, STATUS_LABEL, STATUS_ORDER, timeAgo } from '@/lib/constants';
 import { addComment, addSharedComment, deleteComment, errMsg, myVote, setBugLink, setStatus, toggleVote, updateBug, type Me } from '@/lib/db';
 import { copyToClipboard } from '@/lib/clipboard';
@@ -26,6 +27,25 @@ const bugUrl = (p: Pick<Project, 'slug'>, b: Bug) => `${location.origin}/p/${p.s
 function toMarkdown(project: Props['project'], b: Bug): string {
   const steps = b.steps_to_reproduce?.length ? b.steps_to_reproduce.map((s, i) => `${i + 1}. ${s}`).join('\n') : '—';
   return `## [${b.code}] ${b.title}\n\n**Repository:** ${project.name} · **Severity:** ${b.severity} · **Status:** ${b.status} · **Environment:** ${b.environment}\n\n### Steps to reproduce\n${steps}\n\n### Actual behavior\n${b.actual_behavior || '—'}\n\n### Expected behavior\n${b.expected_behavior || '—'}\n${b.evidence_urls?.length ? `\n### Attachments\n${b.evidence_urls.map((u) => `- ${u}`).join('\n')}\n` : ''}`;
+}
+
+function SideSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+  <div className="border-b border-[#3d444d] py-4 first:pt-0"><h3 className="mb-2 text-xs font-semibold text-[#9198a1]">{title}</h3>{children}</div>
+  );
+}
+function TimelineBox({ name, when, children, badge, heading }: { name: string; when: string; children: React.ReactNode; badge?: React.ReactNode; heading?: React.ReactNode }) {
+  return (
+  <div className="relative flex gap-4">
+    <div className="hidden pt-0.5 sm:block"><Avatar name={name} size={40} /></div>
+    <div className="min-w-0 flex-1 overflow-hidden rounded-md border border-[#3d444d]">
+      <div className="flex items-center justify-between gap-2 border-b border-[#3d444d] bg-[#151b23] px-4 py-2 text-sm text-[#9198a1]">
+        <span className="min-w-0 truncate">{heading ?? <><span className="font-semibold text-[#f0f6fc]">{name}</span> commented {when}</>}</span>{badge}
+      </div>
+      <div className="gh-body p-4">{children}</div>
+    </div>
+  </div>
+  );
 }
 
 export function BugView({ project, bug, comments, me, role, token, onBug, onComments }: Props) {
@@ -101,135 +121,147 @@ export function BugView({ project, bug, comments, me, role, token, onBug, onComm
   const link = token ? `${location.origin}/s/${token}` : bug.share_token ? `${location.origin}/s/${bug.share_token}` : '';
   const t = bug.device_telemetry;
 
+  const changeStatus = (nextStatus: BugStatus) => {
+    const previous = bug;
+    onBug({ ...previous, status: nextStatus }); setError('');
+    void setStatus(bug.id, nextStatus).then(onBug).catch((reason) => { onBug(previous); setError(errMsg(reason)); });
+  };
+  const closed = isClosed(bug.status);
+  const hasBody = Boolean(bug.summary || bug.steps_to_reproduce?.length || bug.actual_behavior || bug.expected_behavior || bug.evidence_urls?.length || (t && (t.os || t.browser)));
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-      <div className="min-w-0 space-y-6">
-        <header>
-          <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
-            <span className="font-mono">{bug.code}</span><StatusBadge status={bug.status} /><SeverityBadge severity={bug.severity} />
-            {linkOnly && <span className="rounded-full border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-300">Private link only</span>}
-          </div>
-          <h1 className="mt-2 text-2xl font-bold leading-snug text-white">{bug.title}</h1>
-          <p className="mt-1 text-xs text-zinc-500">{bug.reporter_name} · {timeAgo(bug.created_at)} · {ENV_LABEL[bug.environment]}</p>
-        </header>
-
-        {bug.steps_to_reproduce?.length > 0 && (
-          <section><h2 className="mb-2 text-sm font-semibold text-zinc-200">Steps to reproduce</h2>
-            <ol className="list-decimal space-y-1 pl-5 text-sm text-zinc-300">{bug.steps_to_reproduce.map((s, i) => <li key={i}>{s}</li>)}</ol></section>
-        )}
-        <div className="grid gap-4 sm:grid-cols-2">
-          {bug.actual_behavior && <section className="rounded-xl border border-red-500/15 bg-red-500/[0.04] p-4"><h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-red-300">Actual</h2><p className="whitespace-pre-wrap text-sm text-zinc-300">{bug.actual_behavior}</p></section>}
-          {bug.expected_behavior && <section className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.04] p-4"><h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-emerald-300">Expected</h2><p className="whitespace-pre-wrap text-sm text-zinc-300">{bug.expected_behavior}</p></section>}
+    <div>
+      <header className="border-b border-[#3d444d] pb-4">
+        <h1 className="break-words text-[26px] font-normal leading-tight text-[#f0f6fc] sm:text-[32px]">
+          {bug.title} <span className="font-light text-[#9198a1]">{bug.code}</span>
+        </h1>
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-[#9198a1]">
+          <IssueStatePill status={bug.status} />
+          <span><span className="font-semibold text-[#9198a1]">{bug.reporter_name}</span> opened this issue {timeAgo(bug.created_at)} · {comments.length} comment{comments.length === 1 ? '' : 's'}</span>
+          {linkOnly && <span className="inline-flex items-center gap-1 rounded-full border border-[#9e6a03] px-2 text-xs leading-[20px] text-[#d29922]"><LockIcon className="h-3 w-3" />Private link only</span>}
         </div>
-        {bug.evidence_urls?.length > 0 && (
-          <section><h2 className="mb-2 text-sm font-semibold text-zinc-200">Attachments</h2>
-            <div className="flex flex-wrap gap-2">{bug.evidence_urls.map((u) => {
-              const src = token && u.startsWith('/api/attachments/') ? `${u}?share_token=${encodeURIComponent(token)}` : u;
-              return <button key={u} onClick={() => setZoom(src)} className="overflow-hidden rounded-lg border border-white/10">
-                <img src={src} alt="Screenshot" className="h-28 w-auto object-cover" loading="lazy" />
-              </button>; })}</div></section>
-        )}
-        {t && (t.os || t.browser) && <p className="text-xs text-zinc-500">Device · {[t.os, t.browser, t.viewport, t.language].filter(Boolean).join(' · ')}</p>}
-        {(triage || bug.dev_notes) && (
-          <section><h2 className="mb-2 text-sm font-semibold text-zinc-200">Developer notes</h2>
-            {triage ? (
-              <div className="space-y-2">
-                <textarea className={`${inputCls} min-h-20`} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Root cause, affected files, and fix…" />
-                {notes !== (bug.dev_notes ?? '') && <button className={btnPrimary} onClick={() => { const previous = bug; const nextNotes = notes; onBug({ ...previous, dev_notes: nextNotes }); void updateBug(bug.id, { dev_notes: nextNotes }).then(onBug).catch((reason) => { onBug(previous); setNotes(previous.dev_notes ?? ''); setError(errMsg(reason)); }); }}>Save</button>}
-              </div>
-            ) : <p className="whitespace-pre-wrap text-sm text-zinc-300">{bug.dev_notes}</p>}
-          </section>
-        )}
+      </header>
 
-        <section>
-          <h2 className="mb-3 text-sm font-semibold text-zinc-200">Discussion ({comments.length})</h2>
-          <ul className="space-y-3">
+      <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_256px]">
+        <div className="min-w-0">
+          <div className="relative space-y-4 before:absolute before:bottom-0 before:left-[20px] before:top-0 before:hidden before:w-0.5 before:bg-[#3d444d] sm:before:block [&>*]:relative">
+            <TimelineBox name={bug.reporter_name} when={timeAgo(bug.created_at)} badge={<span className="rounded-full border border-[#3d444d] px-2 text-xs leading-[18px]">Author</span>}>
+              {!hasBody && <p className="italic text-[#9198a1]">No description provided.</p>}
+              {bug.summary && <p className="whitespace-pre-wrap">{bug.summary}</p>}
+              {bug.steps_to_reproduce?.length > 0 && <><h3>Steps to reproduce</h3><ol>{bug.steps_to_reproduce.map((step, i) => <li key={i}>{step}</li>)}</ol></>}
+              {bug.actual_behavior && <><h3>Actual behavior</h3><p className="whitespace-pre-wrap">{bug.actual_behavior}</p></>}
+              {bug.expected_behavior && <><h3>Expected behavior</h3><p className="whitespace-pre-wrap">{bug.expected_behavior}</p></>}
+              {bug.evidence_urls?.length > 0 && (<><h3>Attachments</h3>
+                <div className="flex flex-wrap gap-2">{bug.evidence_urls.map((u) => {
+                  const src = token && u.startsWith('/api/attachments/') ? `${u}?share_token=${encodeURIComponent(token)}` : u;
+                  return <button key={u} onClick={() => setZoom(src)} className="overflow-hidden rounded-md border border-[#3d444d]"><img src={src} alt="Screenshot" className="h-32 w-auto object-cover" loading="lazy" /></button>;
+                })}</div></>)}
+              {t && (t.os || t.browser) && <p className="mt-3 text-xs text-[#9198a1]">Device · {[t.os, t.browser, t.viewport, t.language].filter(Boolean).join(' · ')}</p>}
+              <div className="mt-4 flex">
+                <button onClick={vote} disabled={voting} aria-pressed={voted} title="I have this issue too"
+                  className={`inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium ${voted ? 'border-[#1f6feb] bg-[#1f6feb]/15 text-[#4493f8]' : 'border-[#3d444d] text-[#9198a1] hover:border-[#9198a1]'}`}>
+                  <ThumbsUpIcon className="h-3.5 w-3.5" />{bug.upvotes_count}
+                </button>
+              </div>
+            </TimelineBox>
+
+            {(triage || bug.dev_notes) && (
+              <TimelineBox name="Developer notes" when="" heading={<><span className="font-semibold text-[#f0f6fc]">Developer notes</span> · visible to the team only</>} badge={<span className="rounded-full border border-[#3d444d] px-2 text-xs leading-[18px]">Team</span>}>
+                {triage ? (
+                  <div className="space-y-2">
+                    <textarea className={`${inputCls} min-h-20`} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Root cause, affected files, and fix…" />
+                    {notes !== (bug.dev_notes ?? '') && <div className="flex justify-end"><button className={ghBtnPrimary} onClick={() => { const previous = bug; const nextNotes = notes; onBug({ ...previous, dev_notes: nextNotes }); void updateBug(bug.id, { dev_notes: nextNotes }).then(onBug).catch((reason) => { onBug(previous); setNotes(previous.dev_notes ?? ''); setError(errMsg(reason)); }); }}>Save notes</button></div>}
+                  </div>
+                ) : <p className="whitespace-pre-wrap">{bug.dev_notes}</p>}
+              </TimelineBox>
+            )}
+
             {comments.map((c) => (
-              <li key={c.id} className="rounded-xl bg-white/[0.03] p-3">
-                <div className="flex items-center justify-between text-xs text-zinc-500">
-                  <span className="font-medium text-zinc-300">{c.author_name}</span>
-                  <span className="flex gap-3">{timeAgo(c.created_at)}
-                    {!token && (triage || (me && c.author_id === me.id)) && <button className="text-red-300 hover:underline" onClick={() => { const previous = comments; onComments(previous.filter((x) => x.id !== c.id)); void deleteComment(c.id).catch((reason) => { onComments(previous); setError(errMsg(reason)); }); }}>Delete</button>}
-                  </span>
-                </div>
-                <p className="mt-1 whitespace-pre-wrap break-words text-sm text-zinc-200">{c.content}</p>
-              </li>
+              <TimelineBox key={c.id} name={c.author_name} when={timeAgo(c.created_at)}
+                badge={!token && (triage || (me && c.author_id === me.id)) ? <button className="text-xs text-[#f85149] hover:underline" onClick={() => { const previous = comments; onComments(previous.filter((x) => x.id !== c.id)); void deleteComment(c.id).catch((reason) => { onComments(previous); setError(errMsg(reason)); }); }}>Delete</button> : undefined}>
+                <p className="whitespace-pre-wrap">{c.content}</p>
+              </TimelineBox>
             ))}
-            {comments.length === 0 && <li className="text-xs text-zinc-500">No comments yet.</li>}
-          </ul>
-          <div className="mt-4">
+          </div>
+
+          <div className="mt-6 border-t-2 border-[#3d444d] pt-6">
             {me ? (
-              <form onSubmit={send} className="space-y-2">
-                <textarea className={`${inputCls} min-h-20`} value={text} onChange={(e) => setText(e.target.value)} placeholder="Leave a comment…" maxLength={5000} aria-label="Comment" />
-                <button className={btnPrimary} disabled={busy || !text.trim()}>{busy ? 'Submitting…' : 'Comment'}</button>
+              <form onSubmit={send} className="flex gap-4">
+                <div className="hidden sm:block"><Avatar name={me.full_name} size={40} /></div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="mb-2 text-base font-semibold text-[#f0f6fc]">Add a comment</h2>
+                  <div className="rounded-md border border-[#3d444d]">
+                    <textarea className="block min-h-[110px] w-full resize-y rounded-md border-0 bg-[#0d1117] px-3 py-2 text-sm text-[#f0f6fc] placeholder-[#9198a1] focus:!shadow-none" value={text} onChange={(e) => setText(e.target.value)} placeholder="Use Markdown to format your comment" maxLength={5000} aria-label="Comment" />
+                  </div>
+                  <div className="mt-2 flex flex-wrap justify-end gap-2">
+                    {triage && !token && (closed
+                      ? <button type="button" className={ghBtn} onClick={() => changeStatus('REPORTED')}><IssueOpenedIcon className="text-[#3fb950]" />Reopen issue</button>
+                      : <button type="button" className={ghBtn} onClick={() => changeStatus('CLOSED')}><IssueClosedIcon className="text-[#ab7df8]" />Close issue</button>)}
+                    <button className={ghBtnPrimary} disabled={busy || !text.trim()}>{busy ? 'Commenting…' : 'Comment'}</button>
+                  </div>
+                </div>
               </form>
             ) : me === null ? <LoginHint what="Write a comment" /> : null}
           </div>
-        </section>
-        {error && <ErrorBox message={error} />}
-      </div>
+          {error && <div className="mt-4"><ErrorBox message={error} /></div>}
+        </div>
 
-      <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
-        <button onClick={vote} disabled={voting} aria-pressed={voted} className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-sm font-semibold transition ${voted ? 'border-emerald-400/40 bg-emerald-400/15 text-emerald-300' : 'border-white/10 text-zinc-200 hover:bg-white/5'}`}>
-          <span className="flex items-center gap-2"><ThumbsUpIcon className="h-4 w-4" />I have this issue too</span><span>{bug.upvotes_count}</span>
-        </button>
-
-        {triage && !token && (
-          <div className="space-y-3 rounded-2xl border border-white/10 p-4">
-            <label className="block text-xs text-zinc-400">Status
-              <select className={`${inputCls} mt-1 !py-2`} value={bug.status} onChange={(e) => {
-                const previous = bug; const nextStatus = e.target.value as BugStatus;
-                onBug({ ...previous, status: nextStatus }); setError('');
-                void setStatus(bug.id, nextStatus).then(onBug).catch((reason) => { onBug(previous); setError(errMsg(reason)); });
-              }}>
-                {STATUS_ORDER.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
-              </select></label>
-            <label className="block text-xs text-zinc-400">Severity
-              <select className={`${inputCls} mt-1 !py-2`} value={bug.severity} onChange={(e) => {
+        <aside className="text-sm lg:self-start">
+          <SideSection title="Labels">
+            <div className="flex flex-wrap gap-1"><IssueLabels bug={bug} /></div>
+            {triage && !token && (
+              <select aria-label="Severity" className="gh-menu-select mt-2 !pl-0" value={bug.severity} onChange={(e) => {
                 const previous = bug; const nextSeverity = e.target.value as Severity;
                 onBug({ ...previous, severity: nextSeverity }); setError('');
                 void updateBug(bug.id, { severity: nextSeverity }).then(onBug).catch((reason) => { onBug(previous); setError(errMsg(reason)); });
-              }}>
-                {SEVERITY_ORDER.map((s) => <option key={s} value={s}>{SEVERITY_LABEL[s]}</option>)}
-              </select></label>
-          </div>
-        )}
-
-        <div className="space-y-2 rounded-2xl border border-white/10 p-4">
-          <button className={`${btnGhost} w-full`} onClick={() => setAi(true)}>AI · Generate AI prompt</button>
-          <button className={`${btnGhost} w-full`} onClick={() => copy('md', toMarkdown(project, bug))}>{copied === 'md' ? 'Copied' : 'Copy Markdown'}</button>
-          {!linkOnly && <button className={`${btnGhost} w-full`} onClick={() => copy('url', bugUrl(project, bug))}>{copied === 'url' ? 'Copied' : 'Copy link'}</button>}
-        </div>
-
-        {(canLink || token) && (
-          <div className="space-y-2 rounded-2xl border border-amber-500/20 bg-amber-500/[0.04] p-4">
-            <h3 className="text-sm font-semibold text-amber-200">Private link</h3>
-            {linkOnly ? (
-              <>
-                <p className="text-xs leading-relaxed text-zinc-400">This issue is hidden from listings and search. Anyone with the link can access it; share it only with trusted people.</p>
-                {link && <input readOnly value={link} onFocus={(e) => e.currentTarget.select()} aria-label="Private link" className={`${inputCls} !py-2 font-mono text-[11px]`} />}
-                {canLink && (
-                  <div className="flex flex-wrap gap-2">
-                    <button className={btnPrimary} onClick={() => copy('link', link)}>{copied === 'link' ? 'Copied' : 'Copy'}</button>
-                    <button className={btnGhost} disabled={linkBusy} onClick={() => { if (!confirm('The previous private link will stop working. Continue?')) return; setLinkBusy(true); void setBugLink(bug.id, true, true).then((tkn) => onBug({ ...bug, share_token: tkn })).catch((reason) => setError(errMsg(reason))).finally(() => setLinkBusy(false)); }}>Regenerate</button>
-                    <button className={btnGhost} disabled={linkBusy} onClick={() => { if (!confirm('This issue will become visible to everyone. Continue?')) return; const previous = bug; onBug({ ...bug, share_token: null }); setLinkBusy(true); void setBugLink(bug.id, false).then(() => onBug({ ...previous, share_token: null })).catch((reason) => { onBug(previous); setError(errMsg(reason)); }).finally(() => setLinkBusy(false)); }}>Make public</button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                <p className="text-xs leading-relaxed text-zinc-400">This issue is currently public. You can hide it from listings and share it using a private link.</p>
-                <button className={`${btnGhost} w-full`} disabled={linkBusy} onClick={() => { setLinkBusy(true); void setBugLink(bug.id, true).then((tkn) => onBug({ ...bug, share_token: tkn })).catch((reason) => setError(errMsg(reason))).finally(() => setLinkBusy(false)); }}>{linkBusy ? 'Creating private link…' : 'Create private link'}</button>
-              </>
+              }}>{SEVERITY_ORDER.map((s) => <option key={s} value={s}>Severity: {SEVERITY_LABEL[s]}</option>)}</select>
             )}
-          </div>
-        )}
-      </aside>
+          </SideSection>
+          <SideSection title="Status">
+            {triage && !token ? (
+              <select aria-label="Status" className="gh-menu-select !pl-0" value={bug.status} onChange={(e) => changeStatus(e.target.value as BugStatus)}>
+                {STATUS_ORDER.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+              </select>
+            ) : <span className="text-[#f0f6fc]">{STATUS_LABEL[bug.status]}</span>}
+          </SideSection>
+          <SideSection title="Environment"><span className="text-[#f0f6fc]">{ENV_LABEL[bug.environment]}</span></SideSection>
+          <SideSection title="Actions">
+            <div className="flex flex-col items-start gap-1.5">
+              <button className="text-[#9198a1] hover:text-[#4493f8]" onClick={() => setAi(true)}>Generate AI prompt</button>
+              <button className="text-[#9198a1] hover:text-[#4493f8]" onClick={() => copy('md', toMarkdown(project, bug))}>{copied === 'md' ? 'Copied!' : 'Copy as Markdown'}</button>
+              {!linkOnly && <button className="text-[#9198a1] hover:text-[#4493f8]" onClick={() => copy('url', bugUrl(project, bug))}>{copied === 'url' ? 'Copied!' : 'Copy link'}</button>}
+            </div>
+          </SideSection>
+
+          {(canLink || token) && (
+            <div className="py-4">
+              <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-[#9198a1]"><LockIcon className="h-3 w-3" />Private link</h3>
+              {linkOnly ? (
+                <div className="space-y-2">
+                  <p className="text-xs leading-relaxed text-[#9198a1]">Hidden from listings and search. Anyone with the link can open it.</p>
+                  {link && <input readOnly value={link} onFocus={(e) => e.currentTarget.select()} aria-label="Private link" className={`${ghInput} font-mono text-[11px]`} />}
+                  {canLink && (
+                    <div className="flex flex-wrap gap-2">
+                      <button className={ghBtn} onClick={() => copy('link', link)}>{copied === 'link' ? 'Copied!' : 'Copy'}</button>
+                      <button className={ghBtn} disabled={linkBusy} onClick={() => { if (!confirm('The previous private link will stop working. Continue?')) return; setLinkBusy(true); void setBugLink(bug.id, true, true).then((tkn) => onBug({ ...bug, share_token: tkn })).catch((reason) => setError(errMsg(reason))).finally(() => setLinkBusy(false)); }}>Regenerate</button>
+                      <button className={ghBtn} disabled={linkBusy} onClick={() => { if (!confirm('This issue will become visible to everyone. Continue?')) return; const previous = bug; onBug({ ...bug, share_token: null }); setLinkBusy(true); void setBugLink(bug.id, false).then(() => onBug({ ...previous, share_token: null })).catch((reason) => { onBug(previous); setError(errMsg(reason)); }).finally(() => setLinkBusy(false)); }}>Make public</button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs leading-relaxed text-[#9198a1]">This issue is public. Hide it from listings and share it with a private link instead.</p>
+                  <button className={`${ghBtn} w-full`} disabled={linkBusy} onClick={() => { setLinkBusy(true); void setBugLink(bug.id, true).then((tkn) => onBug({ ...bug, share_token: tkn })).catch((reason) => setError(errMsg(reason))).finally(() => setLinkBusy(false)); }}>{linkBusy ? 'Creating private link…' : 'Create private link'}</button>
+                </div>
+              )}
+            </div>
+          )}
+        </aside>
+      </div>
 
       {ai && <AIPromptModal bugs={[bug]} onClose={() => setAi(false)} />}
       {zoom && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/85 p-4" onClick={() => setZoom(null)} role="dialog" aria-label="Screenshot">
-          <img src={zoom} alt="Screenshot" className="max-h-full max-w-full rounded-lg" />
+          <img src={zoom} alt="Screenshot" className="max-h-full max-w-full rounded-md" />
         </div>
       )}
     </div>

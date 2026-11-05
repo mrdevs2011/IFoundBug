@@ -1,6 +1,7 @@
 'use client';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { IssueStateIcon } from '@/components/gh';
 import { Nav, LoginHint } from '@/components/Nav';
 import { NewProjectModal } from '@/components/NewProjectModal';
 import { Empty, ErrorBox, btnPrimary, inputCls } from '@/components/ui';
@@ -160,8 +161,8 @@ export default function Home() {
             {issueLoading && <p className="px-4 py-3 text-xs text-[#8b949e]">Searching…</p>}
             {!issueLoading && issueResults.length === 0 && <p className="px-4 py-3 text-xs text-[#8b949e]">No matching issues in repositories visible to your account.</p>}
             {issueResults.map((issue) => <Link key={issue.id} href={`/p/${issue.project.slug}/b/${issue.code}`} className="flex items-center gap-3 px-4 py-3 hover:bg-[#161b22]">
-              <BugIcon className="h-4 w-4 shrink-0 text-[#8b949e]" />
-              <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium text-[#58a6ff]">{issue.title}</span><span className="mt-0.5 block truncate text-[11px] text-[#8b949e]">{issue.project.name} · {issue.code} · {issue.status.replaceAll('_', ' ')}</span></span>
+              <IssueStateIcon status={issue.status} />
+              <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-[#f0f6fc] hover:text-[#4493f8]">{issue.title}</span><span className="mt-0.5 block truncate text-[11px] text-[#8b949e]">{issue.project.name} · {issue.code} · {issue.status.replaceAll('_', ' ')}</span></span>
             </Link>)}
           </div>}
         </section>

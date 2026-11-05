@@ -15,8 +15,8 @@ export function Nav() {
   const [mcp, setMcp] = useState(false);
   const next = encodeURIComponent(path || '/');
   return (
-    <header className="sticky top-0 z-40 border-b border-[#30363d] bg-[#0d1117]/95">
-      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+    <header className="sticky top-0 z-40 border-b border-[#3d444d] bg-[#010409]">
+      <div className="flex h-16 w-full items-center justify-between gap-4 px-4 md:px-6 lg:px-8">
         <Link href="/" className="flex shrink-0 items-center gap-2.5 text-sm font-semibold text-[#e6edf3]">
           <span className="grid h-8 w-8 place-items-center rounded-md border border-[#3fb950]/40 bg-[#3fb950]/10 text-[#3fb950]"><BugIcon className="h-[18px] w-[18px]" /></span>
           <span>FoundBug</span>
