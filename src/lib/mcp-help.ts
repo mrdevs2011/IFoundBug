@@ -34,6 +34,8 @@ D) "Change status / assign / reprioritise X"
   update_bug { bug: "BRB-12", status: "IN_PROGRESS", assigned_to: "me" }   (assigned_to: "me" | username | UUID | "" to unassign)
   Many at once: bulk_update_bugs { bugs: ["BRB-1","BRB-2"], status: "CLOSED", comment: "Fixed in v1.4" }.
 
+E2) "How is the project going?" / "Weekly report" → get_insights { project }; report open vs closed trend, median time to close, critical backlog and overloaded people.
+
 E) "Find / show me issues about X" → search_bugs { q: "..." } (topic "search"). Open one with get_bug { project, bug }.
 
 F) "Fix bug X" (you have code access)
@@ -48,6 +50,7 @@ ifb_help (topic?) [none] — this manual.
 who_am_i () [none] — identity + scopes.
 whats_new (since?, project?, only_open?=true, limit?) [bugs:read] — new/updated issues and new comments since a time, across repos you work in.
 search_bugs (q, project?, limit?) [bugs:read] — query-language search across your repos.
+get_insights (project) [bugs:read] — analytics: totals, median/p90 time to close, severity mix, weekly trend, team workload.
 list_projects (include_public?) [projects:read] — repos + membership_role.
 discover_public_spaces (search?, limit?) [spaces:discover] — public repos that accept reports.
 list_bugs (project, status?, severity?, search?, limit?) [bugs:read] — newest issues in one repo.

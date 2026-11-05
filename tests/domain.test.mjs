@@ -166,3 +166,11 @@ test('auth network failures get a clear message instead of "Load failed"', async
   }
   assert.match(authErrorToEnglish({ message: 'User already registered' }), /already taken/);
 });
+
+test('insights durations are human readable', async () => {
+  const { formatHours } = await import('../src/lib/insights.ts');
+  assert.equal(formatHours(null), '—');
+  assert.equal(formatHours(0.4), '24m');
+  assert.equal(formatHours(5.55), '5.6h');
+  assert.equal(formatHours(50), '2.1d');
+});

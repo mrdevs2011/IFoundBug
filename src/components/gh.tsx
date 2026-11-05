@@ -16,6 +16,7 @@ export const SkipIcon = (p: SvgProps) => <Oct {...p} paths={['M11.28 4.72a.75.75
 export const RepoIcon = (p: SvgProps) => <Oct {...p} paths={['M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z']} />;
 export const CommentIcon = (p: SvgProps) => <Oct {...p} paths={['M1 2.75C1 1.784 1.784 1 2.75 1h10.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 13.25 12H9.06l-2.573 2.573A1.458 1.458 0 0 1 4 13.543V12H2.75A1.75 1.75 0 0 1 1 10.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h4.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z']} />;
 export const PersonIcon = (p: SvgProps) => <Oct {...p} paths={['M10.561 8.073a6.005 6.005 0 0 1 3.432 5.142.75.75 0 1 1-1.498.07 4.5 4.5 0 0 0-8.99 0 .75.75 0 0 1-1.498-.07 6.004 6.004 0 0 1 3.431-5.142 3.999 3.999 0 1 1 5.123 0ZM10.5 5a2.5 2.5 0 1 0-5 0 2.5 2.5 0 0 0 5 0Z']} />;
+export const GraphIcon = (p: SvgProps) => <Oct {...p} paths={['M1.5 1.75V13.5h13.75a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75V1.75a.75.75 0 0 1 1.5 0Zm14.28 2.53-5.25 5.25a.75.75 0 0 1-1.06 0L7 7.06 4.28 9.78a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l3.25-3.25a.75.75 0 0 1 1.06 0L10 7.94l4.72-4.72a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042Z']} />;
 export const LockIcon = (p: SvgProps) => <Oct {...p} paths={['M4 4a4 4 0 0 1 8 0v2h.25c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 12.25 15h-8.5A1.75 1.75 0 0 1 2 13.25v-5.5C2 6.784 2.784 6 3.75 6H4Zm8.25 3.5h-8.5a.25.25 0 0 0-.25.25v5.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-5.5a.25.25 0 0 0-.25-.25ZM10.5 6V4a2.5 2.5 0 1 0-5 0v2Z']} />;
 
 export const isClosed = (s: BugStatus) => DONE_STATUSES.includes(s);
@@ -78,7 +79,7 @@ export function Avatar({ name, size = 20, src }: { name: string; size?: number; 
 /** Repository header: breadcrumb + visibility badge + underline tab nav (GitHub repo chrome). */
 export function RepoHeader({ project, active, openCount, actions }: {
   project: Pick<Project, 'name' | 'slug' | 'is_public'> & { description?: string | null };
-  active: 'issues' | 'people';
+  active: 'issues' | 'people' | 'insights';
   openCount?: number;
   actions?: React.ReactNode;
 }) {
@@ -98,6 +99,10 @@ export function RepoHeader({ project, active, openCount, actions }: {
             className={`flex items-center gap-2 border-b-2 px-2 pb-2 pt-1 ${active === 'issues' ? 'border-[#f78166] font-semibold text-[#e6edf3]' : 'border-transparent text-[#e6edf3] hover:border-[#6e7681]'}`}>
             <IssueOpenedIcon className="text-[#8b949e]" />Issues
             {typeof openCount === 'number' && <span className="rounded-full bg-[#6e7681]/40 px-1.5 text-xs font-medium leading-[18px]">{openCount}</span>}
+          </Link>
+          <Link href={`/p/${project.slug}/insights`} aria-current={active === 'insights' ? 'page' : undefined}
+            className={`flex items-center gap-2 border-b-2 px-2 pb-2 pt-1 ${active === 'insights' ? 'border-[#f78166] font-semibold text-[#e6edf3]' : 'border-transparent text-[#e6edf3] hover:border-[#6e7681]'}`}>
+            <GraphIcon className="text-[#8b949e]" />Insights
           </Link>
         </nav>
       </div>

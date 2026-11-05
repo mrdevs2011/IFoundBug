@@ -19,6 +19,7 @@ const tools = [
   tool('search_bugs', 'Search issues across your repositories with the IFB query language: free text plus status:, priority:, severity:, assignee:(me|username), author:, repo:, created:>YYYY-MM-DD, updated:<YYYY-MM-DD. Quote phrases with "...".', { q: { type: 'string' }, project: { type: 'string' }, limit: { type: 'integer', minimum: 1, maximum: 100, default: 50 } }, ['q']),
   tool('create_bugs', 'Report several bugs at once (max 20), e.g. after auditing an app. Likely duplicates of open issues are skipped and reported back unless skip_duplicates is false.', { project: { type: 'string' }, bugs: { type: 'array', maxItems: 20, items: { type: 'object', properties: { title: { type: 'string' }, summary: { type: 'string' }, section: { type: 'string' }, severity: { type: 'string', enum: ['CRITICAL','HIGH','MEDIUM','LOW'] }, priority: { type: 'string', enum: ['P0','P1','P2','P3'] }, environment: { type: 'string', enum: ['PRODUCTION','STAGING','DEVELOPMENT','LOCAL'] }, actual_behavior: { type: 'string' }, expected_behavior: { type: 'string' }, steps_to_reproduce: { type: 'array', items: { type: 'string' } }, evidence_urls: { type: 'array', items: { type: 'string' } } }, required: ['title'] } }, skip_duplicates: { type: 'boolean', default: true } }, ['project','bugs']),
   tool('bulk_update_bugs', 'Apply the same change (status, severity, priority, assignee, notes) to up to 50 issues. Each issue is permission-checked and audited; per-issue results are returned.', { bugs: { type: 'array', items: { type: 'string' }, maxItems: 50 }, ...{ status: { type: 'string', enum: ['REPORTED','TRIAGED','IN_PROGRESS','READY_FOR_QA','VERIFIED','FIXED','CLOSED','WONT_FIX'] }, severity: { type: 'string', enum: ['CRITICAL','HIGH','MEDIUM','LOW'] }, priority: { type: 'string', enum: ['P0','P1','P2','P3'] }, assigned_to: { type: 'string', description: 'username, "me", profile UUID, or empty string to unassign' }, dev_notes: { type: 'string' } }, comment: { type: 'string', description: 'optional comment added to each updated issue' } }, ['bugs']),
+  tool('get_insights', 'Repository analytics: open/closed totals, median and p90 time to close, open by severity/priority, 12-week created vs closed, per-assignee workload, oldest open issues.', { project: { type: 'string' } }, ['project']),
   tool('who_am_i', 'Return the authenticated FoundBug account identity and effective permissions.'),
   tool('create_project', 'Create a new workspace owned by this account.', { name: { type: 'string' }, description: { type: 'string' }, is_public: { type: 'boolean', default: false }, allow_guest_reports: { type: 'boolean', default: false }, tech_stack: { type: 'array', items: { type: 'string' } } }, ['name']),
   tool('update_project', 'Update project settings. Only project owners/admins can change workspace settings.', { project: { type: 'string' }, name: { type: 'string' }, description: { type: 'string' }, is_public: { type: 'boolean' }, allow_guest_reports: { type: 'boolean' }, tech_stack: { type: 'array', items: { type: 'string' } } }, ['project']),
@@ -277,6 +278,13 @@ async function handle(request: NextRequest) {
           } catch (e) { results.push({ bug: ref, ok: false, error: e instanceof Error ? e.message : 'failed' }); }
         }
         return { updated: results.filter((r) => r.ok).length, failed: results.filter((r) => !r.ok).length, results };
+      }
+      case 'get_insights': {
+        requireScope('bugs:read');
+        const { project } = await resolveProject(String(a.project));
+        const { data, error } = await db.rpc('ifb_project_insights', { p_project: project.id, p_actor: profile.id });
+        if (error) throw error;
+        return { repo: project.slug, ...(data as Record<string, unknown>) };
       }
       case 'who_am_i': return { id: profile.id, username: profile.username, full_name: profile.full_name, role: profile.role, scopes: [...scopes] };
       case 'create_project': {
