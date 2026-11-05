@@ -20,6 +20,8 @@ interface Props {
   token?: string;
   onBug: (b: Bug) => void;
   onComments: (c: BugComment[]) => void;
+  /** profile id -> avatar url */
+  avatars?: Record<string, string>;
 }
 
 const bugUrl = (p: Pick<Project, 'slug'>, b: Bug) => `${location.origin}/p/${p.slug}/b/${b.code}`;
@@ -34,10 +36,10 @@ function SideSection({ title, children }: { title: string; children: React.React
   <div className="border-b border-[#3d444d] py-4 first:pt-0"><h3 className="mb-2 text-xs font-semibold text-[#9198a1]">{title}</h3>{children}</div>
   );
 }
-function TimelineBox({ name, when, children, badge, heading }: { name: string; when: string; children: React.ReactNode; badge?: React.ReactNode; heading?: React.ReactNode }) {
+function TimelineBox({ name, when, children, badge, heading, avatar }: { name: string; when: string; children: React.ReactNode; badge?: React.ReactNode; heading?: React.ReactNode; avatar?: string }) {
   return (
   <div className="relative flex gap-4">
-    <div className="hidden pt-0.5 sm:block"><Avatar name={name} size={40} /></div>
+    <div className="hidden pt-0.5 sm:block"><Avatar name={name} src={avatar} size={40} /></div>
     <div className="min-w-0 flex-1 overflow-hidden rounded-md border border-[#3d444d]">
       <div className="flex items-center justify-between gap-2 border-b border-[#3d444d] bg-[#151b23] px-4 py-2 text-sm text-[#9198a1]">
         <span className="min-w-0 truncate">{heading ?? <><span className="font-semibold text-[#f0f6fc]">{name}</span> commented {when}</>}</span>{badge}
@@ -48,7 +50,7 @@ function TimelineBox({ name, when, children, badge, heading }: { name: string; w
   );
 }
 
-export function BugView({ project, bug, comments, me, role, token, onBug, onComments }: Props) {
+export function BugView({ project, bug, comments, me, role, token, onBug, onComments, avatars = {} }: Props) {
   const triage = Boolean(role && !['viewer', 'hunter'].includes(role));
   const isReporter = Boolean(me && bug.reported_by && bug.reported_by === me.id);
   const canLink = Boolean(me && !token && (isReporter || triage));
@@ -144,7 +146,7 @@ export function BugView({ project, bug, comments, me, role, token, onBug, onComm
       <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_256px]">
         <div className="min-w-0">
           <div className="relative space-y-4 before:absolute before:bottom-0 before:left-[20px] before:top-0 before:hidden before:w-0.5 before:bg-[#3d444d] sm:before:block [&>*]:relative">
-            <TimelineBox name={bug.reporter_name} when={timeAgo(bug.created_at)} badge={<span className="rounded-full border border-[#3d444d] px-2 text-xs leading-[18px]">Author</span>}>
+            <TimelineBox name={bug.reporter_name} avatar={bug.reported_by ? avatars[bug.reported_by] : undefined} when={timeAgo(bug.created_at)} badge={<span className="rounded-full border border-[#3d444d] px-2 text-xs leading-[18px]">Author</span>}>
               {!hasBody && <p className="italic text-[#9198a1]">No description provided.</p>}
               {bug.summary && <p className="whitespace-pre-wrap">{bug.summary}</p>}
               {bug.steps_to_reproduce?.length > 0 && <><h3>Steps to reproduce</h3><ol>{bug.steps_to_reproduce.map((step, i) => <li key={i}>{step}</li>)}</ol></>}
@@ -176,7 +178,7 @@ export function BugView({ project, bug, comments, me, role, token, onBug, onComm
             )}
 
             {comments.map((c) => (
-              <TimelineBox key={c.id} name={c.author_name} when={timeAgo(c.created_at)}
+              <TimelineBox key={c.id} name={c.author_name} avatar={c.author_id ? avatars[c.author_id] : undefined} when={timeAgo(c.created_at)}
                 badge={!token && (triage || (me && c.author_id === me.id)) ? <button className="text-xs text-[#f85149] hover:underline" onClick={() => { const previous = comments; onComments(previous.filter((x) => x.id !== c.id)); void deleteComment(c.id).catch((reason) => { onComments(previous); setError(errMsg(reason)); }); }}>Delete</button> : undefined}>
                 <p className="whitespace-pre-wrap">{c.content}</p>
               </TimelineBox>
@@ -186,7 +188,7 @@ export function BugView({ project, bug, comments, me, role, token, onBug, onComm
           <div className="mt-6 border-t-2 border-[#3d444d] pt-6">
             {me ? (
               <form onSubmit={send} className="flex gap-4">
-                <div className="hidden sm:block"><Avatar name={me.full_name} size={40} /></div>
+                <div className="hidden sm:block"><Avatar name={me.full_name} src={me.avatar_url} size={40} /></div>
                 <div className="min-w-0 flex-1">
                   <h2 className="mb-2 text-base font-semibold text-[#f0f6fc]">Add a comment</h2>
                   <div className="rounded-md border border-[#3d444d]">

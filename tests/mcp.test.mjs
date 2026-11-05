@@ -103,3 +103,22 @@ test('ifb_help documents every MCP tool and its topics match the tool schema', a
   for (const name of tools) assert.match(manual, new RegExp(`\\b${name}\\b`), `${name} missing from ifb_help`);
   for (const topic of HELP_TOPICS) { assert.match(route, new RegExp(`'${topic}'`)); assert.match(helpText(topic), new RegExp(`ifb_help: ${topic}`)); }
 });
+
+test('only avatars from our own public bucket are rendered', async () => {
+  const { trustedAvatar } = await import('../src/lib/avatar.ts');
+  const base = 'https://abc.supabase.co';
+  const ok = `${base}/storage/v1/object/public/avatars/123e4567-e89b-12d3-a456-426614174000/123e4567-e89b-12d3-a456-426614174001.png`;
+  assert.equal(trustedAvatar(ok, base), ok);
+  assert.equal(trustedAvatar('https://images.unsplash.com/photo-1', base), null);
+  assert.equal(trustedAvatar(`${base}/storage/v1/object/public/bug-attachments/x.png`, base), null);
+  assert.equal(trustedAvatar(`${base}/storage/v1/object/public/avatars/../bug-attachments/x.png`, base), null);
+  assert.equal(trustedAvatar(null, base), null);
+});
+
+test('V4 migration closes public storage read on bug attachments and scopes avatar writes to the owner folder', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const sql = await readFile(new URL('../sql/V4_AVATARS.sql', import.meta.url), 'utf8');
+  assert.match(sql, /drop policy if exists ifb_public_read_bug_attachments/);
+  assert.equal((sql.match(/\(storage\.foldername\(name\)\)\[1\] = auth\.uid\(\)::text/g) || []).length, 4);
+  assert.doesNotMatch(sql, /for select/i);
+});

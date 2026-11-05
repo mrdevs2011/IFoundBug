@@ -6,9 +6,16 @@ import { BugIcon, ChevronDownIcon, TerminalIcon } from '@/components/icons';
 import { useMe } from '@/lib/useMe';
 import { signOut } from '@/lib/db';
 import MCPSettingsModal from '@/components/MCPSettingsModal';
+import ProfileModal from '@/components/ProfileModal';
+import { Avatar } from '@/components/gh';
+import { PROFILE_UPDATED_EVENT } from '@/lib/avatar';
+import type { Me } from '@/lib/db';
 
 export function Nav() {
-  const me = useMe();
+  const loaded = useMe();
+  const [override, setOverride] = useState<Me | null>(null);
+  const me = loaded && override && override.id === loaded.id ? override : loaded;
+  const [profile, setProfile] = useState(false);
   const path = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -25,11 +32,12 @@ export function Nav() {
           {me === undefined ? <span className="h-8 w-24 animate-pulse rounded-md bg-[#21262d]" /> : me ? (
             <div className="relative">
               <button onClick={() => setOpen((v) => !v)} className="flex items-center gap-2 rounded-md border border-transparent px-2.5 py-1.5 text-[#c9d1d9] hover:border-[#30363d] hover:bg-[#161b22]" aria-haspopup="menu" aria-expanded={open}>
-                <span className="grid h-6 w-6 place-items-center rounded-full border border-[#3fb950]/40 bg-[#3fb950]/10 text-[11px] font-semibold text-[#3fb950]">{me.full_name.slice(0, 1).toUpperCase()}</span>
+                <Avatar name={me.full_name} src={me.avatar_url} size={24} />
                 <span className="max-w-[140px] truncate">{me.username}</span><ChevronDownIcon className="h-3.5 w-3.5 text-[#8b949e]" />
               </button>
               {open && <div role="menu" className="absolute right-0 mt-2 w-56 overflow-hidden rounded-md border border-[#30363d] bg-[#161b22] py-1 shadow-2xl" onMouseLeave={() => setOpen(false)}>
                 <div className="border-b border-[#30363d] px-3 py-2"><p className="text-xs text-[#8b949e]">Signed in as</p><p className="truncate text-sm font-medium text-[#e6edf3]">@{me.username}</p></div>
+                <button role="menuitem" onClick={() => { setOpen(false); setProfile(true); }} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[#c9d1d9] hover:bg-[#21262d]"><Avatar name={me.full_name} src={me.avatar_url} size={16} /> Edit profile</button>
                 <button role="menuitem" onClick={() => { setOpen(false); setMcp(true); }} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[#c9d1d9] hover:bg-[#21262d]"><TerminalIcon className="h-4 w-4" /> MCP settings</button>
                 <button role="menuitem" onClick={async () => { setOpen(false); await signOut(); router.refresh(); router.push('/'); }} className="block w-full border-t border-[#30363d] px-3 py-2 text-left text-sm text-[#f85149] hover:bg-[#21262d]">Sign out</button>
               </div>}
@@ -38,6 +46,7 @@ export function Nav() {
         </nav>
       </div>
       {mcp && <MCPSettingsModal onClose={() => setMcp(false)} />}
+      {profile && me && <ProfileModal me={me} onClose={() => setProfile(false)} onSaved={(next) => { setOverride(next); window.dispatchEvent(new Event(PROFILE_UPDATED_EVENT)); }} />}
     </header>
   );
 }

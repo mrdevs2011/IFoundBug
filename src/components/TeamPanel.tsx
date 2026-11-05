@@ -1,5 +1,6 @@
 'use client';
 import React, { useCallback, useEffect, useState } from 'react';
+import { Avatar } from '@/components/gh';
 import type { Project, ProjectInvite } from '@/types';
 import { createInvite, errMsg, listInvites, listMembers, removeMember, revokeInvite, type Member } from '@/lib/db';
 import { copyToClipboard } from '@/lib/clipboard';
@@ -44,7 +45,7 @@ export function TeamPanel({ project, isAdmin, onClose }: { project: Project; isA
         <ul className="space-y-1.5">
           {members.map((m) => (
             <li key={m.profile.id} className="flex items-center justify-between rounded-xl bg-white/[0.03] px-3 py-2 text-sm">
-              <span className="text-zinc-200">{m.profile.full_name} <span className="text-xs text-zinc-500">@{m.profile.username}</span></span>
+              <span className="flex items-center gap-2 text-zinc-200"><Avatar name={m.profile.full_name} src={m.profile.avatar_url} size={24} />{m.profile.full_name} <span className="text-xs text-zinc-500">@{m.profile.username}</span></span>
               <span className="flex items-center gap-2 text-xs text-zinc-400">{m.role}
                 {isAdmin && m.role !== 'owner' && <button disabled={Boolean(pending)} className="text-red-300 hover:underline disabled:opacity-50" onClick={() => { const previous = members; setMembers(previous.filter((member) => member.profile.id !== m.profile.id)); setPending(`member:${m.profile.id}`); void removeMember(project.id, m.profile.id).then(load).catch((reason) => { setMembers(previous); setError(errMsg(reason)); }).finally(() => setPending('')); }}>Remove</button>}
               </span>

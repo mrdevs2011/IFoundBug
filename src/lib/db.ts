@@ -8,7 +8,7 @@ function sb() {
 
 export interface Me { id: string; authId: string; username: string; full_name: string; avatar_url?: string }
 export interface ProjectCard extends Project { open_count: number; total_count: number }
-export interface Member { role: string; profile: { id: string; username: string; full_name: string } }
+export interface Member { role: string; profile: { id: string; username: string; full_name: string; avatar_url?: string | null } }
 export interface SharedBug { bug: Bug; project: Pick<Project, 'id' | 'name' | 'slug' | 'color'>; comments: BugComment[] }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -27,6 +27,23 @@ export async function getMe(): Promise<Me | null> {
   const { data } = await supabase.from('ifb_profiles').select(PROFILE_COLS).eq('auth_user_id', user.id).maybeSingle();
   if (!data) return null;
   return { id: data.id, authId: user.id, username: data.username, full_name: data.full_name, avatar_url: data.avatar_url ?? undefined };
+}
+
+/** Avatar URLs for a set of profile ids (missing ids are simply absent). */
+export async function getAvatars(ids: (string | null | undefined)[]): Promise<Record<string, string>> {
+  const unique = [...new Set(ids.filter((id): id is string => Boolean(id && UUID.test(id))))];
+  if (!unique.length || !supabase) return {};
+  const { data } = await supabase.from('ifb_profiles').select('id,avatar_url').in('id', unique);
+  return Object.fromEntries((data ?? []).filter((p) => p.avatar_url).map((p) => [p.id, p.avatar_url as string]));
+}
+
+export async function updateMyName(fullName: string): Promise<void> {
+  const name = fullName.trim();
+  if (!name || name.length > 80) throw new Error('Name must be 1-80 characters.');
+  const { data: { user } } = await sb().auth.getUser();
+  if (!user) throw new Error('Sign in to edit your profile.');
+  const { error } = await sb().from('ifb_profiles').update({ full_name: name }).eq('auth_user_id', user.id);
+  if (error) throw error;
 }
 
 // ---- projects -------------------------------------------------------------
@@ -85,7 +102,7 @@ export async function myRole(projectId: string, profileId: string): Promise<stri
 }
 
 export async function listMembers(projectId: string): Promise<Member[]> {
-  const { data, error } = await sb().from('ifb_project_members').select('role, profile:ifb_profiles(id,username,full_name)').eq('project_id', projectId);
+  const { data, error } = await sb().from('ifb_project_members').select('role, profile:ifb_profiles(id,username,full_name,avatar_url)').eq('project_id', projectId);
   if (error) throw error;
   return (data ?? []) as unknown as Member[];
 }

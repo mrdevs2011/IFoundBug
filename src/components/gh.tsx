@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import type { Bug, BugStatus, Priority, Project, Severity } from '@/types';
 import { DONE_STATUSES, SEVERITY_LABEL, STATUS_LABEL } from '@/lib/constants';
+import { trustedAvatar } from '@/lib/avatar';
 
 type SvgProps = React.SVGProps<SVGSVGElement>;
 const Oct = ({ paths, ...p }: SvgProps & { paths: string[] }) => (
@@ -62,8 +63,10 @@ export function IssueLabels({ bug }: { bug: Pick<Bug, 'severity' | 'priority' | 
 }
 
 const AVATAR_BG = ['#1f6feb', '#8957e5', '#238636', '#bf4b8a', '#9e6a03', '#db6d28', '#0e8a9c'];
-export function Avatar({ name, size = 20 }: { name: string; size?: number }) {
+export function Avatar({ name, size = 20, src }: { name: string; size?: number; src?: string | null }) {
   const n = name || '?';
+  const safe = trustedAvatar(src);
+  if (safe) return <img src={safe} alt="" width={size} height={size} className="shrink-0 rounded-full object-cover" style={{ width: size, height: size }} />;
   let h = 0; for (const c of n) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   return (
     <span aria-hidden="true" className="inline-grid shrink-0 place-items-center rounded-full font-semibold text-white" style={{ width: size, height: size, fontSize: Math.max(9, size * 0.45), background: AVATAR_BG[h % AVATAR_BG.length] }}>

@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { Nav } from '@/components/Nav';
 import { BugView } from '@/components/BugView';
 import { Empty, ErrorBox, Spinner, btnGhost } from '@/components/ui';
-import { errMsg, getBug, getProject, listComments, myRole } from '@/lib/db';
+import { errMsg, getAvatars, getBug, getProject, listComments, myRole } from '@/lib/db';
 import { useMe } from '@/lib/useMe';
 import type { Bug, BugComment, Project } from '@/types';
 import { supabase } from '@/lib/supabase/client';
@@ -20,6 +20,14 @@ export default function BugPage() {
   const [roleState, setRoleState] = useState<{ key: string; role: string | null } | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'missing'>('loading');
   const [error, setError] = useState('');
+  const [avatars, setAvatars] = useState<Record<string, string>>({});
+  const avatarKey = [bug?.reported_by, ...comments.map((c) => c.author_id)].filter(Boolean).sort().join(',');
+  useEffect(() => {
+    if (!avatarKey) return;
+    let alive = true;
+    getAvatars(avatarKey.split(',')).then((map) => { if (alive) setAvatars(map); }).catch(() => {});
+    return () => { alive = false; };
+  }, [avatarKey]);
 
   useEffect(() => {
     let alive = true;
@@ -80,7 +88,7 @@ export default function BugPage() {
         {error && <ErrorBox message={error} />}
         {state === 'ready' && project && bug && (
           <>
-            <BugView project={project} bug={bug} comments={comments} me={me} role={role} onBug={setBug} onComments={setComments} />
+            <BugView project={project} bug={bug} comments={comments} me={me} role={role} onBug={setBug} onComments={setComments} avatars={avatars} />
           </>
         )}
       </main>
