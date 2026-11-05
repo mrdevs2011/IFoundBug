@@ -1,6 +1,23 @@
 # FoundBug — database setup
 
-There are three incremental SQL files. Run `IFOUNDBUG_UNIVERSAL.sql` first, `V2_PUBLIC_MODEL.sql` second, and `V3_ISSUE_SEARCH_INDEXES.sql` third, in **Supabase Dashboard → SQL Editor**. `FOUNDBUG_CANONICAL.sql` is the consolidated fresh-install snapshot of those schema/policy/index scripts plus Realtime publication setup; use either the ordered incremental files or the canonical snapshot, not both. The base file deliberately installs no permissive application policies; the V2 file installs the production access model. Re-running the base file after V2 is fail-closed (it may temporarily revoke public access), so always re-run V2 afterwards. Both files preserve application rows.
+## Migration order (current)
+
+Fresh install: `IFOUNDBUG_UNIVERSAL.sql` → `V2_PUBLIC_MODEL.sql` → `V3` … `V8` below, in order.
+Alternatively `FOUNDBUG_CANONICAL.sql` (covers base + V2 + V3) followed by `V4` … `V8`.
+All V3–V8 files are additive and idempotent; none deletes application rows.
+
+| File | What it adds | Production (ynbiumxtfgcaezatxnbz) |
+|---|---|---|
+| `V3_ISSUE_SEARCH_INDEXES.sql` | pg_trgm + search/filter indexes; also `ifb_mcp_update_bug` lives in V2 | applied 2026-11-05 |
+| `V4_AVATARS.sql` | public `avatars` bucket (own-folder writes) and **drops the public read policy on bug attachments** | applied 2026-11-05 |
+| `V5_SECURITY_FUNCTION_SYNC.sql` | permission checks for status/criteria RPCs, visibility checks for votes/views, sensitive issues hidden | applied 2026-11-05 |
+| `V6_INSIGHTS.sql` | `closed_at` (trigger-derived, backfilled) + `ifb_project_insights` analytics RPC | applied 2026-11-05 |
+| `V7_WEBHOOKS.sql` | `pg_net` webhooks + Telegram notifications, owner/admin RPCs, delivery log | applied 2026-11-05 |
+| `V8_ORGANIZATIONS.sql` | organizations, org members, inherited repo access (`via_org`) | applied 2026-11-05 |
+
+The notification links use `public.ifb_app_url()` (V7). If the domain changes, update that function.
+
+Run the files in **Supabase Dashboard → SQL Editor** (or `supabase db query --linked -f <file>`) in the order above. `FOUNDBUG_CANONICAL.sql` is the consolidated fresh-install snapshot of those schema/policy/index scripts plus Realtime publication setup; use either the ordered incremental files or the canonical snapshot, not both. The base file deliberately installs no permissive application policies; the V2 file installs the production access model. Re-running the base file after V2 is fail-closed (it may temporarily revoke public access), so always re-run V2 afterwards. Both files preserve application rows.
 
 ## Required Supabase Auth setting
 
