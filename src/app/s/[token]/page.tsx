@@ -53,7 +53,7 @@ export default function SharedBugPage() {
         {error && <ErrorBox message={error} />}
         {data && bug && (
           <>
-            <p className="mb-4 text-xs text-zinc-500">Private issue in {data.project.name}</p>
+            <p className="mb-4 text-xs text-[#9198a1]">Private issue in {data.project.name}</p>
             <BugView project={data.project} bug={bug} comments={comments} me={me} role={null} token={token} onBug={setBug} onComments={setComments} />
           </>
         )}

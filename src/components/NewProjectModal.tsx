@@ -29,13 +29,13 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
         <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="Repository name" required maxLength={80} autoFocus />
         <textarea className={`${inputCls} min-h-20`} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" maxLength={300} />
         <input className={inputCls} value={stack} onChange={(e) => setStack(e.target.value)} placeholder="Technologies: React, Next.js, PostgreSQL" />
-        <label className="flex items-start gap-2 text-sm text-zinc-300">
-          <input type="checkbox" checked={isPublic} onChange={(event) => { setIsPublic(event.target.checked); if (!event.target.checked) setAllowGuestReports(false); }} className="mt-0.5 accent-emerald-500" />
-          <span><span className="block font-medium">Public repository</span><span className="text-xs text-zinc-500">Anyone can discover and view this repository.</span></span>
+        <label className="flex items-start gap-2 text-sm text-[#f0f6fc]">
+          <input type="checkbox" checked={isPublic} onChange={(event) => { setIsPublic(event.target.checked); if (!event.target.checked) setAllowGuestReports(false); }} className="mt-0.5 accent-[#238636]" />
+          <span><span className="block font-medium">Public repository</span><span className="text-xs text-[#9198a1]">Anyone can discover and view this repository.</span></span>
         </label>
-        {isPublic && <label className="flex items-start gap-2 pl-6 text-sm text-zinc-300">
-          <input type="checkbox" checked={allowGuestReports} onChange={(event) => setAllowGuestReports(event.target.checked)} className="mt-0.5 accent-emerald-500" />
-          <span><span className="block font-medium">Allow public issue submissions</span><span className="text-xs text-zinc-500">Signed-in users can report issues without joining the team.</span></span>
+        {isPublic && <label className="flex items-start gap-2 pl-6 text-sm text-[#f0f6fc]">
+          <input type="checkbox" checked={allowGuestReports} onChange={(event) => setAllowGuestReports(event.target.checked)} className="mt-0.5 accent-[#238636]" />
+          <span><span className="block font-medium">Allow public issue submissions</span><span className="text-xs text-[#9198a1]">Signed-in users can report issues without joining the team.</span></span>
         </label>}
         {error && <ErrorBox message={error} />}
         <button className={`${btnPrimary} w-full`} disabled={busy || !name.trim()}>{busy ? 'Creating…' : 'Create repository'}</button>

@@ -29,7 +29,7 @@ export const isClosed = (s: BugStatus) => DONE_STATUSES.includes(s);
 export const notPlanned = (s: BugStatus) => s === 'WONT_FIX';
 
 export function IssueStateIcon({ status, className = '' }: { status: BugStatus; className?: string }) {
-  if (notPlanned(status)) return <SkipIcon className={`shrink-0 text-[#8b949e] ${className}`} aria-label="Closed as not planned" />;
+  if (notPlanned(status)) return <SkipIcon className={`shrink-0 text-[#9198a1] ${className}`} aria-label="Closed as not planned" />;
   if (isClosed(status)) return <IssueClosedIcon className={`shrink-0 text-[#ab7df8] ${className}`} aria-label="Closed" />;
   return <IssueOpenedIcon className={`shrink-0 text-[#3fb950] ${className}`} aria-label="Open" />;
 }
@@ -38,7 +38,7 @@ export function IssueStateIcon({ status, className = '' }: { status: BugStatus; 
 export function IssueStatePill({ status }: { status: BugStatus }) {
   const closed = isClosed(status);
   const np = notPlanned(status);
-  const cls = np ? 'bg-[#6e7681]' : closed ? 'bg-[#8957e5]' : 'bg-[#238636]';
+  const cls = np ? 'bg-[#9198a1]' : closed ? 'bg-[#8957e5]' : 'bg-[#238636]';
   return (
     <span className={`inline-flex items-center gap-1 rounded-full px-3 py-[5px] text-sm font-medium text-white ${cls}`}>
       <IssueStateIcon status={status} className="!text-white" />{np ? 'Closed as not planned' : closed ? 'Closed' : 'Open'}
@@ -91,30 +91,30 @@ export function RepoHeader({ project, active, openCount, actions, showSettings }
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="border-b border-[#30363d] bg-[#010409]">
+    <div className="border-b border-[#3d444d] bg-[#0d1117]">
       <div className="mx-auto max-w-[1280px] px-4 pt-4 md:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2 text-xl">
-            <RepoIcon className="text-[#8b949e]" />
-            <Link href={`/p/${project.slug}`} className="truncate font-semibold text-[#e6edf3] hover:underline">{project.name}</Link>
-            <span className="rounded-full border border-[#30363d] px-[7px] text-xs font-medium leading-[18px] text-[#8b949e]">{project.is_public ? 'Public' : 'Private'}</span>
+            <RepoIcon className="text-[#9198a1]" />
+            <Link href={`/p/${project.slug}`} className="truncate font-semibold text-[#f0f6fc] hover:underline">{project.name}</Link>
+            <span className="rounded-full border border-[#3d444d] px-[7px] text-xs font-medium leading-[18px] text-[#9198a1]">{project.is_public ? 'Public' : 'Private'}</span>
           </div>
           {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
         </div>
         <nav className="-mb-px mt-4 flex gap-2 overflow-x-auto text-sm" aria-label="Repository">
           <Link href={`/p/${project.slug}`} aria-current={active === 'issues' ? 'page' : undefined}
-            className={`flex items-center gap-2 border-b-2 px-2 pb-2 pt-1 ${active === 'issues' ? 'border-[#f78166] font-semibold text-[#e6edf3]' : 'border-transparent text-[#e6edf3] hover:border-[#6e7681]'}`}>
-            <IssueOpenedIcon className="text-[#8b949e]" />Issues
-            {typeof openCount === 'number' && <span className="rounded-full bg-[#6e7681]/40 px-1.5 text-xs font-medium leading-[18px]">{openCount}</span>}
+            className={`flex items-center gap-2 border-b-2 px-2 pb-2 pt-1 ${active === 'issues' ? 'border-[#f78166] font-semibold text-[#f0f6fc]' : 'border-transparent text-[#f0f6fc] hover:border-[#9198a1]'}`}>
+            <IssueOpenedIcon className="text-[#9198a1]" />Issues
+            {typeof openCount === 'number' && <span className="rounded-full bg-[#9198a1]/40 px-1.5 text-xs font-medium leading-[18px]">{openCount}</span>}
           </Link>
           <Link href={`/p/${project.slug}/insights`} aria-current={active === 'insights' ? 'page' : undefined}
-            className={`flex items-center gap-2 border-b-2 px-2 pb-2 pt-1 ${active === 'insights' ? 'border-[#f78166] font-semibold text-[#e6edf3]' : 'border-transparent text-[#e6edf3] hover:border-[#6e7681]'}`}>
-            <GraphIcon className="text-[#8b949e]" />Insights
+            className={`flex items-center gap-2 border-b-2 px-2 pb-2 pt-1 ${active === 'insights' ? 'border-[#f78166] font-semibold text-[#f0f6fc]' : 'border-transparent text-[#f0f6fc] hover:border-[#9198a1]'}`}>
+            <GraphIcon className="text-[#9198a1]" />Insights
           </Link>
           {(showSettings || active === 'settings') && (
             <Link href={`/p/${project.slug}/settings`} aria-current={active === 'settings' ? 'page' : undefined}
-              className={`flex items-center gap-2 border-b-2 px-2 pb-2 pt-1 ${active === 'settings' ? 'border-[#f78166] font-semibold text-[#e6edf3]' : 'border-transparent text-[#e6edf3] hover:border-[#6e7681]'}`}>
-              <GearIcon className="text-[#8b949e]" />Settings
+              className={`flex items-center gap-2 border-b-2 px-2 pb-2 pt-1 ${active === 'settings' ? 'border-[#f78166] font-semibold text-[#f0f6fc]' : 'border-transparent text-[#f0f6fc] hover:border-[#9198a1]'}`}>
+              <GearIcon className="text-[#9198a1]" />Settings
             </Link>
           )}
         </nav>

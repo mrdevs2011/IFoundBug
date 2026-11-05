@@ -45,8 +45,8 @@ export function TeamPanel({ project, isAdmin, onClose }: { project: Project; isA
         <ul className="space-y-1.5">
           {members.map((m) => (
             <li key={m.profile.id} className="flex items-center justify-between rounded-xl bg-white/[0.03] px-3 py-2 text-sm">
-              <span className="flex items-center gap-2 text-zinc-200"><Avatar name={m.profile.full_name} src={m.profile.avatar_url} size={24} />{m.profile.full_name} <span className="text-xs text-zinc-500">@{m.profile.username}</span></span>
-              <span className="flex items-center gap-2 text-xs text-zinc-400">{m.role}
+              <span className="flex items-center gap-2 text-[#f0f6fc]"><Avatar name={m.profile.full_name} src={m.profile.avatar_url} size={24} />{m.profile.full_name} <span className="text-xs text-[#9198a1]">@{m.profile.username}</span></span>
+              <span className="flex items-center gap-2 text-xs text-[#9198a1]">{m.role}
                 {isAdmin && m.role !== 'owner' && <button disabled={Boolean(pending)} className="text-red-300 hover:underline disabled:opacity-50" onClick={() => { const previous = members; setMembers(previous.filter((member) => member.profile.id !== m.profile.id)); setPending(`member:${m.profile.id}`); void removeMember(project.id, m.profile.id).then(load).catch((reason) => { setMembers(previous); setError(errMsg(reason)); }).finally(() => setPending('')); }}>Remove</button>}
               </span>
             </li>
@@ -56,25 +56,25 @@ export function TeamPanel({ project, isAdmin, onClose }: { project: Project; isA
           <div className="space-y-3 border-t border-white/[0.07] pt-4">
             <h3 className="text-sm font-semibold text-white">Invitation link</h3>
             <div className="flex gap-2">
-              <select value={role} onChange={(e) => setRole(e.target.value)} className="flex-1 rounded-xl border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white">
+              <select value={role} onChange={(e) => setRole(e.target.value)} className="flex-1 rounded-xl border border-white/10 bg-[#0d1117] px-3 py-2 text-sm text-white">
                 {ROLES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
               <button className={btnPrimary} onClick={make} disabled={Boolean(pending)}>{pending === 'create' ? 'Creating…' : 'Create'}</button>
             </div>
             <ul className="space-y-1.5">
               {invites.map((i) => (
-                <li key={i.id} className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.03] px-3 py-2 text-xs text-zinc-400">
+                <li key={i.id} className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.03] px-3 py-2 text-xs text-[#9198a1]">
                   <span className="truncate">{i.role} · {i.uses_count}/{i.max_uses}</span>
                   <span className="flex shrink-0 gap-3">
-                    <button className="text-emerald-300 hover:underline" onClick={async () => { if (await copyToClipboard(url(i.token))) setCopied(i.id); }}>{copied === i.id ? 'Copied' : 'Copy'}</button>
+                    <button className="text-[#3fb950] hover:underline" onClick={async () => { if (await copyToClipboard(url(i.token))) setCopied(i.id); }}>{copied === i.id ? 'Copied' : 'Copy'}</button>
                     <button disabled={Boolean(pending)} className="text-red-300 hover:underline disabled:opacity-50" onClick={() => { const previous = invites; setInvites(previous.filter((invite) => invite.id !== i.id)); setPending(`invite:${i.id}`); void revokeInvite(i.id).then(load).catch((reason) => { setInvites(previous); setError(errMsg(reason)); }).finally(() => setPending('')); }}>Revoke</button>
                   </span>
                 </li>
               ))}
             </ul>
-            <p className="text-xs text-zinc-500">Invitations expire after 30 days. Members can triage issues; public issue reports and comments do not require membership.</p>
+            <p className="text-xs text-[#9198a1]">Invitations expire after 30 days. Members can triage issues; public issue reports and comments do not require membership.</p>
           </div>
-        ) : <p className="text-xs text-zinc-500">Only repository admins can manage members.</p>}
+        ) : <p className="text-xs text-[#9198a1]">Only repository admins can manage members.</p>}
         {error && <ErrorBox message={error} />}
         <button className={`${btnGhost} w-full`} onClick={onClose}>Close</button>
       </div>

@@ -115,25 +115,25 @@ ${b.acceptance_criteria.map((ac) => `  - [ ] ${ac.text}`).join('\n')}
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div className="bg-[#0d1117] border border-[#3d444d] rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-950/60">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#3d444d] bg-[#0d1117]/60">
           <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <div className="w-8 h-8 rounded-lg bg-[#238636]/10 border border-[#238636]/30 flex items-center justify-center text-[#3fb950]">
               <SparklesIcon className="w-4 h-4" />
             </div>
             <div>
               <h3 className="text-white font-bold text-base flex items-center gap-2">
                 AI Coding Fix Prompt Synthesizer
               </h3>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-[#9198a1]">
                 A ready-to-use prompt for Claude Code, Cursor, Codex, or Antigravity
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition"
+            className="p-1.5 text-[#9198a1] hover:text-white hover:bg-[#212830] rounded-lg transition"
           >
             <XIcon className="w-5 h-5" />
           </button>
@@ -141,8 +141,8 @@ ${b.acceptance_criteria.map((ac) => `  - [ ] ${ac.text}`).join('\n')}
 
         {/* Multi-select filter pills if multiple */}
         {isMultiple && (
-          <div className="px-6 py-3 border-b border-zinc-800/80 bg-zinc-950/30 flex items-center gap-2 overflow-x-auto text-xs">
-            <span className="text-zinc-400 font-medium whitespace-nowrap">Select issues:</span>
+          <div className="px-6 py-3 border-b border-[#3d444d]/80 bg-[#0d1117]/30 flex items-center gap-2 overflow-x-auto text-xs">
+            <span className="text-[#9198a1] font-medium whitespace-nowrap">Select issues:</span>
             {bugs.map((b) => {
               const isSelected = selectedBugIds.includes(b.id);
               return (
@@ -151,8 +151,8 @@ ${b.acceptance_criteria.map((ac) => `  - [ ] ${ac.text}`).join('\n')}
                   onClick={() => toggleBugSelection(b.id)}
                   className={`px-2.5 py-1 rounded-md border text-xs font-semibold whitespace-nowrap transition ${
                     isSelected
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                      : 'bg-zinc-800/40 text-zinc-400 border-zinc-700/50 hover:border-zinc-500'
+                      ? 'bg-[#238636]/20 text-[#3fb950] border-[#238636]/50'
+                      : 'bg-[#212830]/40 text-[#9198a1] border-[#3d444d]/50 hover:border-[#3d444d]'
                   }`}
                 >
                   {b.code}
@@ -164,27 +164,27 @@ ${b.acceptance_criteria.map((ac) => `  - [ ] ${ac.text}`).join('\n')}
 
         {/* Prompt Content */}
         <div className="flex-1 p-6 overflow-y-auto">
-          <pre className="bg-zinc-950 border border-zinc-800/80 rounded-xl p-4 text-xs font-mono text-zinc-300 whitespace-pre-wrap select-all leading-relaxed max-h-[50vh] overflow-y-auto">
+          <pre className="bg-[#0d1117] border border-[#3d444d]/80 rounded-xl p-4 text-xs font-mono text-[#f0f6fc] whitespace-pre-wrap select-all leading-relaxed max-h-[50vh] overflow-y-auto">
             {promptText}
           </pre>
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-800 bg-zinc-950/70">
-          <span className="text-xs text-zinc-500">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-[#3d444d] bg-[#0d1117]/70">
+          <span className="text-xs text-[#9198a1]">
             {selectedBugIds.length} issues selected
           </span>
 
           <div className="flex items-center space-x-2">
             <button
               onClick={handleDownload}
-              className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold px-3.5 py-2 rounded-lg border border-zinc-700 transition"
+              className="flex items-center gap-1.5 bg-[#212830] hover:bg-[#212830] text-[#f0f6fc] text-xs font-semibold px-3.5 py-2 rounded-lg border border-[#3d444d] transition"
             >
               <DownloadIcon className="w-3.5 h-3.5" /> .md Download
             </button>
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold px-4 py-2 rounded-lg shadow-lg shadow-emerald-500/20 transition"
+              className="flex items-center gap-1.5 bg-[#238636] hover:bg-[#2ea043] text-white text-xs font-medium px-3 h-8 rounded-md transition"
             >
               {copied ? (
                 <>

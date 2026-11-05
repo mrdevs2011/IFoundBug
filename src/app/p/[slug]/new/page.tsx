@@ -84,38 +84,38 @@ export default function NewBugPage() {
     <>
       <Nav />
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8">
-        <Link href={`/p/${project.slug}`} className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300"><ArrowLeftIcon className="h-3.5 w-3.5" />{project.name}</Link>
+        <Link href={`/p/${project.slug}`} className="inline-flex items-center gap-1.5 text-xs text-[#9198a1] hover:text-[#f0f6fc]"><ArrowLeftIcon className="h-3.5 w-3.5" />{project.name}</Link>
         <h1 className="mt-2 text-2xl font-bold text-white">New issue</h1>
         {me === null ? <div className="mt-6"><LoginHint what="submit an issue" /></div> : (
           <form onSubmit={submit} className="mt-6 space-y-5">
-            <label className="block text-sm text-zinc-300">What happened?
+            <label className="block text-sm text-[#f0f6fc]">What happened?
               <input className={`${inputCls} mt-1.5`} value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={180} placeholder="Short summary of the problem" autoFocus />
             </label>
-            <label className="block text-sm text-zinc-300">How can this issue be reproduced? <span className="text-xs text-zinc-500">(one step per line)</span>
+            <label className="block text-sm text-[#f0f6fc]">How can this issue be reproduced? <span className="text-xs text-[#9198a1]">(one step per line)</span>
               <textarea className={`${inputCls} mt-1.5 min-h-28`} value={steps} onChange={(e) => setSteps(e.target.value)} placeholder={'Open the application\nGo to Profile → Payment methods\nSelect Add card'} />
             </label>
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block text-sm text-zinc-300">Actual behavior
+              <label className="block text-sm text-[#f0f6fc]">Actual behavior
                 <textarea className={`${inputCls} mt-1.5 min-h-24`} value={actual} onChange={(e) => setActual(e.target.value)} />
               </label>
-              <label className="block text-sm text-zinc-300">Expected behavior
+              <label className="block text-sm text-[#f0f6fc]">Expected behavior
                 <textarea className={`${inputCls} mt-1.5 min-h-24`} value={expected} onChange={(e) => setExpected(e.target.value)} />
               </label>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block text-sm text-zinc-300">Severity
+              <label className="block text-sm text-[#f0f6fc]">Severity
                 <select className={`${inputCls} mt-1.5`} value={severity} onChange={(e) => setSeverity(e.target.value as Severity)}>
                   {SEVERITY_ORDER.map((s) => <option key={s} value={s}>{SEVERITY_LABEL[s]}</option>)}
                 </select>
               </label>
-              <label className="block text-sm text-zinc-300">Environment
+              <label className="block text-sm text-[#f0f6fc]">Environment
                 <select className={`${inputCls} mt-1.5`} value={env} onChange={(e) => setEnv(e.target.value as Environment)}>
                   {(Object.keys(ENV_LABEL) as Environment[]).map((k) => <option key={k} value={k}>{ENV_LABEL[k]}</option>)}
                 </select>
               </label>
             </div>
             <div>
-              <div className="mb-1.5 flex items-center justify-between text-sm text-zinc-300">Screenshot <span className="text-xs text-zinc-500">Paste with Ctrl+V or choose files</span></div>
+              <div className="mb-1.5 flex items-center justify-between text-sm text-[#f0f6fc]">Screenshot <span className="text-xs text-[#9198a1]">Paste with Ctrl+V or choose files</span></div>
               <div className="flex flex-wrap gap-2">
                 {shots.map((s) => (
                   <div key={s.id} className="group relative">
@@ -126,11 +126,11 @@ export default function NewBugPage() {
                     </div>
                   </div>
                 ))}
-                {shots.length < 6 && <button type="button" onClick={() => fileRef.current?.click()} className="flex h-20 w-28 items-center justify-center gap-1.5 rounded-lg border border-dashed border-white/15 text-xs text-zinc-500 hover:border-emerald-500/40 hover:text-emerald-300"><PlusIcon className="h-4 w-4" />Add image</button>}
+                {shots.length < 6 && <button type="button" onClick={() => fileRef.current?.click()} className="flex h-20 w-28 items-center justify-center gap-1.5 rounded-lg border border-dashed border-white/15 text-xs text-[#9198a1] hover:border-[#238636]/40 hover:text-[#3fb950]"><PlusIcon className="h-4 w-4" />Add image</button>}
                 <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => { addFiles(Array.from(e.target.files ?? [])); e.target.value = ''; }} />
               </div>
             </div>
-            <p className="text-xs text-zinc-500">Browser and device details are added automatically. This issue will be public; you can create a private link after submission.</p>
+            <p className="text-xs text-[#9198a1]">Browser and device details are added automatically. This issue will be public; you can create a private link after submission.</p>
             {error && <ErrorBox message={error} />}
             <div className="flex gap-2">
               <button className={btnPrimary} disabled={busy || !title.trim()}>{busy ? 'Submitting…' : 'Submit issue'}</button>

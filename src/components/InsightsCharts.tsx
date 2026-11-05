@@ -82,7 +82,7 @@ export function SeverityBars({ data }: { data: Partial<Record<Severity, number>>
         return (
           <li key={s} className="grid grid-cols-[72px_1fr_32px] items-center gap-3 text-sm" title={`${SEVERITY_LABEL[s]}: ${n} open`}>
             <span className="text-[#9198a1]">{SEVERITY_LABEL[s]}</span>
-            <span className="h-3 rounded-r-[4px] bg-[#21262d]"><span className="block h-3 rounded-r-[4px]" style={{ width: `${(n / max) * 100}%`, background: C_CREATED, minWidth: n ? 4 : 0 }} /></span>
+            <span className="h-3 rounded-r-[4px] bg-[#262c36]"><span className="block h-3 rounded-r-[4px]" style={{ width: `${(n / max) * 100}%`, background: C_CREATED, minWidth: n ? 4 : 0 }} /></span>
             <span className="text-right tabular-nums text-[#f0f6fc]">{n}</span>
           </li>
         );

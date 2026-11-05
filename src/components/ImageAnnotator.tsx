@@ -171,42 +171,42 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({ imageUrl, onSave
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black/90 backdrop-blur-md p-4">
       {/* Top Bar Controls */}
-      <div className="flex items-center justify-between bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 mb-3 shadow-2xl">
+      <div className="flex items-center justify-between bg-[#0d1117] border border-[#3d444d] rounded-xl px-4 py-3 mb-3 shadow-2xl">
         <div className="flex items-center space-x-2">
-          <span className="text-emerald-400 font-bold flex items-center gap-2 text-sm uppercase tracking-wider">
+          <span className="text-[#3fb950] font-bold flex items-center gap-2 text-sm uppercase tracking-wider">
             <PenToolIcon className="w-4 h-4" /> Issue annotation
           </span>
         </div>
 
         {/* Tools */}
-        <div className="flex items-center space-x-2 bg-zinc-950/80 p-1 rounded-lg border border-zinc-800">
+        <div className="flex items-center space-x-2 bg-[#0d1117]/80 p-1 rounded-lg border border-[#3d444d]">
           <button
             onClick={() => setSelectedTool('box')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'box' ? 'bg-emerald-500 text-black font-semibold' : 'text-zinc-400 hover:text-white'}`}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'box' ? 'bg-[#238636] text-black font-semibold' : 'text-[#9198a1] hover:text-white'}`}
           >
             Rectangle
           </button>
           <button
             onClick={() => setSelectedTool('arrow')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'arrow' ? 'bg-emerald-500 text-black font-semibold' : 'text-zinc-400 hover:text-white'}`}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'arrow' ? 'bg-[#238636] text-black font-semibold' : 'text-[#9198a1] hover:text-white'}`}
           >
             Arrow
           </button>
           <button
             onClick={() => setSelectedTool('pen')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'pen' ? 'bg-emerald-500 text-black font-semibold' : 'text-zinc-400 hover:text-white'}`}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'pen' ? 'bg-[#238636] text-black font-semibold' : 'text-[#9198a1] hover:text-white'}`}
           >
             Pen
           </button>
           <button
             onClick={() => setSelectedTool('blur')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'blur' ? 'bg-emerald-500 text-black font-semibold' : 'text-zinc-400 hover:text-white'}`}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'blur' ? 'bg-[#238636] text-black font-semibold' : 'text-[#9198a1] hover:text-white'}`}
           >
             Redact (PII)
           </button>
           <button
             onClick={() => setSelectedTool('text')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'text' ? 'bg-emerald-500 text-black font-semibold' : 'text-zinc-400 hover:text-white'}`}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'text' ? 'bg-[#238636] text-black font-semibold' : 'text-[#9198a1] hover:text-white'}`}
           >
             Text
           </button>
@@ -228,7 +228,7 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({ imageUrl, onSave
           <button
             onClick={undo}
             disabled={history.length <= 1}
-            className="px-2.5 py-1 text-xs text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 rounded"
+            className="px-2.5 py-1 text-xs text-[#f0f6fc] hover:text-white bg-[#212830] hover:bg-[#212830] disabled:opacity-40 rounded"
           >
             Orqaga
           </button>
@@ -238,14 +238,14 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({ imageUrl, onSave
         <div className="flex items-center space-x-2">
           <button
             onClick={handleExport}
-            className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs px-3.5 py-2 rounded-lg shadow-lg transition"
+            className="flex items-center gap-1.5 bg-[#238636] hover:bg-[#238636] text-black font-semibold text-xs px-3.5 py-2 rounded-lg shadow-lg transition"
           >
             <CheckIcon className="w-3.5 h-3.5" /> Save & Annotate
           </button>
           {onClose && (
             <button
               onClick={onClose}
-              className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition"
+              className="p-2 text-[#9198a1] hover:text-white hover:bg-[#212830] rounded-lg transition"
             >
               <XIcon className="w-5 h-5" />
             </button>
@@ -254,7 +254,7 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({ imageUrl, onSave
       </div>
 
       {/* Canvas Viewport */}
-      <div className="flex-1 flex items-center justify-center overflow-auto rounded-xl border border-zinc-800/80 bg-zinc-950 p-2">
+      <div className="flex-1 flex items-center justify-center overflow-auto rounded-xl border border-[#3d444d]/80 bg-[#0d1117] p-2">
         <canvas
           ref={canvasRef}
           onMouseDown={handleMouseDown}
