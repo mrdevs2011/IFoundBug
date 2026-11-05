@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import type { Bug, BugComment, BugStatus, Project, Severity } from '@/types';
 import { LoginHint } from '@/components/Nav';
 import { AIPromptModal } from '@/components/AIPromptModal';
@@ -129,13 +130,23 @@ export function BugView({ project, bug, comments, me, role, token, onBug, onComm
     void setStatus(bug.id, nextStatus).then(onBug).catch((reason) => { onBug(previous); setError(errMsg(reason)); });
   };
   const closed = isClosed(bug.status);
+  const participants = (() => {
+    const seen = new Map<string, { key: string; name: string; src?: string }>();
+    const add = (id: string | null | undefined, name: string) => { const key = id || `n:${name}`; if (!seen.has(key)) seen.set(key, { key, name, src: id ? avatars[id] : undefined }); };
+    add(bug.reported_by, bug.reporter_name);
+    comments.forEach((c) => add(c.author_id, c.author_name));
+    return [...seen.values()];
+  })();
   const hasBody = Boolean(bug.summary || bug.steps_to_reproduce?.length || bug.actual_behavior || bug.expected_behavior || bug.evidence_urls?.length || (t && (t.os || t.browser)));
   return (
     <div>
       <header className="border-b border-[#3d444d] pb-4">
-        <h1 className="break-words text-[26px] font-normal leading-tight text-[#f0f6fc] sm:text-[32px]">
-          {bug.title} <span className="font-light text-[#9198a1]">{bug.code}</span>
-        </h1>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="min-w-0 break-words text-[26px] font-normal leading-tight text-[#f0f6fc] sm:text-[32px]">
+            {bug.title} <span className="font-light text-[#9198a1]">{bug.code}</span>
+          </h1>
+          <Link href={`/p/${project.slug}/new`} className={`${ghBtnPrimary} shrink-0`}>New issue</Link>
+        </div>
         <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-[#9198a1]">
           <IssueStatePill status={bug.status} />
           <span><span className="font-semibold text-[#9198a1]">{bug.reporter_name}</span> opened this issue {timeAgo(bug.created_at)} · {comments.length} comment{comments.length === 1 ? '' : 's'}</span>
@@ -208,6 +219,11 @@ export function BugView({ project, bug, comments, me, role, token, onBug, onComm
         </div>
 
         <aside className="text-sm lg:self-start">
+          <SideSection title="Assignees">
+            {bug.assigned_to
+              ? <span className="inline-flex items-center gap-2 text-[#f0f6fc]"><Avatar name="Assignee" src={avatars[bug.assigned_to]} size={20} />Assigned</span>
+              : <span className="text-[#9198a1]">No one assigned</span>}
+          </SideSection>
           <SideSection title="Labels">
             <div className="flex flex-wrap gap-1"><IssueLabels bug={bug} /></div>
             {triage && !token && (
@@ -226,6 +242,9 @@ export function BugView({ project, bug, comments, me, role, token, onBug, onComm
             ) : <span className="text-[#f0f6fc]">{STATUS_LABEL[bug.status]}</span>}
           </SideSection>
           <SideSection title="Environment"><span className="text-[#f0f6fc]">{ENV_LABEL[bug.environment]}</span></SideSection>
+          <SideSection title={`${participants.length} participant${participants.length === 1 ? '' : 's'}`}>
+            <div className="flex flex-wrap gap-1">{participants.map((u) => <span key={u.key} title={u.name}><Avatar name={u.name} src={u.src} size={26} /></span>)}</div>
+          </SideSection>
           <SideSection title="Actions">
             <div className="flex flex-col items-start gap-1.5">
               <button className="text-[#9198a1] hover:text-[#4493f8]" onClick={() => setAi(true)}>Generate AI prompt</button>

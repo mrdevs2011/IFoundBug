@@ -31,7 +31,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 input:not([type="checkbox"]):not([type="radio"]), textarea, select { color-scheme: dark; border-radius: 6px; }
 input::placeholder, textarea::placeholder { color: #6e7681; opacity: 1; }
 input:disabled, textarea:disabled, select:disabled, button:disabled { cursor: not-allowed; opacity: .55; }
-select.ifb-select, select:not([multiple]) { color:#e6edf3; background:#0d1117; border:1px solid var(--border); border-radius:6px; min-height:34px; padding:.4rem 2.1rem .4rem .7rem; font-size:.8125rem; appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238b949e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 9px center; background-size:13px; }
+select.ifb-select, select:not([multiple]) { color:#e6edf3; background:#0d1117; border:1px solid var(--border); border-radius:6px; min-height:34px; padding:.4rem 2.1rem .4rem .7rem; font-size:.8125rem; appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='%239198a1'%3E%3Cpath d='m4.427 7.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 9px center; background-size:16px; }
 select:hover, input:hover, textarea:hover { border-color:#6e7681; }
 select option { background:#161b22; color:#e6edf3; }
 .linear-card { background:var(--surface); border:1px solid var(--border); box-shadow:none; transition:border-color .14s ease,background-color .14s ease; }
@@ -58,7 +58,7 @@ input:focus, textarea:focus, select:focus { border-color:#1f6feb !important; box
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; } }
 
 /* Primer-style header menu selects used in issue list box headers */
-select.gh-menu-select { background-color:transparent; border-color:transparent; color:#9198a1; min-height:28px; padding:.15rem 1.6rem .15rem .5rem; font-size:.875rem; background-position:right 6px center; }
+select.gh-menu-select { field-sizing:content; background-color:transparent; border-color:transparent; color:#9198a1; min-height:28px; padding:.15rem 1.6rem .15rem .5rem; font-size:.875rem; background-position:right 6px center; }
 select.gh-menu-select:hover { color:#f0f6fc; border-color:transparent; background-color:#262c36; }
 /* Markdown-ish comment body like GitHub */
 .gh-body { font-size:14px; line-height:1.5; color:#f0f6fc; word-wrap:break-word; }

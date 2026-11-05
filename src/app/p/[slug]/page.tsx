@@ -142,11 +142,10 @@ export default function ProjectPage() {
         {error && <div className="mb-4"><ErrorBox message={error} /></div>}
         {project && (
           <>
-            {project.description && <p className="mb-4 text-sm text-[#9198a1]">{project.description}</p>}
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <div className="relative min-w-[220px] flex-1">
                 <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9198a1]" />
-                <input className={`${ghInput} pl-8`} value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} placeholder="Search all issues  status:in_progress priority:P1 assignee:me" aria-label="Search issues" data-issue-search />
+                <input className={`${ghInput} pl-8`} value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} placeholder="Search all issues" aria-label="Search issues" data-issue-search />
               </div>
               <Link href={`/p/${project.slug}/new`} className={ghBtnPrimary}>New issue</Link>
             </div>

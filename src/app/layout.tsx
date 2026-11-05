@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { Footer } from "@/components/Footer";
 import { PwaClient } from "@/components/PwaClient";
 
 export const metadata: Metadata = {
@@ -35,8 +36,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark h-full antialiased">
-      <body className="min-h-full bg-[#0d1117] text-[#e6edf3] flex flex-col selection:bg-[#238636] selection:text-white font-sans">
+      <body className="min-h-full bg-[#0d1117] text-[#f0f6fc] flex flex-col selection:bg-[#238636] selection:text-white font-sans">
         {children}
+        <Footer />
         <PwaClient />
       </body>
     </html>
