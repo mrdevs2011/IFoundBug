@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
 
   const { data: authData } = await db.auth.getUser();
   const userId = authData.user?.id;
+  if (!userId) return NextResponse.json({ error: 'Sign in to search issues.' }, { status: 401 });
   let query = db.from('ifb_bugs').select('*, project:ifb_projects!inner(id,name,slug)', { count: 'exact' });
   if (projectId) query = query.eq('project_id', projectId);
   if (tab === 'done') query = query.in('status', [...DONE]);
@@ -99,7 +100,7 @@ export async function GET(request: NextRequest) {
   const failure = error || allError || openError || doneError;
   if (failure) {
     console.error('Issue search failed:', failure.code || failure.message);
-    return NextResponse.json({ error: 'Unable to search issues.' }, { status: 400 });
+    return NextResponse.json({ error: 'Unable to search issues.' }, { status: 500 });
   }
   return NextResponse.json({
     data: data || [], total: count || 0, page, page_size: pageSize,
