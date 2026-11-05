@@ -66,3 +66,29 @@ test('GitHub evidence fetch rejects non-raw download hosts', async () => {
   const fake = async () => new Response(JSON.stringify([{ type: 'file', name: 'a.png', size: 10, download_url: 'http://169.254.169.254/x' }]), { status: 200 });
   await assert.rejects(fetchGithubImages({ repo: 'a/b', path: 'x' }, fake), /downloadable/);
 });
+
+test('agent helpers: since windows, duplicate detection', async () => {
+  const { parseSince, titleSimilarity, findDuplicate } = await import('../src/lib/mcp-agent.ts');
+  const now = Date.parse('2026-11-05T12:00:00Z');
+  assert.equal(parseSince('24h', now), '2026-11-04T12:00:00.000Z');
+  assert.equal(parseSince('7d', now), '2026-10-29T12:00:00.000Z');
+  assert.equal(parseSince('', now), '2026-11-04T12:00:00.000Z');
+  assert.equal(parseSince('2026-11-01', now), '2026-11-01T00:00:00.000Z');
+  assert.throws(() => parseSince('yesterday', now), /ISO date/);
+  assert.throws(() => parseSince('9999d', now), /365/);
+  assert.ok(titleSimilarity('Login button crashes on Safari', 'login button crashes on safari!') === 1);
+  const pool = [{ code: 'IFB-1', title: 'Login button crashes on Safari' }, { code: 'IFB-2', title: 'Booking page shows wrong price' }];
+  assert.equal(findDuplicate('Safari: login button crashes', pool)?.code, 'IFB-1');
+  assert.equal(findDuplicate('Payment form freezes', pool), null);
+});
+
+test('agent MCP tools are registered and reuse the audited update RPC', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const route = await readFile(new URL('../src/app/api/mcp/route.ts', import.meta.url), 'utf8');
+  for (const name of ['whats_new', 'search_bugs', 'create_bugs', 'bulk_update_bugs']) {
+    assert.match(route, new RegExp(`tool\\('${name}'`));
+    assert.match(route, new RegExp(`case '${name}'`));
+  }
+  assert.equal((route.match(/rpc\('ifb_mcp_update_bug'/g) || []).length, 2);
+  assert.doesNotMatch(route, /from\('ifb_bugs'\)\.update\(patch\)/);
+});

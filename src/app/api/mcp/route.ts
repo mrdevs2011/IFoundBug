@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { fetchGithubImages, parseGithubSource } from '@/lib/github-evidence';
 import { helpText } from '@/lib/mcp-help';
+import { parseIssueQuery } from '@/lib/issues/search';
+import { findDuplicate, OPEN_STATUSES, parseSince } from '@/lib/mcp-agent';
 
 const cryptoRandomToken = () => randomBytes(24).toString('base64url');
 const sha256 = (v: string) => createHash('sha256').update(v).digest('hex');
@@ -13,6 +15,10 @@ const tool = (name: string, description: string, properties: Record<string, unkn
 const tools = [
   tool('ifb_help', 'Short, practical guide to IFB and this MCP server. Call first if unsure. Topics: overview, tools, images, workflow, permissions.', { topic: { type: 'string', enum: ['overview','tools','images','workflow','permissions'] } }),
   tool('import_github_images', 'Attach screenshots to a bug by pulling image files (png/jpg/webp/gif, <=5MB, max 10) from a GitHub repo. Commit images to GitHub, then call this with repo + path (file or folder).', { bug: { type: 'string' }, repo: { type: 'string', description: 'owner/name' }, path: { type: 'string', description: 'image file or folder in the repo' }, ref: { type: 'string', description: 'branch, tag or commit; default branch if omitted' }, github_token: { type: 'string', description: 'optional read-only token for private repos; not stored' } }, ['bug','repo','path']),
+  tool('whats_new', 'Triage inbox: issues created or updated, and new comments, since a time across every repository you can work in. Use for "what new bugs came in?".', { since: { type: 'string', description: 'ISO date or window like 24h, 7d (default 24h)' }, project: { type: 'string', description: 'limit to one repository' }, only_open: { type: 'boolean', default: true }, limit: { type: 'integer', minimum: 1, maximum: 100, default: 50 } }),
+  tool('search_bugs', 'Search issues across your repositories with the IFB query language: free text plus status:, priority:, severity:, assignee:(me|username), author:, repo:, created:>YYYY-MM-DD, updated:<YYYY-MM-DD. Quote phrases with "...".', { q: { type: 'string' }, project: { type: 'string' }, limit: { type: 'integer', minimum: 1, maximum: 100, default: 50 } }, ['q']),
+  tool('create_bugs', 'Report several bugs at once (max 20), e.g. after auditing an app. Likely duplicates of open issues are skipped and reported back unless skip_duplicates is false.', { project: { type: 'string' }, bugs: { type: 'array', maxItems: 20, items: { type: 'object', properties: { title: { type: 'string' }, summary: { type: 'string' }, section: { type: 'string' }, severity: { type: 'string', enum: ['CRITICAL','HIGH','MEDIUM','LOW'] }, priority: { type: 'string', enum: ['P0','P1','P2','P3'] }, environment: { type: 'string', enum: ['PRODUCTION','STAGING','DEVELOPMENT','LOCAL'] }, actual_behavior: { type: 'string' }, expected_behavior: { type: 'string' }, steps_to_reproduce: { type: 'array', items: { type: 'string' } }, evidence_urls: { type: 'array', items: { type: 'string' } } }, required: ['title'] } }, skip_duplicates: { type: 'boolean', default: true } }, ['project','bugs']),
+  tool('bulk_update_bugs', 'Apply the same change (status, severity, priority, assignee, notes) to up to 50 issues. Each issue is permission-checked and audited; per-issue results are returned.', { bugs: { type: 'array', items: { type: 'string' }, maxItems: 50 }, ...{ status: { type: 'string', enum: ['REPORTED','TRIAGED','IN_PROGRESS','READY_FOR_QA','VERIFIED','FIXED','CLOSED','WONT_FIX'] }, severity: { type: 'string', enum: ['CRITICAL','HIGH','MEDIUM','LOW'] }, priority: { type: 'string', enum: ['P0','P1','P2','P3'] }, assigned_to: { type: 'string', description: 'username, "me", profile UUID, or empty string to unassign' }, dev_notes: { type: 'string' } }, comment: { type: 'string', description: 'optional comment added to each updated issue' } }, ['bugs']),
   tool('who_am_i', 'Return the authenticated FoundBug account identity and effective permissions.'),
   tool('create_project', 'Create a new workspace owned by this account.', { name: { type: 'string' }, description: { type: 'string' }, is_public: { type: 'boolean', default: false }, allow_guest_reports: { type: 'boolean', default: false }, tech_stack: { type: 'array', items: { type: 'string' } } }, ['name']),
   tool('update_project', 'Update project settings. Only project owners/admins can change workspace settings.', { project: { type: 'string' }, name: { type: 'string' }, description: { type: 'string' }, is_public: { type: 'boolean' }, allow_guest_reports: { type: 'boolean' }, tech_stack: { type: 'array', items: { type: 'string' } } }, ['project']),
@@ -21,7 +27,7 @@ const tools = [
   tool('list_bugs', 'List bugs in a project by project UUID or slug. Only visible bugs are returned.', { project: { type: 'string' }, status: { type: 'string' }, severity: { type: 'string' }, search: { type: 'string' }, limit: { type: 'integer', minimum: 1, maximum: 100, default: 50 } }, ['project']),
   tool('get_bug', 'Read one bug by UUID or bug code in a project.', { project: { type: 'string' }, bug: { type: 'string' } }, ['project','bug']),
   tool('create_bug', 'Create a bug in a project you belong to, or in a public space that allows guest reports.', { project: { type: 'string' }, title: { type: 'string' }, summary: { type: 'string' }, section: { type: 'string' }, severity: { type: 'string', enum: ['CRITICAL','HIGH','MEDIUM','LOW'] }, priority: { type: 'string', enum: ['P0','P1','P2','P3'] }, environment: { type: 'string', enum: ['PRODUCTION','STAGING','DEVELOPMENT','LOCAL'] }, actual_behavior: { type: 'string' }, expected_behavior: { type: 'string' }, steps_to_reproduce: { type: 'array', items: { type: 'string' } }, evidence_urls: { type: 'array', items: { type: 'string' } } }, ['project','title']),
-  tool('update_bug', 'Update bug status, severity, priority, assignment, notes or descriptive fields. Membership/role is enforced.', { bug: { type: 'string' }, status: { type: 'string', enum: ['REPORTED','TRIAGED','IN_PROGRESS','READY_FOR_QA','VERIFIED','FIXED','CLOSED','WONT_FIX'] }, severity: { type: 'string', enum: ['CRITICAL','HIGH','MEDIUM','LOW'] }, priority: { type: 'string', enum: ['P0','P1','P2','P3'] }, assigned_to: { type: 'string' }, dev_notes: { type: 'string' }, title: { type: 'string' }, summary: { type: 'string' } }, ['bug']),
+  tool('update_bug', 'Update bug status, severity, priority, assignment, notes or descriptive fields. Membership/role is enforced.', { bug: { type: 'string' }, status: { type: 'string', enum: ['REPORTED','TRIAGED','IN_PROGRESS','READY_FOR_QA','VERIFIED','FIXED','CLOSED','WONT_FIX'] }, severity: { type: 'string', enum: ['CRITICAL','HIGH','MEDIUM','LOW'] }, priority: { type: 'string', enum: ['P0','P1','P2','P3'] }, assigned_to: { type: 'string', description: 'username, "me", profile UUID, or empty string to unassign' }, dev_notes: { type: 'string' }, title: { type: 'string' }, summary: { type: 'string' } }, ['bug']),
   tool('list_comments', 'List discussion comments for a bug. Internal comments are hidden from non-privileged members.', { bug: { type: 'string' } }, ['bug']),
   tool('add_comment', 'Add a comment to a bug in a project where you have write access.', { bug: { type: 'string' }, content: { type: 'string' }, internal: { type: 'boolean', default: false } }, ['bug','content']),
   tool('list_members', 'List members and roles for a project you can access.', { project: { type: 'string' } }, ['project']),
@@ -106,6 +112,47 @@ async function handle(request: NextRequest) {
     return { bug, project, member };
   };
   const canWrite = (member: { role: string } | null) => Boolean((member && ['owner','admin','developer','qa_tester','team_lead','product_manager'].includes(member.role)) || ['owner','admin'].includes(profile.role));
+  // Repositories this account works in (membership or ownership). Public repos you merely
+  // browse are excluded from inbox/search unless named explicitly via `project`.
+  const workingProjects = async () => {
+    const isGlobalAdmin = ['owner','admin'].includes(profile.role);
+    const { data: memberships } = await db.from('ifb_project_members').select('project_id').eq('user_id', profile.id);
+    let q = db.from('ifb_projects').select('id,name,slug').limit(500);
+    if (!isGlobalAdmin) {
+      const ids = (memberships || []).map((m) => m.project_id);
+      q = ids.length ? q.or(`created_by.eq.${profile.id},id.in.(${ids.join(',')})`) : q.eq('created_by', profile.id);
+    }
+    const { data, error } = await q; if (error) throw error; return data || [];
+  };
+  const scopeProjects = async (projectArg: unknown) => {
+    if (projectArg) { const { project, member } = await resolveProject(String(projectArg)); return { projects: [{ id: project.id as string, name: project.name as string, slug: project.slug as string }], memberOf: new Set(member ? [project.id as string] : []) }; }
+    const projects = await workingProjects(); return { projects, memberOf: new Set(projects.map((p) => p.id)) };
+  };
+  const resolveAssignee = async (value: unknown, projectId: string) => {
+    const raw = String(value ?? '').trim();
+    if (!raw) return null;
+    if (raw.toLowerCase() === 'me') return profile.id;
+    if (/^[0-9a-f-]{36}$/i.test(raw)) return raw;
+    const { data: rows } = await db.from('ifb_project_members').select('user_id, user:ifb_profiles!inner(username,full_name)').eq('project_id', projectId);
+    const needle = raw.replace(/^@/, '').toLowerCase();
+    const hits = (rows || []).filter((r) => { const u = (Array.isArray(r.user) ? r.user[0] : r.user) as { username?: string; full_name?: string } | null; return u?.username?.toLowerCase() === needle || u?.full_name?.toLowerCase() === needle; });
+    if (hits.length !== 1) throw new Error(hits.length ? `Assignee "${raw}" is ambiguous.` : `"${raw}" is not a member of this repository.`);
+    return hits[0].user_id as string;
+  };
+  const buildPatch = async (a: Record<string, unknown>, projectId: string, allowed: string[]) => {
+    const patch: Record<string, unknown> = {};
+    for (const k of allowed) if (a[k] !== undefined) patch[k] = a[k];
+    if (patch.assigned_to !== undefined) patch.assigned_to = (await resolveAssignee(patch.assigned_to, projectId)) ?? '';
+    return patch;
+  };
+  const insertBug = async (project: Record<string, unknown>, a: Record<string, unknown>) => {
+    const title=String(a.title||'').trim();if(!title||title.length>180)throw new Error('Title is required and must be at most 180 characters.');
+    const payload={project_id:project.id,title,summary:String(a.summary||''),section:String(a.section||'General'),severity:a.severity||'MEDIUM',priority:a.priority||'P2',environment:a.environment||'PRODUCTION',actual_behavior:String(a.actual_behavior||''),expected_behavior:String(a.expected_behavior||''),steps_to_reproduce:Array.isArray(a.steps_to_reproduce)?a.steps_to_reproduce.slice(0,30).map(String):[],evidence_urls:Array.isArray(a.evidence_urls)?a.evidence_urls.slice(0,10).map(String):[],reported_by:profile.id,reporter_name:profile.full_name};
+    const {data,error}=await db.from('ifb_bugs').insert(payload).select('*').single();if(error)throw error;
+    await db.from('ifb_bug_audit_logs').insert({bug_id:data.id,actor_name:profile.full_name,action:'MCP_BUG_CREATED',details:{token_id:tokenRow.id}});
+    return data;
+  };
+  const LIST_COLS = 'id,code,project_id,title,severity,priority,status,assigned_to,reporter_name,created_at,updated_at';
 
   const callTool = async (name: string, a: Record<string, unknown>) => {
     switch (name) {
@@ -128,6 +175,108 @@ async function handle(request: NextRequest) {
         if (upErr) throw upErr;
         await db.from('ifb_bug_audit_logs').insert({ bug_id: bug.id, actor_name: profile.full_name, action: 'MCP_GITHUB_IMAGES_IMPORTED', details: { token_id: tokenRow.id, repo: String(a.repo), path: String(a.path), count: added.length } });
         return { bug: bug.code, imported: added.length, evidence_urls: [...existing, ...added] };
+      }
+      case 'whats_new': {
+        requireScope('bugs:read');
+        const since = parseSince(a.since);
+        const { projects, memberOf } = await scopeProjects(a.project);
+        if (!projects.length) return { since, projects: 0, new_bugs: [], updated_bugs: [], new_comments: [] };
+        const ids = projects.map((p) => p.id);
+        const byId = new Map(projects.map((p) => [p.id, p.slug]));
+        const limit = Math.min(Math.max(Number(a.limit) || 50, 1), 100);
+        const hideShared = (rows: Record<string, unknown>[]) => rows.filter((b) => memberOf.has(b.project_id as string) || !b.share_token);
+        const tag = (rows: Record<string, unknown>[]): Record<string, unknown>[] => hideShared(rows).map(({ share_token: _s, ...b }) => { void _s; return { ...b, repo: byId.get(b.project_id as string) }; });
+        let created = db.from('ifb_bugs').select(LIST_COLS + ',summary,share_token').in('project_id', ids).gte('created_at', since).order('created_at', { ascending: false }).limit(limit);
+        let updated = db.from('ifb_bugs').select(LIST_COLS + ',share_token').in('project_id', ids).gte('updated_at', since).lt('created_at', since).order('updated_at', { ascending: false }).limit(limit);
+        if (a.only_open !== false) { created = created.in('status', [...OPEN_STATUSES]); updated = updated.in('status', [...OPEN_STATUSES]); }
+        const [c, u] = await Promise.all([created, updated]);
+        if (c.error) throw c.error; if (u.error) throw u.error;
+        const { data: comments, error: ce } = await db.from('ifb_bug_comments').select('id,bug_id,author_name,content,is_internal,created_at,bug:ifb_bugs!inner(code,project_id,share_token)').in('bug.project_id', ids).gte('created_at', since).or(`author_id.is.null,author_id.neq.${profile.id}`).order('created_at', { ascending: false }).limit(limit);
+        if (ce) throw ce;
+        const visibleComments = (comments || []).filter((cm) => { const b = (Array.isArray(cm.bug) ? cm.bug[0] : cm.bug) as { project_id: string; share_token: string | null; code: string }; return memberOf.has(b.project_id) ? true : !cm.is_internal && !b.share_token; })
+          .map((cm) => { const b = (Array.isArray(cm.bug) ? cm.bug[0] : cm.bug) as { code: string; project_id: string }; return { id: cm.id, bug: b.code, repo: byId.get(b.project_id), author_name: cm.author_name, content: String(cm.content).slice(0, 500), internal: cm.is_internal, created_at: cm.created_at }; });
+        const newBugs = tag((c.data || []) as unknown as Record<string, unknown>[]);
+        const bySeverity: Record<string, number> = {};
+        for (const b of newBugs) bySeverity[b.severity as string] = (bySeverity[b.severity as string] || 0) + 1;
+        return { since, repositories: projects.length, summary: { new_bugs: newBugs.length, updated_bugs: (u.data || []).length, new_comments: visibleComments.length, new_by_severity: bySeverity }, new_bugs: newBugs, updated_bugs: tag((u.data || []) as unknown as Record<string, unknown>[]), new_comments: visibleComments };
+      }
+      case 'search_bugs': {
+        requireScope('bugs:read');
+        const parsed = parseIssueQuery(String(a.q || ''));
+        if (!parsed.ok) throw new Error(parsed.error);
+        const { projects, memberOf } = await scopeProjects(a.project);
+        let scoped = projects;
+        const limit = Math.min(Math.max(Number(a.limit) || 50, 1), 100);
+        let q = db.from('ifb_bugs').select(LIST_COLS + ',summary,share_token', { count: 'exact' });
+        for (const term of parsed.terms) {
+          const like = (v: string) => v.replace(/[\\%_(),]/g, ' ').trim().slice(0, 100);
+          switch (term.kind) {
+            case 'text': { const v = like(term.value); if (v) q = q.or(['title','code','summary','section','actual_behavior','expected_behavior','reporter_name'].map((f) => `${f}.ilike.%${v}%`).join(',')); break; }
+            case 'status': q = q.eq('status', term.value); break;
+            case 'priority': q = q.eq('priority', term.value); break;
+            case 'severity': q = q.eq('severity', term.value); break;
+            case 'created_after': q = q.gte('created_at', term.value); break;
+            case 'created_before': q = q.lt('created_at', term.value); break;
+            case 'updated_after': q = q.gte('updated_at', term.value); break;
+            case 'updated_before': q = q.lt('updated_at', term.value); break;
+            case 'author': { const v = like(term.value); if (v) q = q.ilike('reporter_name', `%${v}%`); break; }
+            case 'project': { const v = term.value.toLowerCase(); scoped = scoped.filter((p) => p.slug.toLowerCase().includes(v) || p.name.toLowerCase().includes(v)); break; }
+            case 'assignee': {
+              if (term.value === 'me') { q = q.eq('assigned_to', profile.id); break; }
+              if (/^[0-9a-f-]{36}$/i.test(term.value)) { q = q.eq('assigned_to', term.value); break; }
+              const { data: ps } = await db.from('ifb_profiles').select('id').ilike('username', like(term.value)).limit(1);
+              q = q.eq('assigned_to', ps?.[0]?.id || '00000000-0000-0000-0000-000000000000'); break;
+            }
+          }
+        }
+        if (!scoped.length) return { total: 0, items: [] };
+        const byId = new Map(scoped.map((p) => [p.id, p.slug]));
+        const { data, error, count } = await q.in('project_id', scoped.map((p) => p.id)).order('created_at', { ascending: false }).limit(limit);
+        if (error) throw error;
+        const items = ((data || []) as unknown as Record<string, unknown>[]).filter((b) => memberOf.has(b.project_id as string) || !b.share_token).map(({ share_token: _s, ...b }) => { void _s; return { ...b, repo: byId.get(b.project_id as string) }; });
+        return { total: count ?? items.length, items };
+      }
+      case 'create_bugs': {
+        requireScope('bugs:create');
+        const { project, member } = await resolveProject(String(a.project));
+        if (!member && project.allow_guest_reports !== true) throw new Error('This public repository does not accept guest issue reports.');
+        const list = Array.isArray(a.bugs) ? (a.bugs as Record<string, unknown>[]).slice(0, 20) : [];
+        if (!list.length) throw new Error('bugs must be a non-empty array (max 20).');
+        const { data: openRows } = await db.from('ifb_bugs').select('id,code,title,share_token').eq('project_id', project.id).in('status', [...OPEN_STATUSES]).order('created_at', { ascending: false }).limit(1000);
+        const pool = (openRows || []).filter((r) => member || !r.share_token) as { id: string; code: string; title: string }[];
+        const results: Record<string, unknown>[] = [];
+        for (const item of list) {
+          try {
+            const dup = a.skip_duplicates === false ? null : findDuplicate(String(item?.title || ''), pool);
+            if (dup) { results.push({ title: item.title, skipped: true, duplicate_of: dup.code }); continue; }
+            const created = await insertBug(project, item || {});
+            pool.push({ id: created.id, code: created.code, title: created.title });
+            results.push({ title: created.title, created: true, code: created.code, id: created.id });
+          } catch (e) { results.push({ title: item?.title, error: e instanceof Error ? e.message : 'failed' }); }
+        }
+        return { repo: project.slug, created: results.filter((r) => r.created).length, skipped_duplicates: results.filter((r) => r.skipped).length, failed: results.filter((r) => r.error).length, results };
+      }
+      case 'bulk_update_bugs': {
+        requireScope('bugs:update');
+        const refs = Array.isArray(a.bugs) ? [...new Set((a.bugs as unknown[]).map(String))].slice(0, 50) : [];
+        if (!refs.length) throw new Error('bugs must be a non-empty array of issue codes or UUIDs (max 50).');
+        const comment = typeof a.comment === 'string' ? a.comment.trim() : '';
+        if (comment && !has('comments:create')) throw new Error('Permission denied: missing comments:create');
+        if (comment.length > 10000) throw new Error('Comment must be at most 10000 characters.');
+        const results: Record<string, unknown>[] = [];
+        for (const ref of refs) {
+          try {
+            const { bug, member } = await resolveBug(ref);
+            if (!canWrite(member)) throw new Error('No write role in this repository.');
+            const patch = await buildPatch(a, bug.project_id, ['status','severity','priority','assigned_to','dev_notes']);
+            if (!Object.keys(patch).length && !comment) throw new Error('No supported fields provided.');
+            let updated = bug;
+            if (Object.keys(patch).length) { const { data, error } = await db.rpc('ifb_mcp_update_bug', { p_bug_id: bug.id, p_actor_profile_id: profile.id, p_patch: patch }); if (error) throw error; updated = data; }
+            if (comment) { const { error } = await db.from('ifb_bug_comments').insert({ bug_id: bug.id, author_id: profile.id, author_name: profile.full_name, content: comment, is_internal: false }); if (error) throw error; }
+            results.push({ bug: bug.code, ok: true, status: updated.status, assigned_to: updated.assigned_to });
+          } catch (e) { results.push({ bug: ref, ok: false, error: e instanceof Error ? e.message : 'failed' }); }
+        }
+        return { updated: results.filter((r) => r.ok).length, failed: results.filter((r) => !r.ok).length, results };
       }
       case 'who_am_i': return { id: profile.id, username: profile.username, full_name: profile.full_name, role: profile.role, scopes: [...scopes] };
       case 'create_project': {
@@ -182,14 +331,11 @@ async function handle(request: NextRequest) {
       case 'create_bug': {
         requireScope('bugs:create'); const {project,member}=await resolveProject(String(a.project));
         if (!member && project.allow_guest_reports !== true) throw new Error('This public repository does not accept guest issue reports.');
-        const title=String(a.title||'').trim();if(!title||title.length>180)throw new Error('Title is required and must be at most 180 characters.');
-        const payload={project_id:project.id,title,summary:String(a.summary||''),section:String(a.section||'General'),severity:a.severity||'MEDIUM',priority:a.priority||'P2',environment:a.environment||'PRODUCTION',actual_behavior:String(a.actual_behavior||''),expected_behavior:String(a.expected_behavior||''),steps_to_reproduce:Array.isArray(a.steps_to_reproduce)?a.steps_to_reproduce.slice(0,30):[],evidence_urls:Array.isArray(a.evidence_urls)?a.evidence_urls.slice(0,10):[],reported_by:profile.id,reporter_name:profile.full_name};
-        const {data,error}=await db.from('ifb_bugs').insert(payload).select('*').single();if(error)throw error;
-        await db.from('ifb_bug_audit_logs').insert({bug_id:data.id,actor_name:profile.full_name,action:'MCP_BUG_CREATED',details:{token_id:tokenRow.id}});return data;
+        return insertBug(project, a);
       }
       case 'update_bug': {
         requireScope('bugs:update'); const {bug,member}=await resolveBug(String(a.bug));if(!canWrite(member))throw new Error('Only project members with a write role can update bugs.');
-        const allowed=['status','severity','priority','assigned_to','dev_notes','title','summary'];const patch:Record<string,unknown>={};for(const k of allowed)if(a[k]!==undefined)patch[k]=a[k];if(!Object.keys(patch).length)throw new Error('No supported fields provided.');
+        const patch=await buildPatch(a,bug.project_id,['status','severity','priority','assigned_to','dev_notes','title','summary']);if(!Object.keys(patch).length)throw new Error('No supported fields provided.');
         const {data,error}=await db.rpc('ifb_mcp_update_bug',{p_bug_id:bug.id,p_actor_profile_id:profile.id,p_patch:patch});if(error)throw error;return data;
       }
       case 'list_comments': { requireScope('comments:read');const {bug,member}=await resolveBug(String(a.bug));let q=db.from('ifb_bug_comments').select('id,bug_id,author_name,content,is_internal,created_at').eq('bug_id',bug.id).order('created_at',{ascending:true}).limit(100);if(!member||!['owner','admin','developer','team_lead','product_manager'].includes(member.role))q=q.eq('is_internal',false);const {data,error}=await q;if(error)throw error;return data||[]; }
