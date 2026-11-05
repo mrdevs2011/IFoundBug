@@ -122,3 +122,18 @@ test('V4 migration closes public storage read on bug attachments and scopes avat
   assert.equal((sql.match(/\(storage\.foldername\(name\)\)\[1\] = auth\.uid\(\)::text/g) || []).length, 4);
   assert.doesNotMatch(sql, /for select/i);
 });
+
+test('V7 webhooks: secrets are not exposed, SSRF guard and owner-only management exist', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const sql = await readFile(new URL('../sql/V7_WEBHOOKS.sql', import.meta.url), 'utf8');
+  assert.match(sql, /revoke all on public\.ifb_webhooks, public\.ifb_webhook_deliveries from anon, authenticated/);
+  assert.match(sql, /function public\.ifb_webhook_url_ok/);
+  assert.match(sql, /localhost/);
+  assert.match(sql, /if new\.is_internal then return new; end if;/);
+  assert.match(sql, /Only repository owners and admins can manage integrations/);
+  assert.match(sql, /X-IFB-Signature/);
+  // list never returns secret or the full bot token
+  const list = sql.slice(sql.indexOf('function public.ifb_list_webhooks'), sql.indexOf('function public.ifb_create_webhook'));
+  assert.doesNotMatch(list, /'secret'/);
+  assert.match(list, /split_part\(h\.telegram_bot_token, ':', 1\)/);
+});

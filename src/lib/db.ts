@@ -247,3 +247,33 @@ export function errMsg(e: unknown): string {
   if (e && typeof e === 'object' && 'message' in e) return String((e as { message: unknown }).message);
   return 'Unknown error';
 }
+
+// ---- integrations (webhooks / Telegram) -----------------------------------
+export type WebhookEvent = 'issue.created' | 'issue.status_changed' | 'issue.assigned' | 'comment.created';
+export interface Integration {
+  id: string; kind: 'http' | 'telegram'; name: string; url: string | null; telegram_chat_id: string | null; telegram_bot: string | null;
+  events: WebhookEvent[]; active: boolean; created_at: string;
+  recent: { event: string; at: string; status: number | null; error: string | null; pending: boolean }[];
+}
+export async function listIntegrations(projectId: string): Promise<Integration[]> {
+  const { data, error } = await sb().rpc('ifb_list_webhooks', { p_project: projectId });
+  if (error) throw error;
+  return (data ?? []) as Integration[];
+}
+export async function createIntegration(projectId: string, input: { kind: 'http' | 'telegram'; name: string; url?: string; botToken?: string; chatId?: string; events: WebhookEvent[] }): Promise<{ id: string; secret: string | null }> {
+  const { data, error } = await sb().rpc('ifb_create_webhook', { p_project: projectId, p_kind: input.kind, p_name: input.name, p_url: input.url ?? null, p_telegram_bot_token: input.botToken ?? null, p_telegram_chat_id: input.chatId ?? null, p_events: input.events });
+  if (error) throw error;
+  return data as { id: string; secret: string | null };
+}
+export async function updateIntegration(id: string, patch: { active?: boolean; events?: WebhookEvent[] }) {
+  const { error } = await sb().rpc('ifb_update_webhook', { p_id: id, p_active: patch.active ?? null, p_events: patch.events ?? null });
+  if (error) throw error;
+}
+export async function deleteIntegration(id: string) {
+  const { error } = await sb().rpc('ifb_delete_webhook', { p_id: id });
+  if (error) throw error;
+}
+export async function testIntegration(id: string) {
+  const { error } = await sb().rpc('ifb_test_webhook', { p_id: id });
+  if (error) throw error;
+}

@@ -133,7 +133,7 @@ export default function ProjectPage() {
     <>
       <Nav />
       {project && (
-        <RepoHeader project={project} active="issues" openCount={counts.open} actions={<>
+        <RepoHeader project={project} active="issues" openCount={counts.open} showSettings={isAdmin} actions={<>
           <button className={ghBtn} onClick={async () => { if (await copyToClipboard(location.href)) { setCopied(true); if (copyTimer.current) clearTimeout(copyTimer.current); copyTimer.current = setTimeout(() => setCopied(false), 1500); } }}>{copied ? 'Copied!' : 'Copy link'}</button>
           <button className={ghBtn} onClick={() => setTeam(true)}><PersonIcon className="text-[#9198a1]" />People</button>
         </>} />
