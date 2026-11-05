@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { PwaClient } from "@/components/PwaClient";
 
 export const metadata: Metadata = {
-  title: "FoundBug — issue tracking for software teams",
+  title: "IFoundBug: Where teams find and fix bugs",
   description: "A focused issue tracker for software teams. Report issues, discuss fixes, and generate actionable AI prompts. Private issues are accessible only through secure links.",
   manifest: "/manifest.json",
   icons: {
@@ -16,12 +17,12 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "FoundBug",
+    title: "IFoundBug",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0d1117",
+  themeColor: "#010409",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
@@ -36,21 +37,7 @@ export default function RootLayout({
     <html lang="en" className="dark h-full antialiased">
       <body className="min-h-full bg-[#0d1117] text-[#e6edf3] flex flex-col selection:bg-[#238636] selection:text-white font-sans">
         {children}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').then(function(reg) {
-                    reg.update();
-                  }).catch(function(err) {
-                    console.log('SW registration skipped:', err);
-                  });
-                });
-              }
-            `,
-          }}
-        />
+        <PwaClient />
       </body>
     </html>
   );

@@ -1,6 +1,6 @@
-const CACHE_NAME = 'ifoundbug-cache-v6';
+const CACHE_NAME = 'ifoundbug-cache-v7';
 
-// Force new service worker activation immediately
+// Activate new versions immediately; the page shows a "new version" banner on controllerchange.
 self.addEventListener('install', () => {
   self.skipWaiting();
 });
@@ -46,7 +46,7 @@ self.addEventListener('fetch', (event) => {
   // contain account/workspace data. Offline fallback must not replay private pages.
   if (event.request.mode === 'navigate') {
     event.respondWith(fetch(event.request).catch(() => new Response(
-      '<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Offline · IFoundBug</title><body style=\"margin:0;background:#090b0a;color:#e5e7eb;font:16px system-ui;display:grid;min-height:100vh;place-items:center\"><main style=\"max-width:28rem;padding:2rem;text-align:center\"><h1>You are offline</h1><p style=\"color:#9ca3af\">IFoundBug pages are not cached offline to protect private data. Try again when your connection is restored.</p><button onclick=\"location.reload()\" style=\"background:#34d399;border:0;border-radius:10px;padding:.7rem 1rem;font-weight:600\">Try again</button></main></body></html>',
+      '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#010409"><title>Offline · IFoundBug</title><body style="margin:0;background:#0d1117;color:#f0f6fc;font:14px -apple-system,BlinkMacSystemFont,Segoe UI,Noto Sans,Helvetica,Arial,sans-serif;display:grid;min-height:100vh;place-items:center"><main style="max-width:26rem;padding:2rem;text-align:center"><svg width="40" height="40" viewBox="0 0 16 16" fill="#9198a1" aria-hidden="true"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7-3.25v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5a.75.75 0 0 1 1.5 0Z"/></svg><h1 style="font-size:20px;font-weight:600;margin:16px 0 8px">You are offline</h1><p style="color:#9198a1;line-height:1.5;margin:0 0 20px">IFoundBug does not store pages offline, to keep private issues private. Reconnect and try again.</p><button onclick="location.reload()" style="background:#238636;color:#fff;border:1px solid rgba(240,246,252,.1);border-radius:6px;padding:5px 16px;font:inherit;font-weight:500;cursor:pointer">Try again</button></main></body></html>',
       { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
     )));
     return;
