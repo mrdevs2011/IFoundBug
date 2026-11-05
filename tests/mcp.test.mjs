@@ -92,3 +92,14 @@ test('agent MCP tools are registered and reuse the audited update RPC', async ()
   assert.equal((route.match(/rpc\('ifb_mcp_update_bug'/g) || []).length, 2);
   assert.doesNotMatch(route, /from\('ifb_bugs'\)\.update\(patch\)/);
 });
+
+test('ifb_help documents every MCP tool and its topics match the tool schema', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const { helpText, HELP_TOPICS } = await import('../src/lib/mcp-help.ts');
+  const route = await readFile(new URL('../src/app/api/mcp/route.ts', import.meta.url), 'utf8');
+  const tools = [...route.matchAll(/tool\('([a-z_]+)'/g)].map((m) => m[1]);
+  assert.ok(tools.length >= 20);
+  const manual = helpText();
+  for (const name of tools) assert.match(manual, new RegExp(`\\b${name}\\b`), `${name} missing from ifb_help`);
+  for (const topic of HELP_TOPICS) { assert.match(route, new RegExp(`'${topic}'`)); assert.match(helpText(topic), new RegExp(`ifb_help: ${topic}`)); }
+});
