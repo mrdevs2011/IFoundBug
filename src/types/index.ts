@@ -51,6 +51,9 @@ export interface Bug {
   search_keys?: string[];
   evidence_urls: string[];
   is_sensitive?: boolean;
+  reported_by?: string | null;
+  /** Present only for the reporter / team. Non-null = link-only bug. */
+  share_token?: string | null;
   upvotes_count: number;
   reproduced_count: number;
   views_count: number;
@@ -65,6 +68,7 @@ export interface Bug {
 export interface BugComment {
   id: string;
   bug_id: string;
+  author_id?: string | null;
   author_name: string;
   author_avatar?: string;
   content: string;

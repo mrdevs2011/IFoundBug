@@ -106,12 +106,9 @@ header.sticky, header[class*="backdrop-blur"] {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
 
-/* Slim, low-contrast scrollbars (kept visible for discoverability). */
-* { scrollbar-width: thin; scrollbar-color: #303a33 transparent; }
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #303a33; border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: #526158; }
+/* Keep scrolling native while hiding visual scrollbar chrome. */
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { width: 0; height: 0; display: none; }
 
 @media (max-width: 640px) {
   button, a { -webkit-tap-highlight-color: transparent; }

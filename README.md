@@ -64,7 +64,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3333
 ```
 
 ### 3. Supabase Database
-Supabase Dashboard → SQL Editor ichida faqat `sql/IFOUNDBUG_UNIVERSAL.sql` faylini to‘liq ishga tushiring. U barcha jadvallar, RLS, triggerlar, RPC, Storage va Realtime sozlamalarini yaratadi. Demo/seed qatorlari yo‘q.
+Supabase Dashboard → SQL Editor ichida quyidagi fayllarni ketma-ket ishga tushiring: 1) `sql/IFOUNDBUG_UNIVERSAL.sql`, 2) `sql/V2_PUBLIC_MODEL.sql`. Ikkinchi migratsiya public-by-default model, maxfiy bug havolalari, invite RPC va qat’iy role/RLS qoidalarini o‘rnatadi. Backup oling va migratsiya natijasini tekshirmasdan production deb hisoblamang. Demo/seed qatorlari yo‘q.
 
 ### 4. Dasturni ishga tushirish:
 ```bash
@@ -115,7 +115,7 @@ ifoundbug/
 
 IFoundBug exposes an account-scoped MCP Streamable HTTP endpoint at `/api/mcp`. Open **Settings → MCP** to create a Bearer token, select granular scopes, set expiry and revoke tokens. Supported tools include account identity, project create/update/discovery, public-space discovery, bug search/read/create/update and activity history, comments, notifications, project-member lookup and role-limited invitation management. Private spaces require membership; public bug submissions require guest reports to be enabled.
 
-Set `SUPABASE_SERVICE_ROLE_KEY` as a server-only Vercel environment variable and `NEXT_PUBLIC_APP_URL` to the canonical site origin. Never expose the service key or bearer token in client code, commits or public prompts. Run the complete `sql/IFOUNDBUG_UNIVERSAL.sql` in Supabase SQL Editor before using MCP.
+Set `SUPABASE_SERVICE_ROLE_KEY` as a server-only Vercel environment variable and `NEXT_PUBLIC_APP_URL` to the canonical site origin. Never expose the service key or bearer token in client code, commits or public prompts. Run `sql/IFOUNDBUG_UNIVERSAL.sql` and then `sql/V2_PUBLIC_MODEL.sql` in Supabase SQL Editor before using MCP.
 
 ## Data architecture
 

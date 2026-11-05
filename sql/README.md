@@ -28,3 +28,17 @@ The universal SQL also creates account-scoped MCP token storage and a private au
 - `NEXT_PUBLIC_APP_URL` — canonical public app origin, e.g. `https://your-app.vercel.app`, so the Settings screen displays the correct endpoint.
 
 The MCP endpoint is `/api/mcp` using Streamable HTTP, JSON-RPC 2.0 and Bearer authentication. Token creation requires a logged-in IFoundBug account. Use one token per AI client, grant only required scopes, and revoke compromised tokens immediately.
+
+
+## Production setup order
+
+1. Run `IFOUNDBUG_UNIVERSAL.sql` first to create the schema and base functions.
+2. Run `V2_PUBLIC_MODEL.sql` second to install public-by-default visibility, secret links, invite flows, and role-aware RLS/RPC guards.
+3. Verify the SQL Editor reports success for both scripts. Do not expose the app as production until both migrations have been applied.
+
+
+## Production setup order
+
+1. Run `IFOUNDBUG_UNIVERSAL.sql` first to create the schema and base functions.
+2. Run `V2_PUBLIC_MODEL.sql` second to install public-by-default visibility, secret links, invite flows, and role-aware RLS/RPC guards.
+3. Verify the SQL Editor reports success for both scripts. Do not expose the app as production until both migrations have been applied.

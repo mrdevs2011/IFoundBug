@@ -499,8 +499,8 @@ begin
   loop execute format('drop policy if exists %I on %I.%I', p.policyname, p.schemaname, p.tablename); end loop;
 end $$;
 
--- Shared-workspace model: authenticated collaborators can work together.
--- Anonymous users cannot query or mutate application tables.
+-- Temporary bootstrap policies only. V2_PUBLIC_MODEL.sql MUST replace these
+-- with public-read + project-role-aware policies before production use.
 create policy ifb_profiles_authenticated_all on public.ifb_profiles for all to authenticated
   using (auth.uid() is not null) with check (auth.uid() is not null);
 create policy ifb_projects_authenticated_all on public.ifb_projects for all to authenticated

@@ -48,13 +48,12 @@ async function handle(request: NextRequest) {
   const { count: recentCalls } = await db.from('ifb_mcp_audit_logs').select('id', { count: 'exact', head: true }).eq('token_id', tokenRow.id).gte('created_at', new Date(Date.now()-60_000).toISOString());
   if ((recentCalls || 0) >= 120) return NextResponse.json(rpcError(null,-32000,'Rate limit exceeded: max 120 MCP requests per minute.'),{status:429});
   const audit = async (method:string, toolName:string|null, success:boolean, errorCode:string|null=null) => { await db.from('ifb_mcp_audit_logs').insert({token_id:tokenRow.id,profile_id:profile.id,method,tool_name:toolName,success,error_code:errorCode}); };
-  
+
   const requireScope = (scope: string) => { if (!has(scope)) throw new Error(`Permission denied: missing ${scope}`); };
   const checkAccess = async (project: Record<string, unknown>) => {
     const { data: member } = await db.from('ifb_project_members').select('role').eq('project_id', project.id).eq('user_id', profile.id).maybeSingle();
     const isPrivileged = project.created_by === profile.id || ['owner', 'admin'].includes(profile.role);
     const effectiveMember = member || (isPrivileged ? { role: 'owner' } : null);
-    if (!effectiveMember && !project.is_public) throw new Error(`You do not have access to private space "${project.name}".`);
     return { project, member: effectiveMember };
   };
   const resolveProject = async (value: string) => {
@@ -96,6 +95,7 @@ async function handle(request: NextRequest) {
     const { data: bug, error } = await q.maybeSingle();
     if (error || !bug) throw new Error(`Bug "${raw}" not found.`);
     const { project, member } = await resolveProject(bug.project_id);
+    if (bug.share_token && !member && bug.reported_by !== profile.id) throw new Error(`Bug "${raw}" not found.`);
     return { bug, project, member };
   };
   const canWrite = (member: { role: string } | null) => Boolean((member && ['owner','admin','developer','qa_tester','team_lead','product_manager'].includes(member.role)) || ['owner','admin'].includes(profile.role));
@@ -105,7 +105,7 @@ async function handle(request: NextRequest) {
       case 'who_am_i': return { id: profile.id, username: profile.username, full_name: profile.full_name, role: profile.role, scopes: [...scopes] };
       case 'create_project': {
         requireScope('projects:create'); const name=String(a.name||'').trim(); if(!name||name.length>100)throw new Error('Project name must be 1-100 characters.');
-        const {data,error}=await db.from('ifb_projects').insert({name,description:String(a.description||''),is_public:Boolean(a.is_public),allow_guest_reports:Boolean(a.allow_guest_reports),tech_stack:Array.isArray(a.tech_stack)?a.tech_stack.slice(0,20):[],created_by:profile.id}).select('id,name,slug,description,is_public,allow_guest_reports,tech_stack,created_at').single(); if(error)throw error; return data;
+        const {data,error}=await db.from('ifb_projects').insert({name,description:String(a.description||''),is_public:true,allow_guest_reports:true,tech_stack:Array.isArray(a.tech_stack)?a.tech_stack.slice(0,20):[],created_by:profile.id}).select('id,name,slug,description,is_public,allow_guest_reports,tech_stack,created_at').single(); if(error)throw error; return data;
       }
       case 'update_project': { requireScope('projects:update');const {project,member}=await resolveProject(String(a.project));if(!member||!['owner','admin'].includes(member.role))throw new Error('Only project owners/admins can update workspace settings.');const patch:Record<string,unknown>={};for(const k of ['name','description','is_public','allow_guest_reports','tech_stack','github_repo_url'])if(a[k]!==undefined)patch[k]=a[k];if(!Object.keys(patch).length)throw new Error('No project fields supplied.');const {data,error}=await db.from('ifb_projects').update(patch).eq('id',project.id).select('id,name,slug,description,is_public,allow_guest_reports,tech_stack,github_repo_url,created_at').single();if(error)throw error;return data; }
       case 'list_projects': {
@@ -131,14 +131,15 @@ async function handle(request: NextRequest) {
         const { data, error } = await q; if (error) throw error; return data || [];
       }
       case 'list_bugs': {
-        requireScope('bugs:read'); const { project } = await resolveProject(String(a.project));
+        requireScope('bugs:read'); const { project, member } = await resolveProject(String(a.project));
         let q = db.from('ifb_bugs').select('id,code,project_id,title,summary,section,severity,priority,status,environment,actual_behavior,expected_behavior,steps_to_reproduce,evidence_urls,reporter_name,created_at,updated_at').eq('project_id', project.id).order('created_at',{ascending:false}).limit(Math.min(Math.max(Number(a.limit)||50,1),100));
+        if (!member) q = q.is('share_token', null);
         if (a.status) q=q.eq('status',a.status); if(a.severity) q=q.eq('severity',a.severity); if(a.search) q=q.ilike('title',`%${String(a.search).slice(0,80)}%`);
         const {data,error}=await q;if(error)throw error;return data||[];
       }
       case 'get_bug': {
         requireScope('bugs:read');
-        const { project } = await resolveProject(String(a.project));
+        const { project, member } = await resolveProject(String(a.project));
         const rawBug = String(a.bug || '').trim();
         let q = db.from('ifb_bugs').select('*').eq('project_id', project.id);
         if (/^[0-9a-f-]{36}$/i.test(rawBug)) {
@@ -147,11 +148,12 @@ async function handle(request: NextRequest) {
           q = q.ilike('code', rawBug);
         }
         const { data, error } = await q.maybeSingle();
-        if (error || !data) throw new Error(`Bug "${rawBug}" not found in project "${project.name}".`);
+        if (error || !data || (data.share_token && !member && data.reported_by !== profile.id)) throw new Error(`Bug "${rawBug}" not found in project "${project.name}".`);
+        if (!member && data.reported_by !== profile.id) delete (data as Record<string, unknown>).share_token;
         return { project: { id: project.id, name: project.name, slug: project.slug }, bug: data };
       }
       case 'create_bug': {
-        requireScope('bugs:create'); const {project,member}=await resolveProject(String(a.project)); if(member && !canWrite(member))throw new Error('Your project role does not allow creating bugs.'); if(!member && !(project.is_public && project.allow_guest_reports))throw new Error('This public space does not accept guest bug reports.');
+        requireScope('bugs:create'); const {project}=await resolveProject(String(a.project));
         const title=String(a.title||'').trim();if(!title||title.length>180)throw new Error('Title is required and must be at most 180 characters.');
         const payload={project_id:project.id,title,summary:String(a.summary||''),section:String(a.section||'General'),severity:a.severity||'MEDIUM',priority:a.priority||'P2',environment:a.environment||'PRODUCTION',actual_behavior:String(a.actual_behavior||''),expected_behavior:String(a.expected_behavior||''),steps_to_reproduce:Array.isArray(a.steps_to_reproduce)?a.steps_to_reproduce.slice(0,30):[],evidence_urls:Array.isArray(a.evidence_urls)?a.evidence_urls.slice(0,10):[],reported_by:profile.id,reporter_name:profile.full_name};
         const {data,error}=await db.from('ifb_bugs').insert(payload).select('*').single();if(error)throw error;
@@ -164,7 +166,7 @@ async function handle(request: NextRequest) {
         await db.from('ifb_bug_audit_logs').insert({bug_id:bug.id,actor_name:profile.full_name,action:'MCP_BUG_UPDATED',details:{fields:Object.keys(patch),token_id:tokenRow.id}});return data;
       }
       case 'list_comments': { requireScope('comments:read');const {bug,member}=await resolveBug(String(a.bug));let q=db.from('ifb_bug_comments').select('id,bug_id,author_name,content,is_internal,created_at').eq('bug_id',bug.id).order('created_at',{ascending:true}).limit(100);if(!member||!['owner','admin','developer','team_lead','product_manager'].includes(member.role))q=q.eq('is_internal',false);const {data,error}=await q;if(error)throw error;return data||[]; }
-      case 'add_comment': { requireScope('comments:create');const {bug,member}=await resolveBug(String(a.bug));if(!member && !(await resolveProject(bug.project_id)).project.allow_guest_reports)throw new Error('No permission to comment in this space.');if(a.internal&&!member?.role.match(/owner|admin|developer|team_lead|product_manager/))throw new Error('Internal comments require a project team role.');const content=String(a.content||'').trim();if(!content||content.length>10000)throw new Error('Comment must be 1-10000 characters.');const {data,error}=await db.from('ifb_bug_comments').insert({bug_id:bug.id,author_id:profile.id,author_name:profile.full_name,content,is_internal:Boolean(a.internal)}).select('*').single();if(error)throw error;return data; }
+      case 'add_comment': { requireScope('comments:create');const {bug,member}=await resolveBug(String(a.bug));if(a.internal&&!member?.role.match(/owner|admin|developer|team_lead|product_manager/))throw new Error('Internal comments require a project team role.');const content=String(a.content||'').trim();if(!content||content.length>10000)throw new Error('Comment must be 1-10000 characters.');const {data,error}=await db.from('ifb_bug_comments').insert({bug_id:bug.id,author_id:profile.id,author_name:profile.full_name,content,is_internal:Boolean(a.internal)}).select('*').single();if(error)throw error;return data; }
       case 'list_members': { requireScope('members:read');const {project}=await resolveProject(String(a.project));const {data,error}=await db.from('ifb_project_members').select('role,user:ifb_profiles(id,username,full_name,avatar_url)').eq('project_id',project.id);if(error)throw error;return data||[]; }
       case 'list_notifications': { requireScope('notifications:read');let q=db.from('ifb_notifications').select('id,project_id,bug_id,bug_code,title,message,type,read_at,created_at').eq('recipient_id',profile.id).order('created_at',{ascending:false}).limit(Math.min(Math.max(Number(a.limit)||20,1),50));if(a.unread_only)q=q.is('read_at',null);const {data,error}=await q;if(error)throw error;return data||[]; }
       case 'mark_notification_read': { requireScope('notifications:update');const {data,error}=await db.from('ifb_notifications').update({read_at:new Date().toISOString()}).eq('id',String(a.notification_id)).eq('recipient_id',profile.id).select('id,read_at').maybeSingle();if(error)throw error;if(!data)throw new Error('Notification not found or not owned by this account.');return data; }
