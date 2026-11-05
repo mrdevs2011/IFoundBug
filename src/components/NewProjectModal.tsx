@@ -9,6 +9,8 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [stack, setStack] = useState('');
+  const [isPublic, setIsPublic] = useState(false);
+  const [allowGuestReports, setAllowGuestReports] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -16,7 +18,7 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
     e.preventDefault();
     setBusy(true); setError('');
     try {
-      const p = await createProject({ name: name.trim(), description: description.trim(), tech_stack: stack.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 10) });
+      const p = await createProject({ name: name.trim(), description: description.trim(), tech_stack: stack.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 10), is_public: isPublic, allow_guest_reports: isPublic && allowGuestReports });
       router.push(`/p/${p.slug}`);
     } catch (err) { setError(errMsg(err)); setBusy(false); }
   };
@@ -27,7 +29,14 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
         <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="Repository name" required maxLength={80} autoFocus />
         <textarea className={`${inputCls} min-h-20`} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" maxLength={300} />
         <input className={inputCls} value={stack} onChange={(e) => setStack(e.target.value)} placeholder="Technologies: React, Next.js, PostgreSQL" />
-        <p className="text-xs text-zinc-500">The repository and its issues are public. Individual issues can be shared through private links.</p>
+        <label className="flex items-start gap-2 text-sm text-zinc-300">
+          <input type="checkbox" checked={isPublic} onChange={(event) => { setIsPublic(event.target.checked); if (!event.target.checked) setAllowGuestReports(false); }} className="mt-0.5 accent-emerald-500" />
+          <span><span className="block font-medium">Public repository</span><span className="text-xs text-zinc-500">Anyone can discover and view this repository.</span></span>
+        </label>
+        {isPublic && <label className="flex items-start gap-2 pl-6 text-sm text-zinc-300">
+          <input type="checkbox" checked={allowGuestReports} onChange={(event) => setAllowGuestReports(event.target.checked)} className="mt-0.5 accent-emerald-500" />
+          <span><span className="block font-medium">Allow public issue submissions</span><span className="text-xs text-zinc-500">Signed-in users can report issues without joining the team.</span></span>
+        </label>}
         {error && <ErrorBox message={error} />}
         <button className={`${btnPrimary} w-full`} disabled={busy || !name.trim()}>{busy ? 'Creating…' : 'Create repository'}</button>
       </form>

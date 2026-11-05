@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "IFoundBug — issue tracking for software teams",
+  title: "FoundBug — issue tracking for software teams",
   description: "A focused issue tracker for software teams. Report issues, discuss fixes, and generate actionable AI prompts. Private issues are accessible only through secure links.",
   manifest: "/manifest.json",
   icons: {
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "IFoundBug",
+    title: "FoundBug",
   },
 };
 

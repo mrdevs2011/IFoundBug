@@ -1,6 +1,6 @@
-# IFoundBug — database setup
+# FoundBug — database setup
 
-There are two required SQL files. Run `IFOUNDBUG_UNIVERSAL.sql` first, then `V2_PUBLIC_MODEL.sql`, in **Supabase Dashboard → SQL Editor**. The base file deliberately installs no permissive application policies; the V2 file installs the production access model. Re-running the base file after V2 is fail-closed (it may temporarily revoke public access), so always re-run V2 afterwards. Both files preserve application rows.
+There are three incremental SQL files. Run `IFOUNDBUG_UNIVERSAL.sql` first, `V2_PUBLIC_MODEL.sql` second, and `V3_ISSUE_SEARCH_INDEXES.sql` third, in **Supabase Dashboard → SQL Editor**. `FOUNDBUG_CANONICAL.sql` is the consolidated fresh-install snapshot of those schema/policy/index scripts plus Realtime publication setup; use either the ordered incremental files or the canonical snapshot, not both. The base file deliberately installs no permissive application policies; the V2 file installs the production access model. Re-running the base file after V2 is fail-closed (it may temporarily revoke public access), so always re-run V2 afterwards. Both files preserve application rows.
 
 ## Required Supabase Auth setting
 
@@ -37,7 +37,7 @@ The MCP endpoint is `/api/mcp` using Streamable HTTP, JSON-RPC 2.0 and Bearer au
 3. Run `V2_PUBLIC_MODEL.sql` second to install public-project visibility, private issue links, invite flows, role-aware RLS/RPC guards, and private attachment delivery.
 4. Verify both scripts complete successfully and test the access matrix before enabling production traffic.
 
-The base file intentionally leaves application tables fail-closed. If it is re-run after V2, immediately re-run V2 to restore the role-aware policies. Both files preserve application rows.
+The base file intentionally leaves application tables fail-closed. If it is re-run after V2, immediately re-run V2 to restore the role-aware policies. The V3 index migration is additive and preserves application rows.
 
 ## Attachment privacy limitation
 

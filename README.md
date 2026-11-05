@@ -1,4 +1,4 @@
-# IFoundBug
+# FoundBug
 
 A focused issue-tracking workspace for software teams.
 
@@ -64,6 +64,13 @@ The application does not substitute mock records when Supabase is unavailable; i
 
 ## MCP server
 
+Call the `ifb_help` tool for a short guide. Agents with only GitHub access can push screenshots to a GitHub repo and call `import_github_images { bug, repo, path, ref }`; IFB pulls them into private storage and attaches them to the issue.
+
 The account-scoped MCP endpoint is /api/mcp. Create tokens from the account menu, choose only the required scopes, and set an expiry. Raw bearer tokens are shown once; only their SHA-256 digests are stored.
 
 Configure SUPABASE_SERVICE_ROLE_KEY as a server-only Vercel environment variable and NEXT_PUBLIC_APP_URL as the canonical app origin. Never commit or expose secret material or bearer tokens.
+
+
+## Product boundaries
+
+FoundBug repositories are organizational containers, not Git repositories. Git hosting and Git-provider integrations are intentionally out of scope. The dashboard lists repositories owned by or shared with the signed-in account; public discovery is separate. New repositories are private by default.

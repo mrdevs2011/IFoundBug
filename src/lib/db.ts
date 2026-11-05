@@ -31,16 +31,37 @@ export async function getMe(): Promise<Me | null> {
 
 // ---- projects -------------------------------------------------------------
 export async function listProjects(search = ''): Promise<ProjectCard[]> {
-  let q = sb().from('ifb_projects').select('*, bugs:ifb_bugs(status)').order('created_at', { ascending: false }).limit(200);
-  const term = search.trim().replace(/[(),%]/g, ' ');
+  const me = await getMe();
+  if (!me) return [];
+
+  const [{ data: memberships, error: membershipError }, { data: owned, error: ownedError }] = await Promise.all([
+    sb().from('ifb_project_members').select('project_id').eq('user_id', me.id),
+    sb().from('ifb_projects').select('id').eq('created_by', me.id),
+  ]);
+  if (membershipError) throw membershipError;
+  if (ownedError) throw ownedError;
+
+  const accessibleIds = [...new Set([
+    ...(memberships ?? []).map((row) => row.project_id),
+    ...(owned ?? []).map((row) => row.id),
+  ])];
+  if (!accessibleIds.length) return [];
+
+  let q = sb().from('ifb_projects').select('*, bugs:ifb_bugs(status)')
+    .in('id', accessibleIds).order('created_at', { ascending: false }).limit(200);
+  const term = search.trim().replace(/[(),.%_*\\"']/g, ' ').slice(0, 100);
   if (term) q = q.or(`name.ilike.%${term}%,description.ilike.%${term}%`);
   const { data, error } = await q;
   if (error) throw error;
-  return (data ?? []).map((p) => {
-    const bugs = (p.bugs ?? []) as { status: BugStatus }[];
-    const { bugs: _omit, ...project } = p;
+  return (data ?? []).map((project) => {
+    const bugs = (project.bugs ?? []) as { status: BugStatus }[];
+    const { bugs: _omit, ...record } = project;
     void _omit;
-    return { ...(project as Project), total_count: bugs.length, open_count: bugs.filter((b) => !['FIXED', 'CLOSED', 'WONT_FIX', 'VERIFIED'].includes(b.status)).length };
+    return {
+      ...(record as Project),
+      total_count: bugs.length,
+      open_count: bugs.filter((bug) => !['FIXED', 'CLOSED', 'WONT_FIX', 'VERIFIED'].includes(bug.status)).length,
+    };
   });
 }
 
@@ -50,9 +71,9 @@ export async function getProject(slug: string): Promise<Project | null> {
   return data as Project | null;
 }
 
-export async function createProject(input: { name: string; description?: string; tech_stack?: string[]; github_repo_url?: string }): Promise<Project> {
+export async function createProject(input: { name: string; description?: string; tech_stack?: string[]; is_public?: boolean; allow_guest_reports?: boolean }): Promise<Project> {
   const { data, error } = await sb().from('ifb_projects')
-    .insert({ name: input.name, description: input.description || null, tech_stack: input.tech_stack ?? [], github_repo_url: input.github_repo_url || null, is_public: true, allow_guest_reports: true })
+    .insert({ name: input.name, description: input.description || null, tech_stack: input.tech_stack ?? [], is_public: input.is_public ?? false, allow_guest_reports: input.allow_guest_reports ?? false })
     .select('*').single();
   if (error) throw error;
   return data as Project;

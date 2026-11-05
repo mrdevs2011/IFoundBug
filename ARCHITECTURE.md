@@ -1,8 +1,8 @@
-# IFoundBug Architecture
+# FoundBug Architecture
 
 ## Overview
 
-IFoundBug is a Next.js App Router application backed by Supabase Auth and PostgreSQL. The browser is a presentation and interaction client; PostgreSQL owns durable application records, access policies, generated identifiers, and transactional state changes.
+FoundBug is a Next.js App Router application backed by Supabase Auth and PostgreSQL. The browser is a presentation and interaction client; PostgreSQL owns durable application records, access policies, generated identifiers, and transactional state changes.
 
 ## Application layers
 
@@ -36,3 +36,16 @@ The dashboard, repository issue list and issue detail views subscribe to Supabas
 ## Media and privacy boundary
 
 Issue attachments live in a private Supabase Storage bucket. Uploads store guarded `/api/attachments/...` paths; the route verifies the bug row through RLS or validates the private issue token before using the server-only storage key to stream the object. The V2 migration converts legacy public object URLs to proxy paths without changing stored object keys.
+
+
+## Product boundary and evolution
+
+FoundBug is an issue-management product, not a Git hosting product. Repository records are FoundBug containers for issues and collaboration. No GitHub/GitLab/Bitbucket OAuth, webhooks, repository synchronization, clone, branch, commit, or pull-request integration is part of the product. The legacy `ifb_projects.github_repo_url` database column is retained solely to avoid destructive schema changes; the application and MCP API no longer read or write it.
+
+The personal dashboard is intentionally scoped to repositories the signed-in account owns or belongs to. Public repository discovery is a separate capability and must not silently turn every public repository into a personal workspace item. New repositories default to private; public visibility and guest issue intake require explicit selection.
+
+New domain capabilities should be introduced additively behind typed domain contracts and server/database authorization. Existing `ifb_*` records remain the compatibility layer until a verified migration maps them to the expanded workspace/repository/issue model. Do not rename or drop persisted tables as part of an application-only refactor.
+
+## Current implementation boundary
+
+The deployed baseline remains the existing project/bug schema and its RLS policies. The typed issue query parser currently supports text, status, priority, severity, assignee, author, project/repository, and created/updated date comparisons over the fields already persisted. Labels, issue types, due dates, custom fields, and full-text indexing require schema-backed implementation before they can be advertised as searchable.

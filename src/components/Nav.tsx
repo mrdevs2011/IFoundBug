@@ -19,7 +19,7 @@ export function Nav() {
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link href="/" className="flex shrink-0 items-center gap-2.5 text-sm font-semibold text-[#e6edf3]">
           <span className="grid h-8 w-8 place-items-center rounded-md border border-[#3fb950]/40 bg-[#3fb950]/10 text-[#3fb950]"><BugIcon className="h-[18px] w-[18px]" /></span>
-          <span>IFoundBug</span>
+          <span>FoundBug</span>
         </Link>
         <nav className="flex items-center gap-2 text-sm">
           {me === undefined ? <span className="h-8 w-24 animate-pulse rounded-md bg-[#21262d]" /> : me ? (

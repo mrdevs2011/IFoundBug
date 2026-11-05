@@ -318,6 +318,123 @@ begin
   return v_bug;
 end; $$;
 
+-- MCP writes use the same database-owned validation and audit transaction.
+-- The caller must be the server's service-role client and must pass the profile
+-- resolved from a verified, scoped MCP token. No browser role can invoke this.
+create or replace function public.ifb_mcp_update_bug(
+  p_bug_id uuid,
+  p_actor_profile_id uuid,
+  p_patch jsonb
+) returns public.ifb_bugs
+language plpgsql security definer set search_path = public, auth as $$
+declare
+  v_bug public.ifb_bugs%rowtype;
+  v_actor public.ifb_profiles%rowtype;
+  v_project public.ifb_projects%rowtype;
+  v_member_role text;
+  v_status text;
+  v_old_status text;
+  v_severity text;
+  v_priority text;
+  v_assignee uuid;
+  v_fields text[];
+begin
+  if coalesce(
+    nullif(current_setting('request.jwt.claim.role', true), ''),
+    nullif(current_setting('request.jwt.claims', true), '')::jsonb->>'role',
+    ''
+  ) <> 'service_role' then
+    raise exception 'Server authorization required';
+  end if;
+  if p_patch is null or jsonb_typeof(p_patch) <> 'object' or p_patch = '{}'::jsonb then
+    raise exception 'A non-empty object patch is required';
+  end if;
+  if exists (
+    select 1 from jsonb_object_keys(p_patch) as supplied(key)
+    where supplied.key not in ('status','severity','priority','assigned_to','dev_notes','title','summary')
+  ) then
+    raise exception 'Unsupported issue fields supplied';
+  end if;
+
+  select * into v_actor from public.ifb_profiles where id = p_actor_profile_id;
+  if not found then raise exception 'Actor profile not found'; end if;
+  select * into v_bug from public.ifb_bugs where id = p_bug_id for update;
+  if not found then raise exception 'Issue not found'; end if;
+  v_old_status := v_bug.status;
+  select * into v_project from public.ifb_projects where id = v_bug.project_id;
+  select role into v_member_role from public.ifb_project_members
+    where project_id = v_bug.project_id and user_id = p_actor_profile_id;
+
+  if coalesce(v_member_role, '') not in ('owner','admin','developer','qa_tester','team_lead','product_manager')
+     and v_project.created_by is distinct from p_actor_profile_id
+     and v_actor.role not in ('owner','admin') then
+    raise exception 'Issue update permission denied';
+  end if;
+
+  if p_patch ? 'status' then
+    v_status := p_patch->>'status';
+    if v_status is null or v_status not in ('REPORTED','TRIAGED','IN_PROGRESS','READY_FOR_QA','VERIFIED','FIXED','CLOSED','WONT_FIX') then
+      raise exception 'Invalid issue status';
+    end if;
+  end if;
+  if p_patch ? 'severity' then
+    v_severity := p_patch->>'severity';
+    if v_severity is null or v_severity not in ('CRITICAL','HIGH','MEDIUM','LOW') then raise exception 'Invalid severity'; end if;
+  end if;
+  if p_patch ? 'priority' then
+    v_priority := p_patch->>'priority';
+    if v_priority is null or v_priority not in ('P0','P1','P2','P3') then raise exception 'Invalid priority'; end if;
+  end if;
+  if p_patch ? 'title' and (length(btrim(coalesce(p_patch->>'title',''))) not between 1 and 180) then
+    raise exception 'Title must be 1-180 characters';
+  end if;
+  if p_patch ? 'summary' and length(coalesce(p_patch->>'summary','')) > 10000 then
+    raise exception 'Summary is too long';
+  end if;
+  if p_patch ? 'dev_notes' and length(coalesce(p_patch->>'dev_notes','')) > 10000 then
+    raise exception 'Developer notes are too long';
+  end if;
+  if p_patch ? 'assigned_to' then
+    v_assignee := nullif(p_patch->>'assigned_to','')::uuid;
+    if v_assignee is not null and not exists (
+      select 1 from public.ifb_project_members
+      where project_id = v_bug.project_id and user_id = v_assignee
+    ) then
+      raise exception 'Assignee must be a member of this repository';
+    end if;
+  end if;
+
+  v_fields := array(select jsonb_object_keys(p_patch) order by 1);
+  update public.ifb_bugs set
+    status = case when p_patch ? 'status' then v_status else status end,
+    severity = case when p_patch ? 'severity' then v_severity else severity end,
+    priority = case when p_patch ? 'priority' then v_priority else priority end,
+    assigned_to = case when p_patch ? 'assigned_to' then v_assignee else assigned_to end,
+    dev_notes = case when p_patch ? 'dev_notes' then p_patch->>'dev_notes' else dev_notes end,
+    title = case when p_patch ? 'title' then btrim(p_patch->>'title') else title end,
+    summary = case when p_patch ? 'summary' then p_patch->>'summary' else summary end,
+    resolved_at = case
+      when p_patch ? 'status' and v_status = 'FIXED' then coalesce(resolved_at, now())
+      when p_patch ? 'status' and v_status <> 'FIXED' then null
+      else resolved_at
+    end
+  where id = p_bug_id returning * into v_bug;
+
+  insert into public.ifb_bug_audit_logs(bug_id, actor_name, action, details)
+  values (
+    p_bug_id,
+    v_actor.full_name,
+    case when p_patch ? 'status' and v_old_status is distinct from v_bug.status then 'STATUS_CHANGED' else 'MCP_ISSUE_UPDATED' end,
+    jsonb_build_object('fields', v_fields, 'source', 'mcp')
+  );
+
+  return v_bug;
+end;
+$$;
+
+revoke all on function public.ifb_mcp_update_bug(uuid, uuid, jsonb) from public, anon, authenticated;
+grant execute on function public.ifb_mcp_update_bug(uuid, uuid, jsonb) to service_role;
+
 -- Views and acceptance criteria are SECURITY DEFINER RPCs: enforce visibility and
 -- team permissions here rather than relying on table RLS.
 create or replace function public.ifb_increment_bug_views(target_bug_id uuid)

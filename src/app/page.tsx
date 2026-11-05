@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Nav, LoginHint } from '@/components/Nav';
 import { NewProjectModal } from '@/components/NewProjectModal';
@@ -8,6 +8,7 @@ import { BugIcon, SearchIcon, ArrowRightIcon, PlusIcon } from '@/components/icon
 import { errMsg, listProjects, type ProjectCard } from '@/lib/db';
 import { useMe } from '@/lib/useMe';
 import { supabase } from '@/lib/supabase/client';
+import type { Bug } from '@/types';
 
 function Metric({ label, value, detail, tone = 'neutral' }: { label: string; value: number; detail: string; tone?: 'neutral' | 'green' | 'red' }) {
   const color = tone === 'green' ? 'text-[#3fb950]' : tone === 'red' ? 'text-[#ff7b72]' : 'text-[#e6edf3]';
@@ -52,6 +53,11 @@ export default function Home() {
   const [projects, setProjects] = useState<ProjectCard[] | null>(null);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [issueSearch, setIssueSearch] = useState('');
+  const [issueResults, setIssueResults] = useState<(Bug & { project: { id: string; name: string; slug: string } })[]>([]);
+  const [issueLoading, setIssueLoading] = useState(false);
+  const [issueError, setIssueError] = useState('');
+  const issueSearchInput = useRef<HTMLInputElement>(null);
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -65,6 +71,40 @@ export default function Home() {
     }, 160);
     return () => { active = false; clearTimeout(timer); };
   }, [search]);
+
+  useEffect(() => {
+    const term = issueSearch.trim();
+    if (!term) return;
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setIssueLoading(true);
+      try {
+        const params = new URLSearchParams({ q: term, tab: 'all', page: '1', page_size: '20' });
+        const response = await fetch(`/api/issues/search?${params}`, { signal: controller.signal, cache: 'no-store' });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || 'Unable to search issues.');
+        if (!controller.signal.aborted) { setIssueResults(payload.data || []); setIssueError(''); }
+      } catch (reason) {
+        if (!controller.signal.aborted) { setIssueResults([]); setIssueError(reason instanceof Error ? reason.message : 'Unable to search issues.'); }
+      } finally {
+        if (!controller.signal.aborted) setIssueLoading(false);
+      }
+    }, 180);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [issueSearch]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const editing = target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName || '');
+      if (event.key === '/' && !editing && !event.metaKey && !event.ctrlKey && !event.altKey) {
+        event.preventDefault();
+        issueSearchInput.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   useEffect(() => {
     if (!supabase) return;
@@ -109,6 +149,23 @@ export default function Home() {
           </div>
         </div>
 
+        <section aria-label="Global issue search" className="mb-7 overflow-hidden rounded-md border border-[#30363d] bg-[#0d1117]">
+          <div className="border-b border-[#30363d] bg-[#161b22] px-4 py-3">
+            <h2 className="text-sm font-semibold text-[#e6edf3]">Search all issues</h2>
+            <p className="mt-0.5 text-xs text-[#8b949e]">Search across repositories you are allowed to access.</p>
+            <input ref={issueSearchInput} className={`${inputCls} mt-3 w-full`} value={issueSearch} onChange={(event) => setIssueSearch(event.target.value)} placeholder="Search issues… status:in_progress priority:P1 project:my-repo" aria-label="Search all issues" />
+          </div>
+          {issueSearch.trim() && <div className="divide-y divide-[#21262d]">
+            {issueError && <p role="alert" className="px-4 py-3 text-xs text-[#ff7b72]">{issueError}</p>}
+            {issueLoading && <p className="px-4 py-3 text-xs text-[#8b949e]">Searching…</p>}
+            {!issueLoading && issueResults.length === 0 && <p className="px-4 py-3 text-xs text-[#8b949e]">No matching issues in repositories visible to your account.</p>}
+            {issueResults.map((issue) => <Link key={issue.id} href={`/p/${issue.project.slug}/b/${issue.code}`} className="flex items-center gap-3 px-4 py-3 hover:bg-[#161b22]">
+              <BugIcon className="h-4 w-4 shrink-0 text-[#8b949e]" />
+              <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium text-[#58a6ff]">{issue.title}</span><span className="mt-0.5 block truncate text-[11px] text-[#8b949e]">{issue.project.name} · {issue.code} · {issue.status.replaceAll('_', ' ')}</span></span>
+            </Link>)}
+          </div>}
+        </section>
+
         <section aria-label="Workspace overview" className="mb-7 grid grid-cols-2 gap-3 xl:grid-cols-4">
           <Metric label="Repositories" value={metrics.repositories} detail="total" />
           <Metric label="Issues" value={metrics.issues} detail="reported" />
@@ -146,7 +203,7 @@ export default function Home() {
         </section>
 
         <footer className="mt-8 flex flex-col gap-1 border-t border-[#30363d] pt-4 text-[11px] text-[#6e7681] sm:flex-row sm:items-center sm:justify-between">
-          <span>IFoundBug · Find bugs. Fix faster.</span>
+          <span>FoundBug · Find bugs. Fix faster.</span>
           <span>Built for software teams.</span>
         </footer>
       </main>

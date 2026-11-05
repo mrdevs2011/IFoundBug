@@ -43,3 +43,4 @@ next-env.d.ts
 
 # Previous build cache retained for recovery after permission repair
 /.next-previous-build/
+supabase/.temp/

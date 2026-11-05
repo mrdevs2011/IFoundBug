@@ -1,18 +1,19 @@
 'use client';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Nav } from '@/components/Nav';
 import { TeamPanel } from '@/components/TeamPanel';
 import { AIPromptModal } from '@/components/AIPromptModal';
 import { Empty, ErrorBox, SeverityBadge, Spinner, StatusBadge, btnGhost, btnPrimary, inputCls } from '@/components/ui';
-import { DONE_STATUSES, SEVERITY_DOT, SEVERITY_LABEL, SEVERITY_ORDER, STATUS_LABEL, STATUS_ORDER, timeAgo } from '@/lib/constants';
-import { errMsg, getProject, listBugs, myRole } from '@/lib/db';
+import { SEVERITY_DOT, SEVERITY_LABEL, SEVERITY_ORDER, STATUS_LABEL, STATUS_ORDER, timeAgo } from '@/lib/constants';
+import { errMsg, getProject, myRole } from '@/lib/db';
 import { copyToClipboard } from '@/lib/clipboard';
 import { useMe } from '@/lib/useMe';
 import { ThumbsUpIcon, PlusIcon, SparklesIcon } from '@/components/icons';
 import type { Bug, BugStatus, Project, Severity } from '@/types';
 import { supabase } from '@/lib/supabase/client';
+import { parseIssueQuery } from '@/lib/issues/search';
 
 type Tab = 'open' | 'done' | 'all';
 
@@ -21,13 +22,17 @@ export default function ProjectPage() {
   const me = useMe();
   const [project, setProject] = useState<Project | null | undefined>(undefined);
   const [bugs, setBugs] = useState<Bug[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [loadingIssues, setLoadingIssues] = useState(false);
+  const [counts, setCounts] = useState({ open: 0, done: 0, all: 0 });
   const [roleState, setRoleState] = useState<{ key: string; role: string | null } | null>(null);
   const [error, setError] = useState('');
-  const [tab, setTab] = useState<Tab>('open');
-  const [search, setSearch] = useState('');
-  const [severity, setSeverity] = useState<Severity | ''>('');
-  const [status, setStatus] = useState<BugStatus | ''>('');
-  const [sort, setSort] = useState<'new' | 'votes' | 'severity'>('new');
+  const [tab, setTab] = useState<Tab>(() => typeof window !== 'undefined' && ['open', 'done', 'all'].includes(new URLSearchParams(window.location.search).get('tab') || '') ? new URLSearchParams(window.location.search).get('tab') as Tab : 'open');
+  const [search, setSearch] = useState(() => typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('q') || '' : '');
+  const [severity, setSeverity] = useState<Severity | ''>(() => typeof window !== 'undefined' && SEVERITY_ORDER.includes(new URLSearchParams(window.location.search).get('severity') as Severity) ? new URLSearchParams(window.location.search).get('severity') as Severity : '');
+  const [status, setStatus] = useState<BugStatus | ''>(() => typeof window !== 'undefined' && STATUS_ORDER.includes(new URLSearchParams(window.location.search).get('status') as BugStatus) ? new URLSearchParams(window.location.search).get('status') as BugStatus : '');
+  const [sort, setSort] = useState<'new' | 'votes' | 'severity'>(() => typeof window !== 'undefined' && ['new', 'votes', 'severity'].includes(new URLSearchParams(window.location.search).get('sort') || '') ? new URLSearchParams(window.location.search).get('sort') as 'new' | 'votes' | 'severity' : 'new');
   const [team, setTeam] = useState(false);
   const [ai, setAi] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -41,7 +46,6 @@ export default function ProjectPage() {
         const p = await getProject(slug);
         if (!alive) return;
         setProject(p);
-        if (p) setBugs(await listBugs(p.id));
       } catch (e) { if (alive) setError(errMsg(e)); }
     })();
     return () => { alive = false; };
@@ -57,6 +61,46 @@ export default function ProjectPage() {
   const role = project && me && roleState?.key === `${project.id}:${me.id}` ? roleState.role : null;
   const realtimeProjectId = project?.id;
   const realtimeProjectSlug = project?.slug;
+  const parsedQuery = parseIssueQuery(search);
+
+  const loadIssues = useCallback(async (signal?: AbortSignal) => {
+    if (!project || !parseIssueQuery(search).ok) { setBugs([]); setTotal(0); setLoadingIssues(false); return; }
+    setLoadingIssues(true);
+    const params = new URLSearchParams({
+      project: project.id, q: search, tab, severity, status, sort,
+      page: String(page), page_size: '50',
+    });
+    try {
+      const response = await fetch(`/api/issues/search?${params}`, { signal, cache: 'no-store' });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || 'Unable to search issues.');
+      if (signal?.aborted) return;
+      setBugs(payload.data as Bug[]);
+      setTotal(Number(payload.total) || 0);
+      setCounts(payload.counts || { open: 0, done: 0, all: 0 });
+      setError('');
+    } catch (reason) {
+      if (signal?.aborted) return;
+      setError(errMsg(reason));
+    } finally {
+      if (!signal?.aborted) setLoadingIssues(false);
+    }
+  }, [project, search, tab, severity, status, sort, page]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => { void loadIssues(controller.signal); }, 180);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [loadIssues]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    for (const [key, value] of Object.entries({ q: search, tab, severity, status, sort })) {
+      if (value && !(key === 'tab' && value === 'open') && !(key === 'sort' && value === 'new')) url.searchParams.set(key, value);
+      else url.searchParams.delete(key);
+    }
+    window.history.replaceState(null, '', url);
+  }, [search, tab, severity, status, sort]);
 
   useEffect(() => {
     if (!realtimeProjectId || !realtimeProjectSlug || !supabase) return;
@@ -64,8 +108,9 @@ export default function ProjectPage() {
     let active = true;
     const refresh = async () => {
       try {
-        const [nextProject, nextBugs] = await Promise.all([getProject(realtimeProjectSlug), listBugs(realtimeProjectId)]);
-        if (active) { if (nextProject) setProject(nextProject); setBugs(nextBugs); setError(''); }
+        const nextProject = await getProject(realtimeProjectSlug);
+        if (active && nextProject) setProject(nextProject);
+        if (active) await loadIssues();
       } catch (reason) { if (active) setError(errMsg(reason)); }
     };
     const channel = client.channel(`ifb-project-${realtimeProjectId}`)
@@ -73,24 +118,9 @@ export default function ProjectPage() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ifb_projects', filter: `id=eq.${realtimeProjectId}` }, refresh)
       .subscribe();
     return () => { active = false; void client.removeChannel(channel); };
-  }, [realtimeProjectId, realtimeProjectSlug]);
+  }, [realtimeProjectId, realtimeProjectSlug, loadIssues]);
 
-  const visible = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const sev = (s: Severity) => SEVERITY_ORDER.indexOf(s);
-    return (bugs ?? [])
-      .filter((b) => tab === 'all' || (tab === 'done') === DONE_STATUSES.includes(b.status))
-      .filter((b) => !severity || b.severity === severity)
-      .filter((b) => !status || b.status === status)
-      .filter((b) => !q || b.title.toLowerCase().includes(q) || b.code.toLowerCase().includes(q) || (b.actual_behavior ?? '').toLowerCase().includes(q))
-      .sort((a, b) => sort === 'votes' ? b.upvotes_count - a.upvotes_count : sort === 'severity' ? sev(a.severity) - sev(b.severity) : +new Date(b.created_at) - +new Date(a.created_at));
-  }, [bugs, tab, search, severity, status, sort]);
-
-  const counts = useMemo(() => {
-    const all = bugs ?? [];
-    const done = all.filter((b) => DONE_STATUSES.includes(b.status)).length;
-    return { open: all.length - done, done, all: all.length };
-  }, [bugs]);
+  const visible = bugs ?? [];
 
   if (project === undefined && !error) return <><Nav /><Spinner label="Loading…" /></>;
   if (project === null) return <><Nav /><main className="mx-auto max-w-5xl flex-1 px-4 py-10"><Empty title="Repository not found" hint="This repository may have an invalid or outdated URL."><Link href="/" className={btnGhost}>Home</Link></Empty></main></>;
@@ -119,25 +149,26 @@ export default function ProjectPage() {
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <div className="flex rounded-xl border border-white/10 p-0.5 text-sm" role="tablist">
                 {([['open', 'Open'], ['done', 'Closed'], ['all', 'All']] as [Tab, string][]).map(([k, l]) => (
-                  <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`rounded-lg px-3 py-1.5 ${tab === k ? 'bg-emerald-400/15 text-emerald-300' : 'text-zinc-400 hover:text-white'}`}>{l} <span className="text-xs opacity-60">{counts[k]}</span></button>
+                  <button key={k} role="tab" aria-selected={tab === k} onClick={() => { setPage(1); setTab(k); }} className={`rounded-lg px-3 py-1.5 ${tab === k ? 'bg-emerald-400/15 text-emerald-300' : 'text-zinc-400 hover:text-white'}`}>{l} <span className="text-xs opacity-60">{counts[k]}</span></button>
                 ))}
               </div>
-              <input className={`${inputCls} min-w-40 flex-1 !py-2`} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search issues…" aria-label="Search issues" />
-              <select aria-label="Severity" value={severity} onChange={(e) => setSeverity(e.target.value as Severity | '')} className="rounded-xl border border-white/10 bg-zinc-900 px-2.5 py-2 text-sm text-zinc-300">
+              <input className={`${inputCls} min-w-40 flex-1 !py-2`} value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} placeholder="Search issues… status:in_progress priority:P1 assignee:me" aria-label="Search issues" />
+              <select aria-label="Severity" value={severity} onChange={(e) => { setPage(1); setSeverity(e.target.value as Severity | ''); }} className="rounded-xl border border-white/10 bg-zinc-900 px-2.5 py-2 text-sm text-zinc-300">
                 <option value="">Severity</option>{SEVERITY_ORDER.map((s) => <option key={s} value={s}>{SEVERITY_LABEL[s]}</option>)}
               </select>
-              <select aria-label="Status" value={status} onChange={(e) => setStatus(e.target.value as BugStatus | '')} className="rounded-xl border border-white/10 bg-zinc-900 px-2.5 py-2 text-sm text-zinc-300">
+              <select aria-label="Status" value={status} onChange={(e) => { setPage(1); setStatus(e.target.value as BugStatus | ''); }} className="rounded-xl border border-white/10 bg-zinc-900 px-2.5 py-2 text-sm text-zinc-300">
                 <option value="">Status</option>{STATUS_ORDER.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
               </select>
-              <select aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} className="rounded-xl border border-white/10 bg-zinc-900 px-2.5 py-2 text-sm text-zinc-300">
+              <select aria-label="Sort" value={sort} onChange={(e) => { setPage(1); setSort(e.target.value as typeof sort); }} className="rounded-xl border border-white/10 bg-zinc-900 px-2.5 py-2 text-sm text-zinc-300">
                 <option value="new">Newest</option><option value="votes">Most votes</option><option value="severity">Severity</option>
               </select>
             </div>
 
-            {!bugs && <Spinner />}
+            {!parsedQuery.ok && <p role="alert" className="mb-3 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-300">{parsedQuery.error}</p>}
+            {loadingIssues && !bugs && <Spinner />}
             {bugs && visible.length === 0 && (
-              <Empty title={bugs.length ? 'No issues match these filters' : 'No issues yet'} hint={bugs.length ? undefined : 'Report the first issue in this repository.'}>
-                {!bugs.length && <Link href={`/p/${project.slug}/new`} className={btnPrimary}><PlusIcon className="h-4 w-4" />New issue</Link>}
+              <Empty title={total ? 'No issues match these filters' : 'No issues yet'} hint={total ? undefined : 'Report the first issue in this repository.'}>
+                {!total && <Link href={`/p/${project.slug}/new`} className={btnPrimary}><PlusIcon className="h-4 w-4" />New issue</Link>}
               </Empty>
             )}
             {visible.length > 0 && (
@@ -160,8 +191,13 @@ export default function ProjectPage() {
                     </li>
                   ))}
                 </ul>
-                <div className="mt-3 flex justify-end">
-                  <button className={btnGhost} onClick={() => setAi(true)}><SparklesIcon className="h-4 w-4" />Generate an AI task from {visible.length} issues</button>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                  <span className="text-xs text-zinc-500">{total.toLocaleString()} issues · Page {page} of {Math.max(1, Math.ceil(total / 50))}{loadingIssues ? ' · Updating…' : ''}</span>
+                  <div className="flex items-center gap-2">
+                    <button className={btnGhost} disabled={page <= 1 || loadingIssues} onClick={() => setPage((value) => Math.max(1, value - 1))}>Previous</button>
+                    <button className={btnGhost} disabled={page >= Math.ceil(total / 50) || loadingIssues} onClick={() => setPage((value) => value + 1)}>Next</button>
+                    <button className={btnGhost} onClick={() => setAi(true)}><SparklesIcon className="h-4 w-4" />Generate an AI task from {visible.length} issues</button>
+                  </div>
                 </div>
               </>
             )}
