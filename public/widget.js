@@ -11,18 +11,18 @@
   // Inject floating button
   const button = document.createElement('button');
   button.id = 'ifb-floating-btn';
-  button.innerHTML = '🐛 <span style="font-weight:600;font-size:12px;margin-left:4px;">Report Bug</span>';
+  button.innerHTML = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7h8a4 4 0 0 1 4 4v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-3a4 4 0 0 1 4-4Z"/><path d="M12 7V4m-4 3L6 5m10 2 2-2M4 11H2m20 0h-2"/></svg><span style="font-weight:600;font-size:12px;margin-left:6px;">Report issue</span>';
   Object.assign(button.style, {
     position: 'fixed',
     bottom: '20px',
     right: '20px',
     zIndex: '999999',
-    backgroundColor: '#10b981',
-    color: '#000000',
-    border: 'none',
-    borderRadius: '9999px',
-    padding: '10px 16px',
-    boxShadow: '0 10px 25px -5px rgba(16, 185, 129, 0.4), 0 8px 10px -6px rgba(16, 185, 129, 0.2)',
+    backgroundColor: '#238636',
+    color: '#ffffff',
+    border: '1px solid #3fb950',
+    borderRadius: '6px',
+    padding: '9px 13px',
+    boxShadow: 'none',
     cursor: 'pointer',
     fontFamily: 'system-ui, -apple-system, sans-serif',
     display: 'flex',
@@ -42,9 +42,9 @@
     right: '20px',
     width: '360px',
     maxWidth: 'calc(100vw - 40px)',
-    backgroundColor: '#18181b',
-    border: '1px solid #27272a',
-    borderRadius: '16px',
+    backgroundColor: '#0d1117',
+    border: '1px solid #30363d',
+    borderRadius: '8px',
     padding: '20px',
     color: '#ffffff',
     fontFamily: 'system-ui, -apple-system, sans-serif',
@@ -58,18 +58,18 @@
   modal.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div style="display:flex;align-items:center;gap:6px;">
-        <span style="font-size:16px;">🐛</span>
-        <strong style="font-size:14px;color:#10b981;">IFoundBug Report</strong>
+        <span aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3fb950" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7h8a4 4 0 0 1 4 4v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-3a4 4 0 0 1 4-4Z"/><path d="M12 7V4m-4 3L6 5m10 2 2-2"/></svg></span>
+        <strong style="font-size:14px;color:#3fb950;">IFoundBug Report</strong>
       </div>
-      <button id="ifb-close" style="background:transparent;border:none;color:#a1a1aa;cursor:pointer;font-size:16px;">&times;</button>
+      <button id="ifb-close" aria-label="Close" style="background:transparent;border:1px solid #30363d;color:#a1a1aa;cursor:pointer;width:28px;height:28px;display:grid;place-items:center;border-radius:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m18 6-12 12M6 6l12 12"/></svg></button>
     </div>
-    <div style="font-size:11px;color:#a1a1aa;background:#09090b;padding:8px;border-radius:8px;border:1px solid #27272a;">
-      Telemetriya: <strong>${navigator.userAgent.slice(0, 35)}...</strong><br/>
-      Ekran: <strong>${window.innerWidth}x${window.innerHeight}</strong>
+    <div style="font-size:11px;color:#a1a1aa;background:#161b22;padding:8px;border-radius:6px;border:1px solid #30363d;">
+      Device: <strong>${navigator.userAgent.slice(0, 35)}...</strong><br/>
+      Screen: <strong>${window.innerWidth}x${window.innerHeight}</strong>
     </div>
-    <input id="ifb-title" type="text" placeholder="Bug sarlavhasi..." style="width:100%;box-sizing:border-box;background:#09090b;border:1px solid #27272a;color:#fff;padding:8px 10px;border-radius:8px;font-size:12px;outline:none;" />
-    <textarea id="ifb-desc" rows="3" placeholder="Xatolik haqida qisqacha..." style="width:100%;box-sizing:border-box;background:#09090b;border:1px solid #27272a;color:#fff;padding:8px 10px;border-radius:8px;font-size:12px;outline:none;resize:none;"></textarea>
-    <button id="ifb-submit" style="background:#10b981;color:#000;border:none;padding:10px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;">Bugni Yuborish</button>
+    <input id="ifb-title" type="text" placeholder="Issue title…" style="width:100%;box-sizing:border-box;background:#0d1117;border:1px solid #30363d;color:#e6edf3;padding:8px 10px;border-radius:6px;font-size:12px;outline:none;" />
+    <textarea id="ifb-desc" rows="3" placeholder="Describe the issue…" style="width:100%;box-sizing:border-box;background:#0d1117;border:1px solid #30363d;color:#e6edf3;padding:8px 10px;border-radius:6px;font-size:12px;outline:none;resize:none;"></textarea>
+    <button id="ifb-submit" style="background:#238636;color:#fff;border:1px solid #3fb950;padding:10px;border-radius:6px;font-weight:600;font-size:12px;cursor:pointer;">Submit issue</button>
   `;
 
   document.body.appendChild(button);
@@ -87,7 +87,7 @@
     const title = modal.querySelector('#ifb-title').value;
     const desc = modal.querySelector('#ifb-desc').value;
     if (!title) {
-      alert('Iltimos, sarlavha kiriting!');
+      alert('Please enter an issue title.');
       return;
     }
 
@@ -95,7 +95,7 @@
       project_slug: projectSlug,
       title: title,
       actual_behavior: desc || title,
-      expected_behavior: 'To‘g‘ri ishlashi kerak',
+      expected_behavior: 'Expected behavior',
       device_telemetry: {
         url: window.location.href,
         userAgent: navigator.userAgent,
@@ -105,21 +105,22 @@
     };
 
     try {
-      modal.querySelector('#ifb-submit').innerText = 'Yuborilmoqda...';
-      await fetch(apiEndpoint, {
+      modal.querySelector('#ifb-submit').innerText = 'Submitting…';
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      alert('Bug IFoundBug tizimiga yuborildi! Rahmat! 🚀');
+      if (!response.ok) throw new Error('Issue submission failed');
+      alert('Issue submitted to IFoundBug. Thank you!');
       modal.style.display = 'none';
       modal.querySelector('#ifb-title').value = '';
       modal.querySelector('#ifb-desc').value = '';
     } catch {
-      alert('Bug qayd etildi (offline fallback).');
+      alert('Could not submit the issue. Check your connection and try again.');
       modal.style.display = 'none';
     } finally {
-      modal.querySelector('#ifb-submit').innerText = 'Bugni Yuborish';
+      modal.querySelector('#ifb-submit').innerText = 'Submit issue';
     }
   };
 })();

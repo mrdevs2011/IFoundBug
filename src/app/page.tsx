@@ -4,35 +4,153 @@ import Link from 'next/link';
 import { Nav, LoginHint } from '@/components/Nav';
 import { NewProjectModal } from '@/components/NewProjectModal';
 import { Empty, ErrorBox, btnPrimary, inputCls } from '@/components/ui';
-import { BugIcon } from '@/components/icons';
+import { BugIcon, SearchIcon, ArrowRightIcon, PlusIcon } from '@/components/icons';
 import { errMsg, listProjects, type ProjectCard } from '@/lib/db';
 import { useMe } from '@/lib/useMe';
+import { supabase } from '@/lib/supabase/client';
 
 function Metric({ label, value, detail, tone = 'neutral' }: { label: string; value: number; detail: string; tone?: 'neutral' | 'green' | 'red' }) {
-  const color = tone === 'green' ? 'text-emerald-300' : tone === 'red' ? 'text-rose-300' : 'text-white';
-  return <div className="rounded-2xl border border-white/[0.075] bg-[#0e1210] p-4 sm:p-5"><p className="text-xs font-medium text-zinc-500">{label}</p><div className="mt-3 flex items-end justify-between gap-3"><span className={`font-mono text-3xl font-semibold tracking-tight ${color}`}>{value.toLocaleString('uz-UZ')}</span><span className="pb-1 text-[11px] text-zinc-600">{detail}</span></div></div>;
+  const color = tone === 'green' ? 'text-[#3fb950]' : tone === 'red' ? 'text-[#ff7b72]' : 'text-[#e6edf3]';
+  return (
+    <div className="rounded-md border border-[#30363d] bg-[#161b22] px-4 py-3">
+      <p className="text-xs text-[#8b949e]">{label}</p>
+      <div className="mt-2 flex items-baseline justify-between gap-3">
+        <span className={'font-mono text-2xl font-semibold tracking-tight ' + color}>{value.toLocaleString('en-US')}</span>
+        <span className="text-[11px] text-[#6e7681]">{detail}</span>
+      </div>
+    </div>
+  );
 }
-function ProjectTile({ project }: { project: ProjectCard }) {
-  const color = project.color || '#34d399';
-  return <Link href={`/p/${project.slug}`} className="group flex min-h-[190px] flex-col rounded-2xl border border-white/[0.075] bg-[#0e1210] p-5 transition duration-200 hover:-translate-y-0.5 hover:border-emerald-400/30 hover:bg-[#111713] focus-visible:outline-2 focus-visible:outline-emerald-400">
-    <div className="flex items-start justify-between gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl border border-white/[0.07]" style={{ color, backgroundColor: `${color}12` }}><BugIcon className="h-5 w-5" /></span><span className="rounded-full border border-emerald-400/15 bg-emerald-400/[0.07] px-2.5 py-1 text-[11px] font-medium text-emerald-300">{project.open_count} ochiq</span></div>
-    <div className="mt-5 min-w-0"><h3 className="truncate text-[15px] font-semibold text-zinc-100 transition group-hover:text-emerald-200">{project.name}</h3><p className="mt-1.5 min-h-9 line-clamp-2 text-xs leading-relaxed text-zinc-500">{project.description || 'Ushbu workspace ichida xatolarni qayd eting va jamoa bilan hal qiling.'}</p></div>
-    <div className="mt-auto flex items-center gap-2 border-t border-white/[0.06] pt-4"><div className="flex min-w-0 flex-1 flex-wrap gap-1.5">{(project.tech_stack ?? []).slice(0, 3).map((tag) => <span key={tag} className="max-w-24 truncate rounded-md bg-white/[0.045] px-2 py-1 text-[10px] text-zinc-500">{tag}</span>)}</div><span className="shrink-0 text-[11px] tabular-nums text-zinc-600">{project.total_count} bug</span><span aria-hidden="true" className="text-zinc-600 transition group-hover:translate-x-0.5 group-hover:text-emerald-300">→</span></div>
-  </Link>;
+
+function RepositoryRow({ project }: { project: ProjectCard }) {
+  return (
+    <Link href={'/p/' + project.slug} className="group flex min-w-0 items-start gap-3 px-4 py-4 transition hover:bg-[#161b22]">
+      <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-md border border-[#30363d] bg-[#0d1117] text-[#8b949e]">
+        <BugIcon className="h-4 w-4" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="truncate text-sm font-semibold text-[#58a6ff] group-hover:underline">{project.name}</span>
+          <span className="rounded-full border border-[#30363d] px-2 py-0.5 text-[10px] text-[#8b949e]">Public</span>
+        </span>
+        <span className="mt-1 block line-clamp-2 text-xs leading-relaxed text-[#8b949e]">
+          {project.description || 'No description provided.'}
+        </span>
+        <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#8b949e]">
+          <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#3fb950]" />{project.open_count} open issues</span>
+          <span>{project.total_count} total issues</span>
+          {(project.tech_stack ?? []).slice(0, 3).map((tag) => <span key={tag} className="rounded border border-[#30363d] px-1.5 py-0.5">{tag}</span>)}
+        </span>
+      </span>
+      <ArrowRightIcon className="mt-1 h-4 w-4 shrink-0 text-[#6e7681] transition group-hover:translate-x-0.5 group-hover:text-[#58a6ff]" />
+    </Link>
+  );
 }
+
 export default function Home() {
   const me = useMe();
   const [projects, setProjects] = useState<ProjectCard[] | null>(null);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [creating, setCreating] = useState(false);
-  useEffect(() => { let alive = true; const timer = setTimeout(() => { listProjects(search).then((items) => { if (alive) { setProjects(items); setError(''); } }).catch((reason) => { if (alive) { setError(errMsg(reason)); setProjects([]); } }); }, 180); return () => { alive = false; clearTimeout(timer); }; }, [search]);
-  const metrics = useMemo(() => { const items = projects ?? []; return { projects: items.length, bugs: items.reduce((sum, p) => sum + p.total_count, 0), open: items.reduce((sum, p) => sum + p.open_count, 0), resolved: items.reduce((sum, p) => sum + Math.max(0, p.total_count - p.open_count), 0) }; }, [projects]);
-  return <><Nav /><main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 pt-8 sm:px-6 sm:pt-11">
-    <section className="relative overflow-hidden rounded-[24px] border border-white/[0.075] bg-[#0d120f] px-5 py-7 sm:px-8 sm:py-9"><div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-28 h-72 w-72 rounded-full bg-emerald-400/[0.055] blur-3xl"/><div className="relative flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between"><div className="max-w-2xl"><div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/[0.06] px-3 py-1.5 text-[11px] font-medium tracking-wide text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400"/> BUG TRACKING WORKSPACE</div><h1 className="max-w-xl text-3xl font-semibold leading-[1.12] tracking-[-0.045em] text-white sm:text-4xl">Find the issue.<br/><span className="text-emerald-300">Fix it together.</span></h1><p className="mt-4 max-w-lg text-sm leading-6 text-zinc-400">Barcha xatolar, muhokamalar va tuzatish jarayoni — bitta tartibli workspace ichida.</p></div><div className="flex shrink-0 flex-col gap-2 sm:flex-row">{me ? <button className={btnPrimary} onClick={() => setCreating(true)}>＋ Yangi loyiha</button> : me === null ? <LoginHint what="Loyiha yaratish"/> : <span className="h-10 w-36 animate-pulse rounded-xl bg-white/[0.05]"/>}<a href="#projects" className="inline-flex items-center justify-center rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-zinc-300 transition hover:border-white/20 hover:bg-white/[0.04]">Workspace’larni ko‘rish</a></div></div></section>
-    <section aria-label="Umumiy statistika" className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4"><Metric label="Workspace" value={metrics.projects} detail="jami loyiha"/><Metric label="Jami bug" value={metrics.bugs} detail="qayd etilgan"/><Metric label="Ochiq" value={metrics.open} detail="e’tibor kerak" tone="red"/><Metric label="Yopilgan" value={metrics.resolved} detail="hal qilingan" tone="green"/></section>
-    <section id="projects" className="mt-10 scroll-mt-24"><div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-400/80">Your workspace</p><div className="mt-1 flex items-center gap-2"><h2 className="text-xl font-semibold tracking-tight text-white">Loyihalar</h2>{projects && <span className="rounded-md bg-white/[0.05] px-2 py-0.5 font-mono text-[11px] text-zinc-500">{metrics.projects}</span>}</div></div><label className="relative block w-full sm:max-w-xs"><span className="sr-only">Loyiha qidirish</span><span aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600">⌕</span><input className={`${inputCls} !pl-9`} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Loyiha nomini qidiring…"/></label></div>
-    {error && <ErrorBox message={error} />}{!projects && !error && <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{[0,1,2].map((n) => <div key={n} className="h-[190px] animate-pulse rounded-2xl border border-white/[0.06] bg-white/[0.02]"/>)}</div>}{projects && projects.length === 0 && <Empty title={search ? 'Mos loyiha topilmadi' : 'Hali workspace yo‘q'} hint={search ? 'Qidiruv so‘zini o‘zgartirib ko‘ring.' : 'Birinchi loyihani yarating. Keyin buglarni yozish, kuzatish va jamoa bilan hal qilish mumkin.'}>{me ? <button className={btnPrimary} onClick={() => setCreating(true)}>＋ Birinchi loyihani yaratish</button> : <Link href="/signup" className={btnPrimary}>Hisob yaratish</Link>}</Empty>}{projects && projects.length > 0 && <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{projects.map((project) => <ProjectTile key={project.id} project={project}/>)}</div>}</section>
-    <footer className="mt-12 flex flex-col gap-2 border-t border-white/[0.06] pt-5 text-[11px] text-zinc-600 sm:flex-row sm:items-center sm:justify-between"><span>IFoundBug · Find bugs. Fix faster.</span><span>Built for teams that care about quality.</span></footer>
-  </main>{creating && <NewProjectModal onClose={() => setCreating(false)}/>}</>;
+
+  useEffect(() => {
+    let active = true;
+    const timer = setTimeout(() => {
+      void listProjects(search).then((items) => {
+        if (active) { setProjects(items); setError(''); }
+      }).catch((reason) => {
+        if (active) { setError(errMsg(reason)); setProjects([]); }
+      });
+    }, 160);
+    return () => { active = false; clearTimeout(timer); };
+  }, [search]);
+
+  useEffect(() => {
+    if (!supabase) return;
+    const client = supabase;
+    let active = true;
+    const refresh = () => {
+      void listProjects(search).then((items) => {
+        if (active) { setProjects(items); setError(''); }
+      }).catch((reason) => {
+        if (active) setError(errMsg(reason));
+      });
+    };
+    const channel = client.channel('ifb-dashboard')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ifb_projects' }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ifb_bugs' }, refresh)
+      .subscribe();
+    return () => { active = false; void client.removeChannel(channel); };
+  }, [search]);
+
+  const metrics = useMemo(() => {
+    const items = projects ?? [];
+    return {
+      repositories: items.length,
+      issues: items.reduce((sum, project) => sum + project.total_count, 0),
+      open: items.reduce((sum, project) => sum + project.open_count, 0),
+      resolved: items.reduce((sum, project) => sum + Math.max(0, project.total_count - project.open_count), 0),
+    };
+  }, [projects]);
+
+  return (
+    <>
+      <Nav />
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-7 sm:px-6">
+        <div className="mb-6 flex flex-col gap-3 border-b border-[#30363d] pb-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs text-[#8b949e]">Workspace / Overview</p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[#e6edf3]">Dashboard</h1>
+            <p className="mt-1 text-sm text-[#8b949e]">Manage repositories and track reported issues.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {me ? <button className={btnPrimary} onClick={() => setCreating(true)}><PlusIcon className="h-4 w-4" />New repository</button> : me === null ? <LoginHint what="create a repository" /> : <span className="h-9 w-32 animate-pulse rounded-md bg-[#21262d]" />}
+          </div>
+        </div>
+
+        <section aria-label="Workspace overview" className="mb-7 grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <Metric label="Repositories" value={metrics.repositories} detail="total" />
+          <Metric label="Issues" value={metrics.issues} detail="reported" />
+          <Metric label="Open" value={metrics.open} detail="needs attention" tone="red" />
+          <Metric label="Resolved" value={metrics.resolved} detail="completed" tone="green" />
+        </section>
+
+        <section id="repositories" className="overflow-hidden rounded-md border border-[#30363d] bg-[#0d1117]">
+          <div className="flex flex-col gap-3 border-b border-[#30363d] bg-[#161b22] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-[#e6edf3]">Your repositories</h2>
+              <p className="mt-0.5 text-xs text-[#8b949e]">Projects you own or have access to.</p>
+            </div>
+            <label className="relative block w-full sm:max-w-xs">
+              <span className="sr-only">Search repositories</span>
+              <SearchIcon aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8b949e]" />
+              <input className={inputCls + ' !pl-9'} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Find a repository..." />
+            </label>
+          </div>
+
+          {error && <div className="p-4"><ErrorBox message={error} /></div>}
+          {!projects && !error && <div className="space-y-0 divide-y divide-[#21262d]">{[0, 1, 2].map((item) => <div key={item} className="h-24 animate-pulse bg-[#0d1117]" />)}</div>}
+          {projects && projects.length === 0 && (
+            <div className="p-4">
+              <Empty title={search ? 'No repositories found' : 'No repositories yet'} hint={search ? 'Try another search term.' : 'Create your first repository to start collecting and resolving issues.'}>
+                {me ? <button className={btnPrimary} onClick={() => setCreating(true)}><PlusIcon className="h-4 w-4" />Create your first repository</button> : <Link href="/signup" className={btnPrimary}>Create an account</Link>}
+              </Empty>
+            </div>
+          )}
+          {projects && projects.length > 0 && (
+            <div className="divide-y divide-[#21262d]">
+              {projects.map((project) => <RepositoryRow key={project.id} project={project} />)}
+            </div>
+          )}
+        </section>
+
+        <footer className="mt-8 flex flex-col gap-1 border-t border-[#30363d] pt-4 text-[11px] text-[#6e7681] sm:flex-row sm:items-center sm:justify-between">
+          <span>IFoundBug · Find bugs. Fix faster.</span>
+          <span>Built for software teams.</span>
+        </footer>
+      </main>
+      {creating && <NewProjectModal onClose={() => setCreating(false)} />}
+    </>
+  );
 }

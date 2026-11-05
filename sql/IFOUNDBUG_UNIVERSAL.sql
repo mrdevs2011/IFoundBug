@@ -1,7 +1,8 @@
 -- ============================================================================
 -- IFOUNDBUG — SINGLE UNIVERSAL DATABASE SETUP
 -- Supabase / PostgreSQL | Idempotent | Safe to re-run | No existing app rows dropped
--- Run this ONE file in Supabase SQL Editor.
+-- Run this base schema first, then REQUIRED sql/V2_PUBLIC_MODEL.sql before production.
+-- Re-running this base file never installs permissive authenticated policies or grants.
 --
 -- AUTH REQUIREMENT (not configurable through SQL):
 -- Supabase Dashboard -> Authentication -> Providers -> Email -> turn OFF
@@ -488,35 +489,25 @@ alter table public.ifb_bug_upvotes enable row level security;
 alter table public.ifb_notifications enable row level security;
 alter table public.ifb_notifications replica identity full;
 
+-- Reset every application policy so re-running this base file after V2 is
+-- genuinely fail-closed until the reviewed role-aware V2 policies are restored.
 do $$
 declare p record;
 begin
-  for p in select schemaname, tablename, policyname from pg_policies
-    where schemaname = 'public' and tablename in (
-      'ifb_profiles','ifb_projects','ifb_project_members','ifb_project_invites',
-      'ifb_bugs','ifb_bug_comments','ifb_bug_audit_logs','ifb_bug_upvotes','ifb_notifications'
-    )
-  loop execute format('drop policy if exists %I on %I.%I', p.policyname, p.schemaname, p.tablename); end loop;
+  for p in
+    select schemaname, tablename, policyname
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = any(array[
+        'ifb_profiles','ifb_projects','ifb_project_members','ifb_project_invites',
+        'ifb_bugs','ifb_bug_comments','ifb_bug_audit_logs','ifb_bug_upvotes','ifb_notifications'
+      ])
+  loop
+    execute format('drop policy if exists %I on %I.%I', p.policyname, p.schemaname, p.tablename);
+  end loop;
 end $$;
 
--- Temporary bootstrap policies only. V2_PUBLIC_MODEL.sql MUST replace these
--- with public-read + project-role-aware policies before production use.
-create policy ifb_profiles_authenticated_all on public.ifb_profiles for all to authenticated
-  using (auth.uid() is not null) with check (auth.uid() is not null);
-create policy ifb_projects_authenticated_all on public.ifb_projects for all to authenticated
-  using (auth.uid() is not null) with check (auth.uid() is not null);
-create policy ifb_project_members_authenticated_all on public.ifb_project_members for all to authenticated
-  using (auth.uid() is not null) with check (auth.uid() is not null);
-create policy ifb_project_invites_authenticated_all on public.ifb_project_invites for all to authenticated
-  using (auth.uid() is not null) with check (auth.uid() is not null);
-create policy ifb_bugs_authenticated_all on public.ifb_bugs for all to authenticated
-  using (auth.uid() is not null) with check (auth.uid() is not null);
-create policy ifb_bug_comments_authenticated_all on public.ifb_bug_comments for all to authenticated
-  using (auth.uid() is not null) with check (auth.uid() is not null);
-create policy ifb_bug_audit_logs_authenticated_all on public.ifb_bug_audit_logs for all to authenticated
-  using (auth.uid() is not null) with check (auth.uid() is not null);
-create policy ifb_bug_upvotes_authenticated_all on public.ifb_bug_upvotes for all to authenticated
-  using (auth.uid() is not null) with check (auth.uid() is not null);
+-- Notification access is account-scoped and safe to retain in the base schema.
 create policy ifb_notifications_read_own on public.ifb_notifications for select to authenticated
   using (recipient_id = (select id from public.ifb_profiles where auth_user_id = auth.uid()));
 create policy ifb_notifications_delete_own on public.ifb_notifications for delete to authenticated
@@ -524,12 +515,13 @@ create policy ifb_notifications_delete_own on public.ifb_notifications for delet
 
 -- 8. STORAGE ------------------------------------------------------------------
 insert into storage.buckets(id, name, public, file_size_limit, allowed_mime_types)
-values ('bug-attachments', 'bug-attachments', true, 10485760,
+values ('bug-attachments', 'bug-attachments', false, 10485760,
   array['image/jpeg','image/png','image/webp','image/gif','application/pdf','text/plain'])
-on conflict (id) do update set public = true, file_size_limit = 10485760,
+on conflict (id) do update set public = false, file_size_limit = 10485760,
   allowed_mime_types = excluded.allowed_mime_types;
 
 drop policy if exists ifb_public_read_bug_attachments on storage.objects;
+drop policy if exists ifb_authenticated_read_bug_attachments on storage.objects;
 drop policy if exists ifb_authenticated_upload_bug_attachments on storage.objects;
 drop policy if exists ifb_authenticated_delete_bug_attachments on storage.objects;
 drop policy if exists "Public can view bug attachments" on storage.objects;
@@ -537,8 +529,8 @@ drop policy if exists "Anyone can upload bug attachments" on storage.objects;
 drop policy if exists "Anyone can delete their attachments" on storage.objects;
 drop policy if exists "Authenticated users can upload bug attachments" on storage.objects;
 drop policy if exists "Authenticated users can delete bug attachments" on storage.objects;
-create policy ifb_public_read_bug_attachments on storage.objects for select to anon, authenticated
-  using (bucket_id = 'bug-attachments');
+-- Downloads are served through /api/attachments after issue-level RLS or secret-link validation.
+-- Never grant direct public reads on this bucket.
 create policy ifb_authenticated_upload_bug_attachments on storage.objects for insert to authenticated
   with check (bucket_id = 'bug-attachments' and owner_id = auth.uid()::text);
 create policy ifb_authenticated_delete_bug_attachments on storage.objects for delete to authenticated
@@ -574,20 +566,20 @@ begin
 end $$;
 
 -- 10. API PERMISSIONS + SCHEMA CACHE ------------------------------------------
-grant usage on schema public to authenticated, service_role;
-grant select, insert, update, delete on public.ifb_profiles, public.ifb_projects,
-  public.ifb_project_members, public.ifb_project_invites, public.ifb_bugs,
-  public.ifb_bug_comments, public.ifb_bug_audit_logs, public.ifb_bug_upvotes to authenticated;
-grant select, delete on public.ifb_notifications to authenticated;
-grant usage, select on all sequences in schema public to authenticated;
-grant execute on function public.ifb_increment_bug_views(uuid) to authenticated;
-grant execute on function public.ifb_toggle_bug_upvote(uuid, text, boolean) to authenticated;
-grant execute on function public.ifb_update_bug_status(uuid, text) to authenticated;
-grant execute on function public.ifb_update_bug_criteria(uuid, jsonb) to authenticated;
-grant execute on function public.ifb_mark_notification_read(uuid) to authenticated;
+grant usage on schema public to anon, authenticated, service_role;
+-- Application table grants are intentionally installed by V2_PUBLIC_MODEL.sql only.
 revoke all on public.ifb_profiles, public.ifb_projects, public.ifb_project_members,
   public.ifb_project_invites, public.ifb_bugs, public.ifb_bug_comments,
-  public.ifb_bug_audit_logs, public.ifb_bug_upvotes, public.ifb_notifications from anon;
+  public.ifb_bug_audit_logs, public.ifb_bug_upvotes, public.ifb_notifications
+  from anon, authenticated;
+grant select, delete on public.ifb_notifications to authenticated;
+-- Keep privileged RPCs closed in the base migration. V2 grants only the
+-- reviewed functions after role-aware visibility and write guards are installed.
+revoke execute on function public.ifb_increment_bug_views(uuid) from public, anon, authenticated;
+revoke execute on function public.ifb_toggle_bug_upvote(uuid, text, boolean) from public, anon, authenticated;
+revoke execute on function public.ifb_update_bug_status(uuid, text) from public, anon, authenticated;
+revoke execute on function public.ifb_update_bug_criteria(uuid, jsonb) from public, anon, authenticated;
+revoke execute on function public.ifb_mark_notification_read(uuid) from public, anon, authenticated;
 revoke execute on function public.ifb_increment_bug_views(uuid) from public, anon;
 revoke execute on function public.ifb_toggle_bug_upvote(uuid, text, boolean) from public, anon;
 revoke execute on function public.ifb_update_bug_status(uuid, text) from public, anon;

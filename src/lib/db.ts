@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase/client';
 import type { Bug, BugAuditLog, BugComment, BugStatus, Project, ProjectInvite, UserProfile } from '@/types';
 
 function sb() {
-  if (!supabase) throw new Error('Supabase sozlanmagan (NEXT_PUBLIC_SUPABASE_URL / KEY).');
+  if (!supabase) throw new Error('Supabase is not configured (NEXT_PUBLIC_SUPABASE_URL / KEY).');
   return supabase;
 }
 
@@ -200,12 +200,12 @@ export async function uploadFile(file: Blob, name = 'screenshot.png'): Promise<s
   form.append('file', file, name);
   const res = await fetch('/api/upload', { method: 'POST', body: form });
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.error || 'Faylni yuklab bo‘lmadi');
+  if (!res.ok) throw new Error(json.error || 'Could not upload the file');
   return json.url as string;
 }
 
 export function errMsg(e: unknown): string {
   if (e instanceof Error) return e.message;
   if (e && typeof e === 'object' && 'message' in e) return String((e as { message: unknown }).message);
-  return 'Noma’lum xatolik';
+  return 'Unknown error';
 }

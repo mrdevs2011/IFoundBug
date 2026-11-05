@@ -22,14 +22,14 @@ export function NewProjectModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Modal title="Yangi loyiha" onClose={onClose}>
+    <Modal title="New repository" onClose={onClose}>
       <form onSubmit={submit} className="space-y-3">
-        <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="Loyiha nomi" required maxLength={80} autoFocus />
-        <textarea className={`${inputCls} min-h-20`} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Qisqacha tavsif (ixtiyoriy)" maxLength={300} />
-        <input className={inputCls} value={stack} onChange={(e) => setStack(e.target.value)} placeholder="Texnologiyalar: Kotlin, Next.js, …" />
-        <p className="text-xs text-zinc-500">Loyiha va uning buglari hamma uchun ochiq. Alohida bugni keyinchalik maxfiy havolaga aylantirish mumkin.</p>
+        <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="Repository name" required maxLength={80} autoFocus />
+        <textarea className={`${inputCls} min-h-20`} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" maxLength={300} />
+        <input className={inputCls} value={stack} onChange={(e) => setStack(e.target.value)} placeholder="Technologies: React, Next.js, PostgreSQL" />
+        <p className="text-xs text-zinc-500">The repository and its issues are public. Individual issues can be shared through private links.</p>
         {error && <ErrorBox message={error} />}
-        <button className={`${btnPrimary} w-full`} disabled={busy || !name.trim()}>{busy ? 'Yaratilmoqda…' : 'Loyiha yaratish'}</button>
+        <button className={`${btnPrimary} w-full`} disabled={busy || !name.trim()}>{busy ? 'Creating…' : 'Create repository'}</button>
       </form>
     </Modal>
   );

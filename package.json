@@ -6,7 +6,8 @@
     "dev": "next dev -p 3333",
     "build": "next build",
     "start": "next start -p 3333",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --disable-warning=ExperimentalWarning --experimental-strip-types --test tests/*.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -24,5 +25,6 @@
     "eslint-config-next": "16.4.4",
     "tailwindcss": "^4",
     "typescript": "^5"
-  }
+  },
+  "type": "module"
 }

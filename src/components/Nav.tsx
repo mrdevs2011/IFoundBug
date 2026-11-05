@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BugIcon } from '@/components/icons';
+import { BugIcon, ChevronDownIcon, TerminalIcon } from '@/components/icons';
 import { useMe } from '@/lib/useMe';
 import { signOut } from '@/lib/db';
 import MCPSettingsModal from '@/components/MCPSettingsModal';
@@ -14,34 +14,27 @@ export function Nav() {
   const [open, setOpen] = useState(false);
   const [mcp, setMcp] = useState(false);
   const next = encodeURIComponent(path || '/');
-
   return (
-    <header className="sticky top-0 z-40 border-b border-white/[0.07] bg-zinc-950/85 backdrop-blur-xl">
-      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-2 font-bold text-white">
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-emerald-400/15 text-emerald-400"><BugIcon className="h-4 w-4" /></span>
-          IFoundBug
+    <header className="sticky top-0 z-40 border-b border-[#30363d] bg-[#0d1117]/95">
+      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+        <Link href="/" className="flex shrink-0 items-center gap-2.5 text-sm font-semibold text-[#e6edf3]">
+          <span className="grid h-8 w-8 place-items-center rounded-md border border-[#3fb950]/40 bg-[#3fb950]/10 text-[#3fb950]"><BugIcon className="h-[18px] w-[18px]" /></span>
+          <span>IFoundBug</span>
         </Link>
         <nav className="flex items-center gap-2 text-sm">
-          {me === undefined ? <span className="h-8 w-20" /> : me ? (
+          {me === undefined ? <span className="h-8 w-24 animate-pulse rounded-md bg-[#21262d]" /> : me ? (
             <div className="relative">
-              <button onClick={() => setOpen((v) => !v)} className="flex items-center gap-2 rounded-xl border border-white/10 px-3 py-1.5 text-zinc-200 hover:bg-white/5" aria-haspopup="menu" aria-expanded={open}>
-                <span className="grid h-5 w-5 place-items-center rounded-full bg-emerald-400/20 text-[10px] font-bold text-emerald-300">{me.full_name.slice(0, 1).toUpperCase()}</span>
-                <span className="max-w-[120px] truncate">{me.username}</span>
+              <button onClick={() => setOpen((v) => !v)} className="flex items-center gap-2 rounded-md border border-transparent px-2.5 py-1.5 text-[#c9d1d9] hover:border-[#30363d] hover:bg-[#161b22]" aria-haspopup="menu" aria-expanded={open}>
+                <span className="grid h-6 w-6 place-items-center rounded-full border border-[#3fb950]/40 bg-[#3fb950]/10 text-[11px] font-semibold text-[#3fb950]">{me.full_name.slice(0, 1).toUpperCase()}</span>
+                <span className="max-w-[140px] truncate">{me.username}</span><ChevronDownIcon className="h-3.5 w-3.5 text-[#8b949e]" />
               </button>
-              {open && (
-                <div role="menu" className="absolute right-0 mt-2 w-48 overflow-hidden rounded-xl border border-white/10 bg-[#101312] py-1 shadow-xl" onMouseLeave={() => setOpen(false)}>
-                  <button role="menuitem" onClick={() => { setOpen(false); setMcp(true); }} className="block w-full px-4 py-2 text-left text-sm text-zinc-300 hover:bg-white/5">AI / MCP ulanish</button>
-                  <button role="menuitem" onClick={async () => { setOpen(false); await signOut(); router.refresh(); router.push('/'); }} className="block w-full px-4 py-2 text-left text-sm text-red-300 hover:bg-white/5">Chiqish</button>
-                </div>
-              )}
+              {open && <div role="menu" className="absolute right-0 mt-2 w-56 overflow-hidden rounded-md border border-[#30363d] bg-[#161b22] py-1 shadow-2xl" onMouseLeave={() => setOpen(false)}>
+                <div className="border-b border-[#30363d] px-3 py-2"><p className="text-xs text-[#8b949e]">Signed in as</p><p className="truncate text-sm font-medium text-[#e6edf3]">@{me.username}</p></div>
+                <button role="menuitem" onClick={() => { setOpen(false); setMcp(true); }} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[#c9d1d9] hover:bg-[#21262d]"><TerminalIcon className="h-4 w-4" /> MCP settings</button>
+                <button role="menuitem" onClick={async () => { setOpen(false); await signOut(); router.refresh(); router.push('/'); }} className="block w-full border-t border-[#30363d] px-3 py-2 text-left text-sm text-[#f85149] hover:bg-[#21262d]">Sign out</button>
+              </div>}
             </div>
-          ) : (
-            <>
-              <Link href={`/login?next=${next}`} className="rounded-xl px-3 py-1.5 text-zinc-300 hover:bg-white/5 hover:text-white">Kirish</Link>
-              <Link href={`/signup?next=${next}`} className="rounded-xl bg-emerald-400 px-3.5 py-1.5 font-semibold text-black hover:bg-emerald-300">Ro‘yxatdan o‘tish</Link>
-            </>
-          )}
+          ) : <><Link href={`/login?next=${next}`} className="rounded-md px-3 py-1.5 text-[#c9d1d9] hover:bg-[#161b22]">Sign in</Link><Link href={`/signup?next=${next}`} className="rounded-md border border-[#3fb950]/50 bg-[#238636] px-3 py-1.5 font-semibold text-white hover:bg-[#2ea043]">Sign up</Link></>}
         </nav>
       </div>
       {mcp && <MCPSettingsModal onClose={() => setMcp(false)} />}
@@ -52,10 +45,5 @@ export function Nav() {
 export function LoginHint({ what }: { what: string }) {
   const path = usePathname();
   const next = encodeURIComponent(path || '/');
-  return (
-    <p className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-xs text-zinc-400">
-      {what} uchun <Link className="font-semibold text-emerald-300 hover:underline" href={`/login?next=${next}`}>kiring</Link> yoki{' '}
-      <Link className="font-semibold text-emerald-300 hover:underline" href={`/signup?next=${next}`}>ro‘yxatdan o‘ting</Link> — bir daqiqa, email kerak emas.
-    </p>
-  );
+  return <p className="rounded-md border border-[#30363d] bg-[#161b22] px-4 py-3 text-xs text-[#8b949e]">Sign in to {what.toLowerCase()} or <Link className="font-semibold text-[#58a6ff] hover:underline" href={`/login?next=${next}`}>create an account</Link>.</p>;
 }

@@ -148,7 +148,7 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({ imageUrl, onSave
     const currentCoords = getCanvasCoords(e);
 
     if (selectedTool === 'text') {
-      const text = prompt('Belgilash matnini kiriting:');
+      const text = prompt('Enter annotation text:');
       if (text) {
         ctx.font = `bold ${Math.max(16, lineWidth * 5)}px Inter, sans-serif`;
         ctx.fillStyle = color;
@@ -174,7 +174,7 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({ imageUrl, onSave
       <div className="flex items-center justify-between bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 mb-3 shadow-2xl">
         <div className="flex items-center space-x-2">
           <span className="text-emerald-400 font-bold flex items-center gap-2 text-sm uppercase tracking-wider">
-            <PenToolIcon className="w-4 h-4" /> Bug Annotation Studio
+            <PenToolIcon className="w-4 h-4" /> Issue annotation
           </span>
         </div>
 
@@ -184,31 +184,31 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({ imageUrl, onSave
             onClick={() => setSelectedTool('box')}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'box' ? 'bg-emerald-500 text-black font-semibold' : 'text-zinc-400 hover:text-white'}`}
           >
-            To‘rtburchak
+            Rectangle
           </button>
           <button
             onClick={() => setSelectedTool('arrow')}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'arrow' ? 'bg-emerald-500 text-black font-semibold' : 'text-zinc-400 hover:text-white'}`}
           >
-            Strelka
+            Arrow
           </button>
           <button
             onClick={() => setSelectedTool('pen')}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'pen' ? 'bg-emerald-500 text-black font-semibold' : 'text-zinc-400 hover:text-white'}`}
           >
-            Qalam
+            Pen
           </button>
           <button
             onClick={() => setSelectedTool('blur')}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'blur' ? 'bg-emerald-500 text-black font-semibold' : 'text-zinc-400 hover:text-white'}`}
           >
-            Maxfiy (PII Blur)
+            Redact (PII)
           </button>
           <button
             onClick={() => setSelectedTool('text')}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'text' ? 'bg-emerald-500 text-black font-semibold' : 'text-zinc-400 hover:text-white'}`}
           >
-            Matn
+            Text
           </button>
         </div>
 
@@ -240,7 +240,7 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({ imageUrl, onSave
             onClick={handleExport}
             className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs px-3.5 py-2 rounded-lg shadow-lg transition"
           >
-            <CheckIcon className="w-3.5 h-3.5" /> Saqlash & Belgilash
+            <CheckIcon className="w-3.5 h-3.5" /> Save & Annotate
           </button>
           {onClose && (
             <button

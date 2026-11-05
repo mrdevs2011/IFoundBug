@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "IFoundBug — xatoliklarni bir joyda toping va tuzating",
-  description: "Ochiq bug tracker: bug yozing, “menda ham shunday” bosing, muhokama qiling va AI uchun tayyor vazifa oling. Maxfiy bug — faqat uzun havola orqali.",
+  title: "IFoundBug — issue tracking for software teams",
+  description: "A focused issue tracker for software teams. Report issues, discuss fixes, and generate actionable AI prompts. Private issues are accessible only through secure links.",
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#090b0a",
+  themeColor: "#0d1117",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
@@ -33,8 +33,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="uz" className="dark h-full antialiased">
-      <body className="min-h-full bg-zinc-950 text-zinc-100 flex flex-col selection:bg-emerald-500 selection:text-black font-sans">
+    <html lang="en" className="dark h-full antialiased">
+      <body className="min-h-full bg-[#0d1117] text-[#e6edf3] flex flex-col selection:bg-[#238636] selection:text-white font-sans">
         {children}
         <script
           dangerouslySetInnerHTML={{

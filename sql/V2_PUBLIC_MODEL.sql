@@ -3,7 +3,7 @@
 -- Idempotent. Run once in Supabase SQL Editor AFTER taking a backup.
 --
 -- Rules after this migration
---   * Everyone (even logged out) can READ projects, bugs, comments.
+--   * Everyone can READ public projects, listed bugs and their public comments.
 --   * Logged-in users can create bugs, comment and "me too" any visible bug.
 --   * Triage (status / severity / priority / assignee / notes) = project members
 --     with a non-viewer role. Project settings/team = owner/admin.
@@ -24,7 +24,29 @@ update public.ifb_bugs b
    set share_token = replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '')
  where b.share_token is null
    and (b.is_sensitive or exists (select 1 from public.ifb_projects p where p.id = b.project_id and not p.is_public));
-update public.ifb_projects set is_public = true where not is_public;
+-- Keep private project metadata private; public bug listing is only for public projects.
+-- Attachments are private objects. The application serves them only after checking
+-- issue visibility or the secret issue token in /api/attachments.
+update storage.buckets set public = false, file_size_limit = 10485760
+ where id = 'bug-attachments';
+drop policy if exists ifb_public_read_bug_attachments on storage.objects;
+drop policy if exists ifb_authenticated_read_bug_attachments on storage.objects;
+
+-- Convert existing public object URLs to the guarded application proxy without
+-- changing the underlying Storage object keys.
+update public.ifb_bugs b
+set evidence_urls = array(
+  select case
+    when u ~ '^https?://[^/]+/storage/v1/object/public/bug-attachments/'
+      then regexp_replace(u, '^https?://[^/]+/storage/v1/object/public/bug-attachments/', '/api/attachments/')
+    else u
+  end
+  from unnest(b.evidence_urls) as u
+)
+where exists (
+  select 1 from unnest(b.evidence_urls) as u
+  where u ~ '^https?://[^/]+/storage/v1/object/public/bug-attachments/'
+);
 
 -- 2. HELPERS (security definer so RLS policies never recurse) ------------------
 create or replace function public.ifb_my_profile_id() returns uuid
@@ -63,10 +85,20 @@ create or replace function public.ifb_bug_visible(p_bug uuid) returns boolean
 language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.ifb_bugs b
                  where b.id = p_bug
-                   and (b.share_token is null
+                   and ((b.share_token is null and not b.is_sensitive and exists (
+                          select 1 from public.ifb_projects p where p.id = b.project_id and p.is_public))
                         or b.reported_by = public.ifb_my_profile_id()
                         or public.ifb_is_member(b.project_id)))
 $$;
+
+-- Repair owner memberships on existing installations without changing project data.
+update public.ifb_project_members m set role = 'developer'
+  from public.ifb_projects p
+ where p.id = m.project_id and m.role = 'owner'
+   and p.created_by is not null and m.user_id <> p.created_by;
+insert into public.ifb_project_members(project_id, user_id, role)
+  select id, created_by, 'owner' from public.ifb_projects where created_by is not null
+  on conflict (project_id, user_id) do update set role = 'owner';
 
 -- 3. INSERT / UPDATE GUARDS ----------------------------------------------------
 -- Client roles (authenticated) cannot forge ownership, counters or triage fields.
@@ -109,10 +141,10 @@ begin
   v_me := public.ifb_my_profile_id();
   if tg_table_name = 'ifb_bugs' then
     select count(*) into v_n from public.ifb_bugs where reported_by = v_me and created_at > now() - interval '1 hour';
-    if v_n >= 20 then raise exception 'Rate limit: at most 20 bugs per hour'; end if;
+    if v_n > 20 then raise exception 'Rate limit: at most 20 bugs per hour'; end if;
   else
     select count(*) into v_n from public.ifb_bug_comments where author_id = v_me and created_at > now() - interval '10 minutes';
-    if v_n >= 30 then raise exception 'Rate limit: at most 30 comments per 10 minutes'; end if;
+    if v_n > 30 then raise exception 'Rate limit: at most 30 comments per 10 minutes'; end if;
   end if;
   return new;
 end; $$;
@@ -120,6 +152,79 @@ drop trigger if exists ifb_bugs_rate_limit on public.ifb_bugs;
 create trigger ifb_bugs_rate_limit after insert on public.ifb_bugs for each row execute function public.ifb_rate_limit();
 drop trigger if exists ifb_comments_rate_limit on public.ifb_bug_comments;
 create trigger ifb_comments_rate_limit after insert on public.ifb_bug_comments for each row execute function public.ifb_rate_limit();
+
+-- Ownership is immutable through normal client writes. A project owner can
+-- delegate admin rights, but admins cannot promote themselves or replace owner.
+create or replace function public.ifb_guard_project_update() returns trigger
+language plpgsql set search_path = public as $$
+begin
+  if current_user in ('authenticated', 'anon') then
+    new.created_by := old.created_by;
+  end if;
+  return new;
+end; $$;
+drop trigger if exists ifb_projects_guard_update on public.ifb_projects;
+create trigger ifb_projects_guard_update before update on public.ifb_projects
+for each row execute function public.ifb_guard_project_update();
+
+create or replace function public.ifb_guard_member_write() returns trigger
+language plpgsql set search_path = public, auth as $$
+declare v_owner uuid; v_me uuid;
+begin
+  if current_user not in ('authenticated', 'anon') then
+    if tg_op = 'DELETE' then return old; else return new; end if;
+  end if;
+  v_me := public.ifb_my_profile_id();
+  if tg_op = 'DELETE' then
+    select created_by into v_owner from public.ifb_projects where id = old.project_id;
+    if old.role = 'owner' then raise exception 'Project ownership cannot be removed'; end if;
+    if old.role = 'admin' and v_me is distinct from v_owner then raise exception 'Only the project owner can remove an admin'; end if;
+    return old;
+  end if;
+  select created_by into v_owner from public.ifb_projects where id = new.project_id;
+  if new.role = 'owner' and new.user_id is distinct from v_owner then
+    raise exception 'Only the original project owner can hold the owner role';
+  end if;
+  if new.role = 'admin' and v_me is distinct from v_owner then
+    raise exception 'Only the project owner can grant admin role';
+  end if;
+  if tg_op = 'UPDATE' and old.role = 'owner' and
+     (new.role <> old.role or new.user_id <> old.user_id or new.project_id <> old.project_id) then
+    raise exception 'Project ownership cannot be changed through membership edits';
+  end if;
+  if tg_op = 'UPDATE' and old.role = 'admin' and v_me is distinct from v_owner then
+    raise exception 'Only the project owner can edit an admin membership';
+  end if;
+  return new;
+end; $$;
+drop trigger if exists ifb_project_members_guard_write on public.ifb_project_members;
+create trigger ifb_project_members_guard_write before insert or update or delete on public.ifb_project_members
+for each row execute function public.ifb_guard_member_write();
+
+create or replace function public.ifb_guard_invite_write() returns trigger
+language plpgsql set search_path = public, auth as $$
+declare v_owner uuid;
+begin
+  if current_user not in ('authenticated', 'anon') then
+    if tg_op = 'DELETE' then return old; else return new; end if;
+  end if;
+  if tg_op = 'DELETE' then return old; end if;
+  select created_by into v_owner from public.ifb_projects where id = new.project_id;
+  if new.role = 'admin' and public.ifb_my_profile_id() is distinct from v_owner then
+    raise exception 'Only the project owner can create admin invitations';
+  end if;
+  new.created_by := public.ifb_my_profile_id();
+  if tg_op = 'UPDATE' then
+    new.token := old.token;
+    new.project_id := old.project_id;
+    new.uses_count := old.uses_count;
+    new.created_by := old.created_by;
+  end if;
+  return new;
+end; $$;
+drop trigger if exists ifb_project_invites_guard_write on public.ifb_project_invites;
+create trigger ifb_project_invites_guard_write before insert or update or delete on public.ifb_project_invites
+for each row execute function public.ifb_guard_invite_write();
 
 -- 4. RPCs ----------------------------------------------------------------------
 -- Open a link-only bug by its secret token (works logged out).
@@ -173,23 +278,25 @@ end; $$;
 -- "Me too" / reproduced toggle, one vote per account.
 create or replace function public.ifb_toggle_bug_upvote(target_bug_id uuid, user_id_str text, reproduced_flag boolean default false)
 returns jsonb language plpgsql security definer set search_path = public as $$
-declare v_existing uuid; v_upvotes integer; v_reproduced integer;
+declare v_existing uuid; v_existing_reproduced boolean; v_upvotes integer; v_reproduced integer;
 begin
   if auth.uid() is null then raise exception 'Authentication required'; end if;
   if not public.ifb_bug_visible(target_bug_id) then raise exception 'Bug not found'; end if;
   perform pg_advisory_xact_lock(hashtextextended(target_bug_id::text || ':' || auth.uid()::text, 0));
-  select id into v_existing from public.ifb_bug_upvotes where bug_id = target_bug_id and user_identifier = auth.uid()::text for update;
+  select id, is_reproduced into v_existing, v_existing_reproduced
+    from public.ifb_bug_upvotes where bug_id = target_bug_id and user_identifier = auth.uid()::text for update;
   if v_existing is not null then
     delete from public.ifb_bug_upvotes where id = v_existing;
-    update public.ifb_bugs set upvotes_count = greatest(0, upvotes_count - 1), reproduced_count = greatest(0, reproduced_count - 1)
+    update public.ifb_bugs set upvotes_count = greatest(0, upvotes_count - 1),
+      reproduced_count = case when v_existing_reproduced then greatest(0, reproduced_count - 1) else reproduced_count end
       where id = target_bug_id returning upvotes_count, reproduced_count into v_upvotes, v_reproduced;
-    if not found then raise exception 'Bug not found'; end if;
     return jsonb_build_object('voted', false, 'upvotes', v_upvotes, 'reproduced', v_reproduced);
   end if;
-  insert into public.ifb_bug_upvotes(bug_id, user_identifier, is_reproduced) values (target_bug_id, auth.uid()::text, true);
-  update public.ifb_bugs set upvotes_count = upvotes_count + 1, reproduced_count = reproduced_count + 1
+  insert into public.ifb_bug_upvotes(bug_id, user_identifier, is_reproduced)
+    values (target_bug_id, auth.uid()::text, reproduced_flag);
+  update public.ifb_bugs set upvotes_count = upvotes_count + 1,
+    reproduced_count = reproduced_count + case when reproduced_flag then 1 else 0 end
     where id = target_bug_id returning upvotes_count, reproduced_count into v_upvotes, v_reproduced;
-  if not found then raise exception 'Bug not found'; end if;
   return jsonb_build_object('voted', true, 'upvotes', v_upvotes, 'reproduced', v_reproduced);
 end; $$;
 
@@ -226,8 +333,15 @@ returns public.ifb_bugs language plpgsql security definer set search_path = publ
 declare v_profile public.ifb_profiles%rowtype; v_bug public.ifb_bugs%rowtype; v_all_checked boolean; v_old_status text;
 begin
   if auth.uid() is null then raise exception 'Authentication required'; end if;
-  if jsonb_typeof(new_criteria) <> 'array' or jsonb_array_length(new_criteria) > 100 then
+  if new_criteria is null or jsonb_typeof(new_criteria) <> 'array' or jsonb_array_length(new_criteria) > 100 then
     raise exception 'Acceptance criteria must be an array with at most 100 items';
+  end if;
+  if exists (select 1 from jsonb_array_elements(new_criteria) item
+             where jsonb_typeof(item) <> 'object'
+                or jsonb_typeof(item->'text') <> 'string'
+                or length(item->>'text') > 500
+                or (item ? 'checked' and jsonb_typeof(item->'checked') <> 'boolean')) then
+    raise exception 'Each acceptance criterion must contain text and an optional boolean checked field';
   end if;
   select * into v_bug from public.ifb_bugs where id = target_bug_id for update;
   if not found then raise exception 'Bug not found'; end if;
@@ -290,20 +404,27 @@ end $$;
 create policy profiles_read   on public.ifb_profiles for select to anon, authenticated using (true);
 create policy profiles_update on public.ifb_profiles for update to authenticated using (auth_user_id = auth.uid()) with check (auth_user_id = auth.uid());
 
-create policy projects_read   on public.ifb_projects for select to anon, authenticated using (true);
+create policy projects_read on public.ifb_projects for select to anon, authenticated using (is_public or public.ifb_is_member(id));
 create policy projects_insert on public.ifb_projects for insert to authenticated with check (auth.uid() is not null);
 create policy projects_update on public.ifb_projects for update to authenticated using (public.ifb_is_project_admin(id)) with check (public.ifb_is_project_admin(id));
 create policy projects_delete on public.ifb_projects for delete to authenticated using (public.ifb_is_project_admin(id));
 
-create policy members_read   on public.ifb_project_members for select to anon, authenticated using (true);
+create policy members_read on public.ifb_project_members for select to anon, authenticated using (exists (select 1 from public.ifb_projects p where p.id = project_id and p.is_public) or public.ifb_is_member(project_id));
 create policy members_write  on public.ifb_project_members for all to authenticated using (public.ifb_is_project_admin(project_id)) with check (public.ifb_is_project_admin(project_id));
 create policy members_leave  on public.ifb_project_members for delete to authenticated using (user_id = public.ifb_my_profile_id() and role <> 'owner');
 
-create policy invites_admin  on public.ifb_project_invites for all to authenticated using (public.ifb_is_project_admin(project_id)) with check (public.ifb_is_project_admin(project_id));
+create policy invites_read on public.ifb_project_invites for select to authenticated
+  using (public.ifb_is_project_admin(project_id));
+create policy invites_insert on public.ifb_project_invites for insert to authenticated
+  with check (public.ifb_is_project_admin(project_id));
+create policy invites_delete on public.ifb_project_invites for delete to authenticated
+  using (public.ifb_is_project_admin(project_id));
 
 create policy bugs_read   on public.ifb_bugs for select to anon, authenticated
-  using (share_token is null or reported_by = public.ifb_my_profile_id() or public.ifb_is_member(project_id));
-create policy bugs_insert on public.ifb_bugs for insert to authenticated with check (auth.uid() is not null);
+  using ((share_token is null and not is_sensitive and exists (select 1 from public.ifb_projects p where p.id = project_id and p.is_public)) or reported_by = public.ifb_my_profile_id() or public.ifb_is_member(project_id));
+create policy bugs_insert on public.ifb_bugs for insert to authenticated
+  with check (auth.uid() is not null and (public.ifb_is_member(project_id) or exists (
+    select 1 from public.ifb_projects p where p.id = project_id and p.is_public and p.allow_guest_reports)));
 create policy bugs_update on public.ifb_bugs for update to authenticated
   using (reported_by = public.ifb_my_profile_id() or public.ifb_can_triage(project_id))
   with check (reported_by = public.ifb_my_profile_id() or public.ifb_can_triage(project_id));
@@ -326,11 +447,11 @@ create policy upvotes_read on public.ifb_bug_upvotes    for select to authentica
 revoke all on public.ifb_profiles, public.ifb_projects, public.ifb_project_members, public.ifb_project_invites,
   public.ifb_bugs, public.ifb_bug_comments, public.ifb_bug_audit_logs, public.ifb_bug_upvotes from anon, authenticated;
 grant select (id, username, full_name, avatar_url, role, reputation_score, created_at) on public.ifb_profiles to anon;
-grant select on public.ifb_profiles to authenticated;
+grant select (id, username, full_name, avatar_url) on public.ifb_profiles to authenticated;
 grant update (full_name, avatar_url) on public.ifb_profiles to authenticated;
 grant select on public.ifb_projects, public.ifb_project_members, public.ifb_bugs, public.ifb_bug_comments, public.ifb_bug_audit_logs to anon, authenticated;
 grant insert, update, delete on public.ifb_projects, public.ifb_project_members, public.ifb_bugs to authenticated;
-grant select, insert, update, delete on public.ifb_project_invites to authenticated;
+grant select, insert, delete on public.ifb_project_invites to authenticated;
 grant insert, delete on public.ifb_bug_comments to authenticated;
 grant select on public.ifb_bug_upvotes to authenticated;
 
@@ -339,12 +460,14 @@ grant  execute on function public.ifb_get_shared_bug(text), public.ifb_preview_i
 revoke execute on function public.ifb_add_shared_comment(text, text), public.ifb_set_bug_link(uuid, boolean, boolean),
   public.ifb_accept_invite(text), public.ifb_toggle_bug_upvote(uuid, text, boolean), public.ifb_update_bug_status(uuid, text),
   public.ifb_update_bug_criteria(uuid, jsonb), public.ifb_increment_bug_views(uuid) from public, anon;
+grant execute on function public.ifb_mark_notification_read(uuid) to authenticated;
 grant  execute on function public.ifb_add_shared_comment(text, text), public.ifb_set_bug_link(uuid, boolean, boolean),
   public.ifb_accept_invite(text), public.ifb_toggle_bug_upvote(uuid, text, boolean), public.ifb_update_bug_status(uuid, text),
   public.ifb_update_bug_criteria(uuid, jsonb), public.ifb_increment_bug_views(uuid) to authenticated;
 grant  execute on function public.ifb_my_profile_id(), public.ifb_is_member(uuid), public.ifb_can_triage(uuid),
   public.ifb_is_project_admin(uuid), public.ifb_bug_project(uuid), public.ifb_bug_visible(uuid) to anon, authenticated;
-revoke all on function public.ifb_guard_bug_write(), public.ifb_rate_limit() from public, anon, authenticated;
+revoke all on function public.ifb_guard_bug_write(), public.ifb_rate_limit(), public.ifb_guard_project_update(),
+  public.ifb_guard_member_write(), public.ifb_guard_invite_write() from public, anon, authenticated;
 
 notify pgrst, 'reload schema';
 commit;

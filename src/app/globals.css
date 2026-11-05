@@ -2,155 +2,58 @@
 
 :root {
   color-scheme: dark;
-  --background: #090b0a;
-  --foreground: #f4f6f4;
-  --surface: #101311;
-  --surface-raised: #151a17;
-  --surface-muted: #0d100e;
-  --border: rgba(255,255,255,.075);
-  --border-strong: rgba(255,255,255,.12);
-  --muted: #8b958e;
-  --muted-strong: #aab3ac;
-  --accent: #34d399;
-  --accent-soft: rgba(52,211,153,.1);
-  --cyber-primary: #34d399;
-  --cyber-glow: rgba(52,211,153,.18);
+  --background: #0d1117;
+  --foreground: #e6edf3;
+  --surface: #161b22;
+  --surface-raised: #1c2128;
+  --surface-muted: #010409;
+  --border: #30363d;
+  --border-muted: #21262d;
+  --muted: #8b949e;
+  --muted-strong: #c9d1d9;
+  --accent: #3fb950;
+  --accent-soft: rgba(63,185,80,.12);
+  --danger: #f85149;
 }
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
-
 * { box-sizing: border-box; }
-html { min-height: 100%; background: var(--background); }
-body {
-  min-height: 100%;
-  overflow-x: hidden;
-  background: var(--background);
-  color: var(--foreground);
-  font-feature-settings: "ss01" on, "cv11" on;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-}
-::selection { background: rgba(52,211,153,.28); color: #ecfdf5; }
-
-/* Quiet, consistent surfaces: fewer gradients, glows and decorative effects. */
-.linear-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  box-shadow: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  transition: border-color .16s ease, background-color .16s ease;
-}
-.linear-card:hover {
-  transform: none;
-  border-color: var(--border-strong);
-  background: var(--surface-raised);
-  box-shadow: none;
-}
-.glow-accent::before { display: none; }
-
-/* Shared controls across dashboard, forms, filters and dialogs. */
+html, body { min-height: 100%; background: var(--background); }
+body { color: var(--foreground); overflow-x: hidden; font-feature-settings: "ss01" on, "cv11" on; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+::selection { background: rgba(63,185,80,.28); color: #fff; }
 button, input, textarea, select { font: inherit; }
-button { -webkit-tap-highlight-color: transparent; }
-button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
-  outline: 2px solid rgba(52,211,153,.8);
-  outline-offset: 2px;
-}
-input:not([type="checkbox"]):not([type="radio"]), textarea, select {
-  color-scheme: dark;
-  border-radius: 10px;
-}
-input::placeholder, textarea::placeholder { color: #68736b; opacity: 1; }
+button, a { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid #3fb950; outline-offset: 2px; }
+input:not([type="checkbox"]):not([type="radio"]), textarea, select { color-scheme: dark; border-radius: 6px; }
+input::placeholder, textarea::placeholder { color: #6e7681; opacity: 1; }
 input:disabled, textarea:disabled, select:disabled, button:disabled { cursor: not-allowed; opacity: .55; }
-
-/* Native dropdowns remain native and accessible, with a unified dark treatment. */
-select.ifb-select, select:not([multiple]) {
-  color: #e7ece8;
-  background-color: #111613;
-  border: 1px solid var(--border-strong);
-  border-radius: 10px;
-  min-height: 40px;
-  padding: .55rem 2.5rem .55rem .8rem;
-  font-size: .8125rem;
-  font-weight: 500;
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2395a198' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 14px;
-  transition: border-color .15s ease, background-color .15s ease;
-}
-select:hover { border-color: rgba(52,211,153,.38); }
-select option, select optgroup { color: #e7ece8; background: #111613; }
-
-/* App chrome and popovers share one restrained surface language. */
-header.sticky, header[class*="backdrop-blur"] {
-  background: rgba(9,11,10,.94);
-  border-color: var(--border);
-  -webkit-backdrop-filter: blur(18px);
-  backdrop-filter: blur(18px);
-}
-[role="dialog"], [data-radix-popper-content-wrapper] > *, .shadow-2xl {
-  --tw-shadow: 0 20px 60px rgba(0,0,0,.38);
-}
-
-/* Remove noisy motion while retaining meaningful interaction feedback. */
-.animate-pulse, .soft-pulse { animation-duration: 2.8s; }
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
-}
-
-/* Keep scrolling native while hiding visual scrollbar chrome. */
-* { scrollbar-width: none; }
-*::-webkit-scrollbar { width: 0; height: 0; display: none; }
-
-@media (max-width: 640px) {
-  button, a { -webkit-tap-highlight-color: transparent; }
-}
-
-/* Normalize the existing Tailwind-built screens without touching their behavior. */
-main { min-width: 0; }
-main h1 { letter-spacing: -.035em; }
-main h2 { letter-spacing: -.025em; }
-main h1, main h2, main h3 { text-wrap: balance; }
-main p { text-wrap: pretty; }
-
-/* Large nested radii made the interface feel overly soft; use a clear scale. */
-[class*="rounded-3xl"] { border-radius: 18px !important; }
-[class*="rounded-2xl"] { border-radius: 14px !important; }
-[class*="rounded-xl"] { border-radius: 10px !important; }
-
-/* Cards and panels: quiet borders, solid surfaces, no glassy gradients. */
-[class*="border-white/[0.06]"], [class*="border-white/[0.07]"], [class*="border-zinc-800"] {
-  border-color: var(--border) !important;
-}
-[class*="bg-zinc-900/"], [class*="bg-zinc-900 "] { background-color: var(--surface) !important; }
-[class*="bg-zinc-950/"] { background-color: rgba(9,11,10,.72) !important; }
-
-/* Form fields align in height and contrast on every route. */
-input:not([type="checkbox"]):not([type="radio"]), textarea {
-  background-color: #101512;
-  border-color: var(--border-strong);
-  color: #edf2ee;
-}
-input:not([type="checkbox"]):not([type="radio"]):hover, textarea:hover {
-  border-color: rgba(255,255,255,.2);
-}
-input:not([type="checkbox"]):not([type="radio"]):focus, textarea:focus {
-  border-color: rgba(52,211,153,.7);
-  box-shadow: 0 0 0 3px rgba(52,211,153,.09);
-  outline: none;
-}
-
-/* Touch targets and action hierarchy remain consistent on small screens. */
-@media (max-width: 640px) {
-  main { padding-left: 16px; padding-right: 16px; }
-  [class*="p-6"] { padding: 18px; }
-  [class*="gap-6"] { gap: 16px; }
-}
+select.ifb-select, select:not([multiple]) { color:#e6edf3; background:#0d1117; border:1px solid var(--border); border-radius:6px; min-height:34px; padding:.4rem 2.1rem .4rem .7rem; font-size:.8125rem; appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238b949e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 9px center; background-size:13px; }
+select:hover, input:hover, textarea:hover { border-color:#6e7681; }
+select option { background:#161b22; color:#e6edf3; }
+.linear-card { background:var(--surface); border:1px solid var(--border); box-shadow:none; transition:border-color .14s ease,background-color .14s ease; }
+.linear-card:hover { background:var(--surface-raised); border-color:#6e7681; transform:none; box-shadow:none; }
+.glow-accent::before { display:none; }
+header.sticky, header[class*="backdrop-blur"] { background:rgba(13,17,23,.96); border-color:var(--border); backdrop-filter:blur(12px); }
+[role="dialog"], .shadow-2xl { --tw-shadow:0 16px 40px rgba(0,0,0,.45); }
+* { scrollbar-width:thin; scrollbar-color:#30363d transparent; }
+*::-webkit-scrollbar { width:8px; height:8px; }
+*::-webkit-scrollbar-thumb { background:#30363d; border-radius:8px; }
+*::-webkit-scrollbar-track { background:transparent; }
+main { min-width:0; }
+main h1 { letter-spacing:-.035em; }
+main h1, main h2, main h3 { text-wrap:balance; }
+main p { text-wrap:pretty; }
+[class*="rounded-3xl"], [class*="rounded-2xl"] { border-radius:8px !important; }
+[class*="rounded-xl"] { border-radius:6px !important; }
+[class*="rounded-lg"] { border-radius:5px !important; }
+[class*="border-white/[0.06]"], [class*="border-white/[0.07]"], [class*="border-white/10"], [class*="border-zinc-800"] { border-color:var(--border) !important; }
+[class*="bg-zinc-900/"], [class*="bg-zinc-900 "] { background-color:var(--surface) !important; }
+[class*="bg-zinc-950/"] { background-color:var(--surface-muted) !important; }
+input:not([type="checkbox"]):not([type="radio"]), textarea { background-color:#0d1117; border-color:var(--border); color:#e6edf3; }
+input:focus, textarea:focus, select:focus { border-color:#3fb950 !important; box-shadow:0 0 0 2px rgba(63,185,80,.15); outline:none; }
+@media (max-width:640px) { main { padding-left:16px; padding-right:16px; } [class*="p-6"] { padding:16px; } [class*="gap-6"] { gap:14px; } }
+@media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; } }

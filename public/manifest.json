@@ -1,12 +1,12 @@
 {
-  "name": "IFoundBug (IFB) — Developer Bug Tracking Platform",
+  "name": "IFoundBug \u2014 Issue Tracking",
   "short_name": "IFoundBug",
-  "description": "Dasturchilar va jamoalar uchun tezkor, real-time bug tracking tizimi.",
+  "description": "Issue tracking and bug triage for software teams.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#090b0a",
-  "theme_color": "#090b0a",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
   "orientation": "any",
   "categories": [
     "developer",

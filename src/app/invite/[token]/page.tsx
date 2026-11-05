@@ -26,14 +26,14 @@ export default function InvitePage() {
     <>
       <Nav />
       <main className="mx-auto w-full max-w-md flex-1 px-4 py-14">
-        {invite === undefined && <Spinner label="Taklif tekshirilmoqda…" />}
-        {invite === null && <Empty title="Taklif yaroqsiz" hint="Muddati tugagan yoki bekor qilingan bo‘lishi mumkin." />}
+        {invite === undefined && <Spinner label="Checking invitation…" />}
+        {invite === null && <Empty title="Invalid invitation" hint="This invitation may have expired or been revoked." />}
         {invite && (
           <div className="space-y-4 rounded-2xl border border-white/10 bg-[#101312] p-6 text-center">
-            <p className="text-xs text-zinc-500">Sizni jamoaga taklif qilishdi</p>
+            <p className="text-xs text-zinc-500">You have been invited to join</p>
             <h1 className="text-xl font-bold text-white">{invite.project.name}</h1>
-            <p className="text-sm text-zinc-400">Rol: <b className="text-zinc-200">{invite.role}</b></p>
-            {me ? <button className={`${btnPrimary} w-full`} onClick={join} disabled={busy}>{busy ? 'Qo‘shilmoqda…' : 'Jamoaga qo‘shilish'}</button> : me === null ? <LoginHint what="Qo‘shilish" /> : null}
+            <p className="text-sm text-zinc-400">Role: <b className="text-zinc-200">{invite.role}</b></p>
+            {me ? <button className={`${btnPrimary} w-full`} onClick={join} disabled={busy}>{busy ? 'Joining…' : 'Join repository'}</button> : me === null ? <LoginHint what="join this repository" /> : null}
             {error && <ErrorBox message={error} />}
           </div>
         )}

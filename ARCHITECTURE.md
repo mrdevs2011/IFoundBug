@@ -1,55 +1,38 @@
-# ARCHITECTURE.md — IFoundBug (IFB) Enterprise Specification
+# IFoundBug Architecture
 
-## 1. Executive Topology & Architecture
-IFoundBug is engineered as a zero-latency, high-concurrency collaborative bug tracking and developer triage platform. It provides deterministic, telemetry-backed bug lifecycles in a focused workspace.
+## Overview
 
-```mermaid
-graph TD
-    Client[Web & Mobile Clients PWA] --> NextEdge[Next.js 16 Edge / App Router]
-    ExternalApp[Client Apps & Websites] -->|Embed Script / widget.js| APIBug[Next.js API: /api/bugs]
-    NextEdge --> SupaDB[(Supabase PostgreSQL + RLS)]
-    APIBug --> SupaDB
-    SupaDB -->|Realtime Pub/Sub| RealtimeEngine[Supabase Realtime WebSocket]
-    RealtimeEngine -->|Live Comments & Status Events| Client
-```
+IFoundBug is a Next.js App Router application backed by Supabase Auth and PostgreSQL. The browser is a presentation and interaction client; PostgreSQL owns durable application records, access policies, generated identifiers, and transactional state changes.
 
----
+## Application layers
 
-## 2. Core Architectural Pillars
+- src/app: route composition, route-level state, and API handlers.
+- src/components: reusable UI, forms, issue views, annotation, team and MCP dialogs.
+- src/lib/db.ts: typed Supabase data access and RPC adapters.
+- src/lib/supabase: browser client, server auth and username-based identity mapping.
+- sql/IFOUNDBUG_UNIVERSAL.sql: base tables, constraints, indexes, triggers, notifications and storage setup.
+- sql/V2_PUBLIC_MODEL.sql: role-aware RLS, private issue links, write guards and transactional RPCs.
 
-### A. Non-Volatile Client Diagnostics & Telemetry
-Whenever a tester or developer records a defect, the client captures:
-- Viewport and native physical device resolution
-- Operating system release string
-- User-Agent, browser engine, and rendering vendor
-- System network latency & connection type
-- Interface locale & active locale string
+## Data and identity boundaries
 
-### B. In-Browser Image Annotation Engine
-An HTML5 Canvas rendering pipeline (`ImageAnnotator.tsx`) operates client-side:
-- **Zero-Roundtrip Processing**: Operates entirely in memory with 60FPS draw cycles.
-- **PII Obfuscation Layer**: Renders dark blurring bounding boxes over confidential credentials, phone numbers, or tokens before persistence.
-- **State Stacking**: 10-level non-destructive undo buffer using canvas `ImageData`.
+Supabase Auth owns authentication. Usernames are mapped to stable synthetic email addresses for Supabase Email/Password Auth; the application does not require a real email address. ifb_profiles maps Auth identities to application profile IDs.
 
-### C. AI Coding Agent Prompt Synthesizer
-Directly transforms raw defect metadata into structured instructions compatible with:
-- **Claude Code** (`claude ...`)
-- **Cursor IDE**
-- **Codex / Antigravity Agents**
-- Generates reproducible steps, expected vs actual behavior, acceptance checklists, and path references.
+The primary records are profiles, projects, project memberships, invitations, bugs, comments, audit events, votes, notifications and MCP tokens. The browser uses the publishable key only. MCP uses a server-only service key after validating an account-scoped token and its scopes.
 
-### D. Multi-Tenant Workspace & Secure Tokenized Invites
-- **Row Level Security (RLS)**: Enforces access controls across public and private workspaces.
-- **Tokenized Invites**: Cryptographic tokens grant role-restricted access (`owner`, `admin`, `developer`, `qa_tester`, `viewer`).
+## Access model
 
----
+- Public projects and non-sensitive, listed issues can be read publicly.
+- Private projects are visible only to project members.
+- Private-link issues are excluded from listings and require their secret link or an authorized reporter/member session.
+- Public guest issue creation is allowed only when the project enables guest reports; private projects require membership.
+- Reporter writes are constrained by database triggers. Triage fields require a project role with triage permission.
+- Owner/admin membership changes are guarded in PostgreSQL, not trusted to UI checks.
+- MCP bearer tokens are stored as SHA-256 digests and are scoped per account.
 
-## 3. Database Schema Overview
-- `ifb_profiles`: User identities, roles, reputation scores.
-- `ifb_projects`: Multi-tenant workspaces with webhook endpoints and tech stack metadata.
-- `ifb_project_members`: Workspace team association with strict RBAC.
-- `ifb_project_invites`: Tokenized share links with auto-expiring usage counts.
-- `ifb_bugs`: Defect items with telemetry JSONB, acceptance checklists, and AI prompts.
-- `ifb_bug_comments`: Discussion threads with markdown and emoji reactions.
-- `ifb_bug_audit_logs`: Audit trail for compliance and status histories.
-- `ifb_bug_upvotes`: Community reproduction and upvoting counters.
+## Realtime and state
+
+The dashboard, repository issue list and issue detail views subscribe to Supabase Postgres Changes and refresh only the affected data. Shared-link issue views subscribe using the resolved issue ID; delivery for private rows remains subject to the active RLS policy and must be verified against the production project. Every subscription is removed when its component unmounts. No route uses recurring polling for data refresh. User-facing writes use optimistic state where the result is predictable and roll back on server rejection; server-generated secrets are shown immediately after the server returns them.
+
+## Media and privacy boundary
+
+Issue attachments live in a private Supabase Storage bucket. Uploads store guarded `/api/attachments/...` paths; the route verifies the bug row through RLS or validates the private issue token before using the server-only storage key to stream the object. The V2 migration converts legacy public object URLs to proxy paths without changing stored object keys.

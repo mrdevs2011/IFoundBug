@@ -1,6 +1,6 @@
-# IFoundBug — single database setup
+# IFoundBug — database setup
 
-The only application SQL file is `IFOUNDBUG_UNIVERSAL.sql`. Run that complete file once in **Supabase Dashboard → SQL Editor**. It is designed to be re-runnable and preserves application rows. Do not run the deleted legacy migration files.
+There are two required SQL files. Run `IFOUNDBUG_UNIVERSAL.sql` first, then `V2_PUBLIC_MODEL.sql`, in **Supabase Dashboard → SQL Editor**. The base file deliberately installs no permissive application policies; the V2 file installs the production access model. Re-running the base file after V2 is fail-closed (it may temporarily revoke public access), so always re-run V2 afterwards. Both files preserve application rows.
 
 ## Required Supabase Auth setting
 
@@ -32,13 +32,13 @@ The MCP endpoint is `/api/mcp` using Streamable HTTP, JSON-RPC 2.0 and Bearer au
 
 ## Production setup order
 
-1. Run `IFOUNDBUG_UNIVERSAL.sql` first to create the schema and base functions.
-2. Run `V2_PUBLIC_MODEL.sql` second to install public-by-default visibility, secret links, invite flows, and role-aware RLS/RPC guards.
-3. Verify the SQL Editor reports success for both scripts. Do not expose the app as production until both migrations have been applied.
+1. Take a current database backup.
+2. Run `IFOUNDBUG_UNIVERSAL.sql` first.
+3. Run `V2_PUBLIC_MODEL.sql` second to install public-project visibility, private issue links, invite flows, role-aware RLS/RPC guards, and private attachment delivery.
+4. Verify both scripts complete successfully and test the access matrix before enabling production traffic.
 
+The base file intentionally leaves application tables fail-closed. If it is re-run after V2, immediately re-run V2 to restore the role-aware policies. Both files preserve application rows.
 
-## Production setup order
+## Attachment privacy limitation
 
-1. Run `IFOUNDBUG_UNIVERSAL.sql` first to create the schema and base functions.
-2. Run `V2_PUBLIC_MODEL.sql` second to install public-by-default visibility, secret links, invite flows, and role-aware RLS/RPC guards.
-3. Verify the SQL Editor reports success for both scripts. Do not expose the app as production until both migrations have been applied.
+The bug-attachments bucket is private. Uploads return guarded `/api/attachments/...` URLs; the route checks issue visibility through RLS or validates the secret issue token before reading the object with the server-only storage key. The V2 migration converts existing public object URLs to the guarded proxy paths. Do not expose the service-role key to client code.
