@@ -7,6 +7,8 @@ export function normalizeUsername(value: string): string { return value.trim().t
 export function usernameToAuthEmail(username: string): string { return `${normalizeUsername(username)}@${AUTH_EMAIL_DOMAIN}`; }
 export function authErrorToEnglish(error: { message?: string; status?: number }): string {
  const message = (error.message || '').toLowerCase();
+ // Browser network failures: Safari "Load failed", Chrome "Failed to fetch", Firefox "NetworkError…".
+ if (/load failed|failed to fetch|networkerror|fetch failed|network request failed/.test(message)) return 'Cannot reach the server. Check your internet connection (or VPN/DNS) and try again.';
  if (message.includes('email rate limit exceeded') || message.includes('rate limit')) return 'Email confirmation may still be enabled, or a temporary rate limit was reached. In Authentication → Providers → Email, disable Confirm email and keep the Email provider enabled. Wait for the rate limit to reset, then try again.';
  if (message.includes('email address') && message.includes('invalid')) return 'Supabase rejected the internal sign-in address. Verify that the Email provider is enabled and Auth is configured correctly.';
  if (message.includes('user already registered')) return 'This username is already taken. Sign in or choose another username.';

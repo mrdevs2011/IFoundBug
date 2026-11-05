@@ -158,3 +158,11 @@ test('issue search supports project and repository aliases for global and scoped
     assert.equal(matchesIssueQuery(issue, [parsed.terms[0]], undefined, { name: 'Other', slug: 'other' }), false);
   }
 });
+
+test('auth network failures get a clear message instead of "Load failed"', async () => {
+  const { authErrorToEnglish } = await import('../src/lib/supabase/username-auth.ts');
+  for (const message of ['Load failed', 'Failed to fetch', 'NetworkError when attempting to fetch resource.']) {
+    assert.match(authErrorToEnglish({ message }), /Cannot reach the server/);
+  }
+  assert.match(authErrorToEnglish({ message: 'User already registered' }), /already taken/);
+});
