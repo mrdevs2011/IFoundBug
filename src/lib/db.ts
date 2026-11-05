@@ -277,3 +277,25 @@ export async function testIntegration(id: string) {
   const { error } = await sb().rpc('ifb_test_webhook', { p_id: id });
   if (error) throw error;
 }
+
+// ---- organizations ----------------------------------------------------------
+export type OrgRole = 'owner' | 'admin' | 'member';
+export interface OrgSummary { id: string; name: string; slug: string; description: string; role: OrgRole; members: number; repositories: number }
+export interface OrgOverview {
+  id: string; name: string; slug: string; description: string; my_role: OrgRole;
+  members: { id: string; username: string; full_name: string; avatar_url: string | null; role: OrgRole }[];
+  repositories: { id: string; name: string; slug: string; is_public: boolean; open: number }[];
+}
+const rpc = async <T>(fn: string, args: Record<string, unknown> = {}): Promise<T> => {
+  const { data, error } = await sb().rpc(fn, args);
+  if (error) throw error;
+  return data as T;
+};
+export const myOrgs = () => rpc<OrgSummary[]>('ifb_my_orgs');
+export const orgOverview = (slug: string) => rpc<OrgOverview>('ifb_org_overview', { p_slug: slug });
+export const createOrg = (name: string, slug: string, description: string) => rpc<string>('ifb_create_org', { p_name: name, p_slug: slug, p_description: description });
+export const addOrgMember = (org: string, username: string, role: OrgRole) => rpc<void>('ifb_org_add_member', { p_org: org, p_username: username, p_role: role });
+export const setOrgRole = (org: string, user: string, role: OrgRole) => rpc<void>('ifb_org_set_role', { p_org: org, p_user: user, p_role: role });
+export const removeOrgMember = (org: string, user: string) => rpc<void>('ifb_org_remove_member', { p_org: org, p_user: user });
+export const setProjectOrg = (project: string, org: string | null) => rpc<void>('ifb_org_set_project', { p_project: project, p_org: org });
+export const deleteOrg = (org: string) => rpc<void>('ifb_delete_org', { p_org: org });

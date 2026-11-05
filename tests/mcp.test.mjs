@@ -153,3 +153,13 @@ test('REST router maps resources to the shared tools and errors to HTTP codes', 
   assert.equal(statusForError('Bug "X" not found.'), 404);
   assert.equal(statusForError('Title is required'), 400);
 });
+
+test('V8 organizations: inherited access is guarded and explicit memberships win', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const sql = await readFile(new URL('../sql/V8_ORGANIZATIONS.sql', import.meta.url), 'utf8');
+  assert.match(sql, /on conflict \(project_id, user_id\) do nothing/);
+  assert.match(sql, /An organization needs at least one owner/);
+  assert.match(sql, /Organization access is managed by the organization/);
+  assert.match(sql, /new\.org_id := old\.org_id/);
+  assert.match(sql, /revoke all on public\.ifb_organizations, public\.ifb_org_members from anon, authenticated/);
+});
