@@ -1,9 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<rect x="24" y="24" width="464" height="464" rx="116" fill="#090b0a" stroke="#34d399" stroke-opacity=".35" stroke-width="3"/>
-<g fill="none" stroke="#6ee7b7" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"><path d="M214 145 175 105h-33M298 145l39-40h33"/></g>
-<g fill="none" stroke="#34d399" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"><path d="m184 245-52-30h-27m73 85-52 30h-25m227-85 52-30h27m-73 85 52 30h25"/></g>
-<circle cx="256" cy="159" r="51" fill="#6ee7b7"/>
-<rect x="184" y="190" width="144" height="190" rx="72" fill="#34d399"/>
-<path d="M256 218v136" stroke="#094633" stroke-width="9" stroke-linecap="round"/>
-<g fill="#090b0a"><circle cx="235.5" cy="155.5" r="7.5"/><circle cx="276.5" cy="155.5" r="7.5"/></g>
+<rect width="512" height="512" rx="112" fill="#000"/>
+<text x="256" y="322" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-weight="800" font-size="196" letter-spacing="-8" fill="#fff">IFB</text>
 </svg>
