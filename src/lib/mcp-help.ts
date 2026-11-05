@@ -9,6 +9,8 @@ Model: repository (= project) → issues (= bugs) → comments, activity, attach
 Issue fields: code (e.g. BRB-12), title, status, severity, priority, environment, assignee, steps, actual/expected behaviour, dev_notes, evidence images.
 Identifiers: a repository can be passed as UUID, slug or exact/partial name ("ifb barbershop" works). An issue as UUID or code.
 
+No MCP client? The same tools are available as a REST API: GET /api/v1 lists endpoints (same token, scopes and limits).
+
 First 3 calls in any session:
 1. who_am_i → your identity and token scopes (what you are allowed to do).
 2. list_projects → repositories you can see, with your membership_role.

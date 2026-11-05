@@ -25,7 +25,7 @@ test('attachment proxy accepts only UUID-backed bug object paths', () => {
 
 test('MCP issue updates are delegated to the transactional database contract', async () => {
   const { readFile } = await import('node:fs/promises');
-  const route = await readFile(new URL('../src/app/api/mcp/route.ts', import.meta.url), 'utf8');
+  const route = await readFile(new URL('../src/lib/ifb-tools.ts', import.meta.url), 'utf8');
   const sql = await readFile(new URL('../sql/V2_PUBLIC_MODEL.sql', import.meta.url), 'utf8');
   assert.match(route, /rpc\('ifb_mcp_update_bug'/);
   assert.doesNotMatch(route, /from\('ifb_bugs'\)\.update\(patch\)/);
@@ -38,7 +38,7 @@ test('MCP issue updates are delegated to the transactional database contract', a
 
 test('MCP service-role paths explicitly enforce private project visibility and guest reporting policy', async () => {
   const { readFile } = await import('node:fs/promises');
-  const route = await readFile(new URL('../src/app/api/mcp/route.ts', import.meta.url), 'utf8');
+  const route = await readFile(new URL('../src/lib/ifb-tools.ts', import.meta.url), 'utf8');
   assert.match(route, /project\.is_public !== true/);
   assert.match(route, /project\.allow_guest_reports !== true/);
   assert.match(route, /Project not found or access denied/);
@@ -84,7 +84,7 @@ test('agent helpers: since windows, duplicate detection', async () => {
 
 test('agent MCP tools are registered and reuse the audited update RPC', async () => {
   const { readFile } = await import('node:fs/promises');
-  const route = await readFile(new URL('../src/app/api/mcp/route.ts', import.meta.url), 'utf8');
+  const route = await readFile(new URL('../src/lib/ifb-tools.ts', import.meta.url), 'utf8');
   for (const name of ['whats_new', 'search_bugs', 'create_bugs', 'bulk_update_bugs']) {
     assert.match(route, new RegExp(`tool\\('${name}'`));
     assert.match(route, new RegExp(`case '${name}'`));
@@ -96,7 +96,7 @@ test('agent MCP tools are registered and reuse the audited update RPC', async ()
 test('ifb_help documents every MCP tool and its topics match the tool schema', async () => {
   const { readFile } = await import('node:fs/promises');
   const { helpText, HELP_TOPICS } = await import('../src/lib/mcp-help.ts');
-  const route = await readFile(new URL('../src/app/api/mcp/route.ts', import.meta.url), 'utf8');
+  const route = await readFile(new URL('../src/lib/ifb-tools.ts', import.meta.url), 'utf8');
   const tools = [...route.matchAll(/tool\('([a-z_]+)'/g)].map((m) => m[1]);
   assert.ok(tools.length >= 20);
   const manual = helpText();
@@ -136,4 +136,20 @@ test('V7 webhooks: secrets are not exposed, SSRF guard and owner-only management
   const list = sql.slice(sql.indexOf('function public.ifb_list_webhooks'), sql.indexOf('function public.ifb_create_webhook'));
   assert.doesNotMatch(list, /'secret'/);
   assert.match(list, /split_part\(h\.telegram_bot_token, ':', 1\)/);
+});
+
+test('REST router maps resources to the shared tools and errors to HTTP codes', async () => {
+  const { routeRest, statusForError } = await import('../src/lib/rest-router.ts');
+  const q = (s = '') => new URLSearchParams(s);
+  assert.deepEqual(routeRest('GET', ['repos', 'barbershop', 'issues'], q('status=REPORTED&limit=5'), {}), { tool: 'list_bugs', args: { project: 'barbershop', status: 'REPORTED', limit: 5 } });
+  assert.equal(routeRest('POST', ['repos', 'x', 'issues'], q(), { bugs: [{ title: 'a' }] }).tool, 'create_bugs');
+  assert.equal(routeRest('POST', ['repos', 'x', 'issues'], q(), { title: 'a' }).tool, 'create_bug');
+  assert.deepEqual(routeRest('PATCH', ['issues', 'BRB-1'], q(), { status: 'CLOSED' }), { tool: 'update_bug', args: { status: 'CLOSED', bug: 'BRB-1' } });
+  // path wins over body: a caller cannot retarget another issue through the body
+  assert.equal(routeRest('PATCH', ['issues', 'BRB-1'], q(), { bug: 'OTHER-9' }).args.bug, 'BRB-1');
+  assert.equal(routeRest('GET', ['inbox'], q('since=7d'), {}).tool, 'whats_new');
+  assert.equal(routeRest('DELETE', ['repos', 'x'], q(), {}), null);
+  assert.equal(statusForError('Permission denied: missing bugs:update'), 403);
+  assert.equal(statusForError('Bug "X" not found.'), 404);
+  assert.equal(statusForError('Title is required'), 400);
 });
