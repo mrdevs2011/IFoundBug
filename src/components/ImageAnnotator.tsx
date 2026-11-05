@@ -182,31 +182,31 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({ imageUrl, onSave
         <div className="flex items-center space-x-2 bg-[#0d1117]/80 p-1 rounded-lg border border-[#3d444d]">
           <button
             onClick={() => setSelectedTool('box')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'box' ? 'bg-[#238636] text-black font-semibold' : 'text-[#9198a1] hover:text-white'}`}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'box' ? 'bg-[#238636] text-white font-semibold' : 'text-[#9198a1] hover:text-white'}`}
           >
             Rectangle
           </button>
           <button
             onClick={() => setSelectedTool('arrow')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'arrow' ? 'bg-[#238636] text-black font-semibold' : 'text-[#9198a1] hover:text-white'}`}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'arrow' ? 'bg-[#238636] text-white font-semibold' : 'text-[#9198a1] hover:text-white'}`}
           >
             Arrow
           </button>
           <button
             onClick={() => setSelectedTool('pen')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'pen' ? 'bg-[#238636] text-black font-semibold' : 'text-[#9198a1] hover:text-white'}`}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'pen' ? 'bg-[#238636] text-white font-semibold' : 'text-[#9198a1] hover:text-white'}`}
           >
             Pen
           </button>
           <button
             onClick={() => setSelectedTool('blur')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'blur' ? 'bg-[#238636] text-black font-semibold' : 'text-[#9198a1] hover:text-white'}`}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'blur' ? 'bg-[#238636] text-white font-semibold' : 'text-[#9198a1] hover:text-white'}`}
           >
             Redact (PII)
           </button>
           <button
             onClick={() => setSelectedTool('text')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'text' ? 'bg-[#238636] text-black font-semibold' : 'text-[#9198a1] hover:text-white'}`}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${selectedTool === 'text' ? 'bg-[#238636] text-white font-semibold' : 'text-[#9198a1] hover:text-white'}`}
           >
             Text
           </button>
@@ -238,7 +238,7 @@ export const ImageAnnotator: React.FC<ImageAnnotatorProps> = ({ imageUrl, onSave
         <div className="flex items-center space-x-2">
           <button
             onClick={handleExport}
-            className="flex items-center gap-1.5 bg-[#238636] hover:bg-[#238636] text-black font-semibold text-xs px-3.5 py-2 rounded-lg shadow-lg transition"
+            className="flex items-center gap-1.5 bg-[#238636] hover:bg-[#238636] text-white font-semibold text-xs px-3.5 py-2 rounded-lg shadow-lg transition"
           >
             <CheckIcon className="w-3.5 h-3.5" /> Save & Annotate
           </button>

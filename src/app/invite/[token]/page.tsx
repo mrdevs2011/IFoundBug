@@ -31,7 +31,7 @@ export default function InvitePage() {
         {invite && (
           <div className="space-y-4 rounded-2xl border border-white/10 bg-[#101312] p-6 text-center">
             <p className="text-xs text-[#9198a1]">You have been invited to join</p>
-            <h1 className="text-xl font-bold text-white">{invite.project.name}</h1>
+            <h1 className="text-2xl font-semibold text-[#f0f6fc]">{invite.project.name}</h1>
             <p className="text-sm text-[#9198a1]">Role: <b className="text-[#f0f6fc]">{invite.role}</b></p>
             {me ? <button className={`${btnPrimary} w-full`} onClick={join} disabled={busy}>{busy ? 'Joining…' : 'Join repository'}</button> : me === null ? <LoginHint what="join this repository" /> : null}
             {error && <ErrorBox message={error} />}

@@ -188,11 +188,11 @@ ${b.acceptance_criteria.map((ac) => `  - [ ] ${ac.text}`).join('\n')}
             >
               {copied ? (
                 <>
-                  <CheckIcon className="w-4 h-4 text-black" /> Copied!
+                  <CheckIcon className="w-4 h-4 text-white" /> Copied!
                 </>
               ) : (
                 <>
-                  <CopyIcon className="w-4 h-4 text-black" /> Copy prompt
+                  <CopyIcon className="w-4 h-4 text-white" /> Copy prompt
                 </>
               )}
             </button>

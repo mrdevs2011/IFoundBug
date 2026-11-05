@@ -25,7 +25,7 @@
 html, body { min-height: 100%; background: var(--background); }
 body { color: var(--foreground); overflow-x: hidden; font-feature-settings: "ss01" on, "cv11" on; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
 ::selection { background: rgba(56,139,253,.4); color: #fff; }
-button, input, textarea, select { font: inherit; }
+@layer base { button, input, textarea, select { font: inherit; } }
 button, a { -webkit-tap-highlight-color: transparent; }
 button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid #1f6feb; outline-offset: -2px; box-shadow:none; }
 input:not([type="checkbox"]):not([type="radio"]), textarea, select { color-scheme: dark; border-radius: 6px; }

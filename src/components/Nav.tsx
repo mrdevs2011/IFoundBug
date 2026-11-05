@@ -8,7 +8,7 @@ import MCPSettingsModal from '@/components/MCPSettingsModal';
 import ProfileModal from '@/components/ProfileModal';
 import { NewProjectModal } from '@/components/NewProjectModal';
 import { Logo } from '@/components/Logo';
-import { Avatar, IssueOpenedIcon, PlusOctIcon, RepoIcon, SearchOctIcon, ThreeBarsIcon, TriangleDownIcon } from '@/components/gh';
+import { Avatar, IssueOpenedIcon, PersonIcon, PlusOctIcon, RepoIcon, SearchOctIcon, ThreeBarsIcon, TriangleDownIcon } from '@/components/gh';
 import { PROFILE_UPDATED_EVENT } from '@/lib/avatar';
 import type { Me } from '@/lib/db';
 
@@ -82,6 +82,7 @@ export function Nav() {
                   <div className="mx-4 mb-2 mt-1 flex items-center gap-2 border-b border-[#3d444d] pb-2"><Avatar name={me.full_name} src={me.avatar_url} size={32} /><div className="min-w-0"><p className="truncate text-sm font-semibold text-[#f0f6fc]">{me.username}</p><p className="truncate text-xs text-[#9198a1]">{me.full_name}</p></div></div>
                   <button role="menuitem" className={menuItem} onClick={() => { setMenu(null); setProfile(true); }}>Your profile</button>
                   <Link role="menuitem" href="/" className={menuItem} onClick={() => setMenu(null)}>Your repositories</Link>
+                  <Link role="menuitem" href="/orgs" className={menuItem} onClick={() => setMenu(null)}>Your organizations</Link>
                   <button role="menuitem" className={menuItem} onClick={() => { setMenu(null); setMcp(true); }}>MCP settings</button>
                   <div className="my-2 border-t border-[#3d444d]" />
                   <button role="menuitem" className={menuItem} onClick={async () => { setMenu(null); await signOut(); router.refresh(); router.push('/'); }}>Sign out</button>
@@ -99,6 +100,7 @@ export function Nav() {
           <div className="mb-4 flex items-center justify-between"><Logo size={32} /><button onClick={() => setDrawer(false)} aria-label="Close" className={`${iconBtn} w-8 !px-0`}>✕</button></div>
           <ul className="space-y-0.5 text-sm">
             <li><Link href="/" onClick={() => setDrawer(false)} className={menuItem + ' !mx-0 !w-full'}><RepoIcon className="text-[#9198a1]" />Repositories</Link></li>
+            <li><Link href="/orgs" onClick={() => setDrawer(false)} className={menuItem + ' !mx-0 !w-full'}><PersonIcon className="text-[#9198a1]" />Organizations</Link></li>
             <li><Link href="/?q=" onClick={() => setDrawer(false)} className={menuItem + ' !mx-0 !w-full'}><IssueOpenedIcon className="text-[#9198a1]" />Issues</Link></li>
           </ul>
         </aside>

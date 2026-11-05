@@ -160,7 +160,12 @@ export default function SettingsPage() {
     <>
       <Nav />
       {project && <RepoHeader project={project} active="settings" />}
-      <main className="mx-auto w-full max-w-[1012px] flex-1 px-4 py-6 md:px-6">
+      <main className="mx-auto flex w-full max-w-[1280px] flex-1 flex-col gap-6 px-4 py-6 md:px-6 lg:flex-row lg:px-8">
+        <nav aria-label="Settings" className="w-full shrink-0 lg:w-[256px]">
+          <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-wide text-[#9198a1]">Integrations</p>
+          <div aria-current="page" className="relative flex items-center rounded-md bg-[#656c7633] px-2 py-1.5 text-sm font-semibold text-[#f0f6fc] before:absolute before:-left-2 before:top-1.5 before:h-5 before:w-1 before:rounded before:bg-[#1f6feb]">Webhooks &amp; Telegram</div>
+        </nav>
+        <div className="min-w-0 flex-1">
         {role === undefined && !error && <Spinner />}
         {role !== undefined && !isAdmin && <Empty title="Only owners and admins can change repository settings." />}
         {isAdmin && project && (
@@ -217,6 +222,7 @@ export default function SettingsPage() {
             {items && items.length > 0 && <p className="mt-2 text-xs text-[#9198a1]">Dots show the last 5 deliveries: green delivered, red failed (hover for the reason), grey pending. <button className="text-[#4493f8] hover:underline" onClick={load}>Refresh</button></p>}
           </section>
         )}
+        </div>
       </main>
     </>
   );

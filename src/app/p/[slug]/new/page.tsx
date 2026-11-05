@@ -85,7 +85,7 @@ export default function NewBugPage() {
       <Nav />
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8">
         <Link href={`/p/${project.slug}`} className="inline-flex items-center gap-1.5 text-xs text-[#9198a1] hover:text-[#f0f6fc]"><ArrowLeftIcon className="h-3.5 w-3.5" />{project.name}</Link>
-        <h1 className="mt-2 text-2xl font-bold text-white">New issue</h1>
+        <h1 className="mt-2 text-2xl font-semibold text-[#f0f6fc]">New issue</h1>
         {me === null ? <div className="mt-6"><LoginHint what="submit an issue" /></div> : (
           <form onSubmit={submit} className="mt-6 space-y-5">
             <label className="block text-sm text-[#f0f6fc]">What happened?
